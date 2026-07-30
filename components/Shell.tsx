@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 
 const TABS = [
+  { href: '/camino', label: 'Camino' },
   { href: '/partidos', label: 'Partidos' },
   { href: '/stats', label: 'Stats' },
   { href: '/cuentas', label: 'Cuentas' },

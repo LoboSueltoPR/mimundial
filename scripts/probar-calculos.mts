@@ -110,5 +110,61 @@ chequear('Brunito debe 30000 en dos partidos', brunito.saldo, 30000);
 const lobo = cuentas.find((c) => c.nombre === 'Lobo')!;
 chequear('Lobo pago una de las dos veces', [lobo.debe, lobo.pago], [10000, 5000]);
 
+/* ---------- el camino del mundial ---------- */
+const { calcularCamino, PARA_LA_COPA } = await import('../lib/camino.ts');
+
+const pt = (fecha: string, resultado: Partido['resultado']) =>
+  ({
+    id: 'p' + fecha, user_id: 'u', grupo_id: null, fecha, hora: null, lugar: null,
+    cupo: 12, costo: 0, puso: null, resultado, goles_favor: null, goles_contra: null,
+    equipos: null, notas: null, creado_en: fecha + 'T20:00:00Z',
+  }) as Partido;
+
+const d = (n: number) => `2026-08-${String(n).padStart(2, '0')}`;
+
+chequear('sin partidos arranca en grupos', calcularCamino([]).proxima.id, 'g1');
+chequear('sin partidos, cero copas', calcularCamino([]).copas, 0);
+
+const tresGanados = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), 'ganamos'), pt(d(3), 'ganamos')]);
+chequear('3 triunfos -> octavos', tresGanados.proxima.id, 'oc');
+chequear('3 triunfos acumulados', tresGanados.triunfos, 3);
+
+const conEmpate = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), 'empate'), pt(d(3), 'ganamos')]);
+chequear('el empate no hace retroceder', conEmpate.triunfos, 2);
+
+const conDerrota = calcularCamino([
+  pt(d(1), 'ganamos'), pt(d(2), 'ganamos'), pt(d(3), 'ganamos'),
+  pt(d(4), 'perdimos'),
+]);
+chequear('la derrota manda a cero', conDerrota.triunfos, 0);
+chequear('la derrota abre un mundial nuevo', conDerrota.mundial, 2);
+chequear('pero queda registrada la mejor instancia', conDerrota.mejorInstancia, 3);
+
+const campeon = calcularCamino(
+  Array.from({ length: PARA_LA_COPA }, (_, i) => pt(d(i + 1), 'ganamos')),
+);
+chequear('7 al hilo -> una copa', campeon.copas, 1);
+chequear('despues de la copa vuelve a cero', campeon.triunfos, 0);
+chequear('y arranca el mundial 2', campeon.mundial, 2);
+chequear('el ultimo paso marca la copa', campeon.historial[0].copa, true);
+chequear('el ultimo triunfo fue la final', campeon.historial[0].instancia.id, 'fi');
+
+const dosCopas = calcularCamino(
+  Array.from({ length: PARA_LA_COPA * 2 }, (_, i) => pt(d(i + 1), 'ganamos')),
+);
+chequear('14 al hilo -> dos copas', dosCopas.copas, 2);
+
+/* el orden cronologico manda, no el orden en que vienen */
+const desordenado = calcularCamino([
+  pt(d(3), 'perdimos'), pt(d(1), 'ganamos'), pt(d(2), 'ganamos'),
+]);
+chequear('ordena por fecha antes de contar', desordenado.triunfos, 0);
+chequear('y la derrota final deja mejor instancia en 2', desordenado.mejorInstancia, 2);
+
+/* los partidos sin resultado no cuentan */
+const conPendientes = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), null), pt(d(3), 'ganamos')]);
+chequear('los partidos sin cargar se ignoran', conPendientes.triunfos, 2);
+chequear('el historial solo trae los jugados', conPendientes.historial.length, 2);
+
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);
