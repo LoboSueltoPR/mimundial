@@ -6,7 +6,7 @@
  */
 
 const CACHE = 'mimundial-v1';
-const SHELL = ['/', '/partidos', '/manifest.json', '/icons/icon.svg'];
+const SHELL = ['/', '/camino', '/manifest.json', '/icons/icon.svg'];
 
 self.addEventListener('install', (evento) => {
   evento.waitUntil(
@@ -41,7 +41,7 @@ self.addEventListener('fetch', (evento) => {
         caches.open(CACHE).then((c) => c.put(req, copia)).catch(() => {});
         return res;
       })
-      .catch(() => caches.match(req).then((r) => r || caches.match('/partidos'))),
+      .catch(() => caches.match(req).then((r) => r || caches.match('/camino'))),
   );
 });
 
@@ -57,14 +57,14 @@ self.addEventListener('push', (evento) => {
       body: datos.cuerpo,
       icon: '/icons/icon-192.png',
       badge: '/icons/icon-192.png',
-      data: { url: datos.url || '/partidos' },
+      data: { url: datos.url || '/camino' },
     }),
   );
 });
 
 self.addEventListener('notificationclick', (evento) => {
   evento.notification.close();
-  const destino = evento.notification.data?.url || '/partidos';
+  const destino = evento.notification.data?.url || '/camino';
   evento.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((lista) => {
       const abierta = lista.find((c) => c.url.includes(destino));

@@ -206,6 +206,85 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .saldo .m.ok{color:var(--faint)}
 .saldo .m.favor{color:var(--green)}
 
+/* ---------- camino ---------- */
+.copaBox{
+  position:relative;overflow:hidden;border-radius:16px;padding:26px 18px 18px;
+  text-align:center;border:1px solid var(--line);
+  background:linear-gradient(160deg,#1a2230,#12171f);
+}
+.copaBox.ardiendo{border-color:#6b5a1e;background:linear-gradient(160deg,#2e2714,#1a1710)}
+.copaBox-glow{
+  position:absolute;top:-70px;left:50%;transform:translateX(-50%);
+  width:220px;height:160px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(195,245,60,.3),transparent);
+  pointer-events:none;
+}
+.copaBox.ardiendo .copaBox-glow{background:radial-gradient(closest-side,rgba(240,200,60,.42),transparent)}
+.copaBox-ico{font-size:40px;line-height:1;margin-bottom:10px}
+.copaBox-fase{font-size:25px;font-weight:800;letter-spacing:-.7px}
+.copaBox-frase{font-size:13.5px;color:var(--dim);margin-top:5px;max-width:290px;
+  margin-left:auto;margin-right:auto;line-height:1.5}
+.copaBox-pie{
+  display:flex;margin-top:18px;padding-top:15px;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.copaBox-pie div{flex:1;min-width:0}
+.copaBox-pie b{display:block;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.copaBox-pie span{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px}
+
+.ruta{list-style:none;padding:6px 0}
+.ruta-paso{position:relative;display:flex;align-items:center;gap:13px;padding:9px 15px}
+.ruta-linea{
+  position:absolute;left:29px;top:-14px;width:2px;height:28px;background:var(--line);
+}
+.ruta-paso:first-child .ruta-linea{display:none}
+.ruta-punto{
+  width:29px;height:29px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:13px;font-weight:800;z-index:1;
+  border:2px solid var(--line);background:var(--surface-2);color:var(--faint);
+}
+.ruta-txt{min-width:0}
+.ruta-txt b{display:block;font-size:14px;font-weight:600}
+.ruta-txt small{font-size:11.5px;color:var(--faint)}
+
+.ruta-paso.pasada .ruta-punto{background:var(--green);border-color:var(--green);color:#06120a}
+.ruta-paso.pasada .ruta-linea{background:var(--green)}
+.ruta-paso.pasada .ruta-txt b{color:var(--dim)}
+.ruta-paso.actual .ruta-punto{
+  background:var(--lime);border-color:var(--lime);
+  box-shadow:0 0 0 5px rgba(195,245,60,.16);
+  position:relative;
+}
+/* punto interior: marca el "estás acá" sin depender de un emoji chiquito */
+.ruta-paso.actual .ruta-punto:after{
+  content:"";width:9px;height:9px;border-radius:50%;background:var(--lime-ink);
+}
+.ruta-paso.actual .ruta-txt b{color:var(--lime)}
+.ruta-paso.copa .ruta-punto{background:transparent;border-style:dashed;font-size:15px}
+.ruta-paso.copa.pasada .ruta-punto{background:#4a3f12;border-color:#6b5a1e;border-style:solid}
+
+.vitrina{
+  display:flex;flex-wrap:wrap;gap:8px;padding:15px;border-radius:14px;
+  background:var(--surface);border:1px solid var(--line);
+}
+.trofeo{font-size:27px;line-height:1}
+
+.paso{display:flex;align-items:center;gap:11px;padding:11px 13px;
+  border-bottom:1px solid var(--line-soft);cursor:pointer}
+.paso:last-child{border-bottom:0}
+.paso-res{
+  width:27px;height:27px;border-radius:8px;flex:none;display:grid;place-items:center;
+  font-size:12px;font-weight:800;
+}
+.paso-res.ganamos{background:#1d3a1f;color:#8fdc98}
+.paso-res.empate{background:#2a2f38;color:var(--dim)}
+.paso-res.perdimos{background:#3a1f1f;color:#f0a8a4}
+.paso-info{flex:1;min-width:0}
+.paso-info b{display:block;font-size:14px;font-weight:600}
+.paso-info small{font-size:11.5px;color:var(--faint)}
+.paso-flecha{font-size:15px;color:var(--faint);flex:none}
+.chip.copaChip{color:#f0c97e;border-color:#6b5a1e;background:#2e2714}
+
 /* ---------- modal ---------- */
 .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.72);
   display:flex;align-items:flex-end;justify-content:center}

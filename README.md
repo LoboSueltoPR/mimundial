@@ -74,6 +74,9 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
 
 ## Qué hace
 
+- **Camino** — tu mundial personal. Cada triunfo te hace avanzar una instancia: fase de grupos (3),
+  octavos, cuartos, semifinal, final. Siete al hilo y levantás la copa, que queda en la vitrina y
+  arrancás un mundial nuevo. El empate te deja donde estabas; **la derrota te manda a cero**.
 - **Partidos** — fecha, hora, lugar, cuántos van y cuánto sale.
 - **Anotados** — sumás gente y le ponés `+` por cada invitado. El invitado ocupa lugar en el cupo y
   se le carga a la cuenta de quien lo trae.

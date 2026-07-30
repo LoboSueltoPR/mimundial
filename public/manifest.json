@@ -2,7 +2,7 @@
   "name": "MiMundial",
   "short_name": "MiMundial",
   "description": "Tu registro de picaditos: quién juega, quién debe y cómo salió.",
-  "start_url": "/partidos",
+  "start_url": "/camino",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
