@@ -77,6 +77,8 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
 - **Camino** — tu mundial personal. Cada triunfo te hace avanzar una instancia: fase de grupos (3),
   octavos, cuartos, semifinal, final. Siete al hilo y levantás la copa, que queda en la vitrina y
   arrancás un mundial nuevo. El empate te deja donde estabas; **la derrota te manda a cero**.
+- **Invitar sin cuenta** — cada partido tiene un link. El que lo abre pone su nombre y se anota, sin registrarse. Solo puede manejar su lugar y sus invitados.
+- **Amigos** — los sumás por mail y después los anotás de un toque. Los amigos de tus amigos aparecen sugeridos.
 - **Partidos** — fecha, hora, lugar, cuántos van y cuánto sale.
 - **Anotados** — sumás gente y le ponés `+` por cada invitado. El invitado ocupa lugar en el cupo y
   se le carga a la cuenta de quien lo trae.
@@ -95,13 +97,14 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
 ```
 app/
   (app)/          pantallas con sesión: partidos, stats, cuentas, perfil
+  p/[token]/      la invitación pública: entra cualquiera, sin cuenta
   login/          Google + link por mail
   auth/callback/  vuelta del OAuth
 lib/
   calculos.ts     plata, equipos y stats (con tests)
   supabase/       clientes de navegador y servidor
 proxy.ts          refresca la sesión y protege las rutas
-supabase/migrations/  el SQL a pegar en Supabase
+supabase/migrations/  el SQL a pegar en Supabase (0001 base, 0002 amigos e invitados)
 scripts/          generador de íconos y tests
 ```
 
@@ -112,7 +115,8 @@ scripts/          generador de íconos y tests
 ```bash
 npm run dev      # desarrollo en el puerto 3001
 npm run build    # build de producción
-npm test         # tests de la lógica de plata, equipos y stats
+npm test         # lógica de plata, equipos, stats y camino
+node scripts/probar-seguridad.mjs [token]   # que el acceso anónimo esté realmente cerrado
 npm run iconos   # regenera los PNG del ícono
 ```
 
@@ -133,7 +137,6 @@ Ordenadas por si tocan la base de datos o no.
 
 - **Grupos compartidos** — que la pachanguita entera vea el mismo partido y cada uno se anote solo.
   La tabla `partidos` ya tiene un `grupo_id` sin usar, justamente para esto.
-- **Link para anotarse** — compartís una URL y el que entra se suma sin instalar nada.
 - **Canchas guardadas** — sedes y precios que ya usás, para no reescribirlos cada vez.
 - **Rendimiento por jugador** — con qué equipo ganó cada uno, quién nunca pierde.
 

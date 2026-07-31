@@ -7,6 +7,8 @@ export type Jugador = {
   invitados: number;
   pagado: number;
   orden: number;
+  /** true si se anotó solo por el link de invitación */
+  se_anoto_solo?: boolean;
 };
 
 export type Cabeza = {
@@ -21,10 +23,30 @@ export type Equipos = {
   n: number;
 };
 
+/** Lo que ve alguien que entra por el link, sin cuenta. Nunca trae plata ni ids. */
+export type PartidoPublico = {
+  fecha: string;
+  hora: string | null;
+  lugar: string | null;
+  cupo: number;
+  abierto: boolean;
+  cabezas: number;
+  faltan: number;
+  anfitrion: string | null;
+  anotados: { nombre: string; invitados: number }[];
+};
+
+export type Amigo = { id: string; nombre: string };
+export type Sugerencia = Amigo & { via: string };
+
+export type RespuestaRPC = { ok: boolean; error?: string };
+
 export type Partido = {
   id: string;
   user_id: string;
   grupo_id: string | null;
+  token: string;
+  abierto: boolean;
   fecha: string;
   hora: string | null;
   lugar: string | null;
