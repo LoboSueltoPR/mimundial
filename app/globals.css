@@ -1,9 +1,18 @@
 :root{
-  --bg:#0d1117; --surface:#161b22; --surface-2:#1c2430;
-  --line:#2a3441; --line-soft:#212a35;
-  --txt:#e8edf3; --dim:#8b98a8; --faint:#5b6675;
+  /* Fondo: verde nocturno de cancha bajo reflectores, no gris de dashboard. */
+  --bg:#0a1410; --surface:#0f1d17; --surface-2:#14261e;
+  --line:#1f3a2d; --line-soft:#182c22;
+  --txt:#e9f2ec; --dim:#8fa89a; --faint:#5d7568;
   --lime:#c3f53c; --lime-ink:#16200a;
   --green:#2ea043; --amber:#f0a92e; --red:#e5534b; --blue:#4b9fe5;
+  --tiza:rgba(233,242,236,.14);   /* las líneas de cal */
+  --cesped:#12241b;
+}
+
+/* El césped: franjas de corte, como una cancha de verdad. */
+.pasto{
+  background-image:repeating-linear-gradient(
+    90deg, transparent 0 34px, rgba(255,255,255,.018) 34px 68px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--txt)}
@@ -18,8 +27,13 @@ a{color:inherit;text-decoration:none}
 
 /* ---------- header ---------- */
 header.top{
-  position:sticky;top:0;z-index:20;background:rgba(13,17,23,.93);
+  position:sticky;top:0;z-index:20;background:rgba(10,20,16,.94);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft);
+}
+/* franja de cal debajo del header */
+header.top:after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,var(--tiza) 20%,var(--tiza) 80%,transparent);
 }
 .hd{display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:10px}
 .brand{display:flex;align-items:center;gap:9px;min-width:0}
@@ -210,7 +224,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .copaBox{
   position:relative;overflow:hidden;border-radius:16px;padding:26px 18px 18px;
   text-align:center;border:1px solid var(--line);
-  background:linear-gradient(160deg,#1a2230,#12171f);
+  background:linear-gradient(160deg,#16301f,#0c1a13);
 }
 .copaBox.ardiendo{border-color:#6b5a1e;background:linear-gradient(160deg,#2e2714,#1a1710)}
 .copaBox-glow{
@@ -284,6 +298,88 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .paso-info small{font-size:11.5px;color:var(--faint)}
 .paso-flecha{font-size:15px;color:var(--faint);flex:none}
 .chip.copaChip{color:#f0c97e;border-color:#6b5a1e;background:#2e2714}
+
+/* ---------- invitación (la página del link) ---------- */
+.invitacion{padding-top:20px;padding-bottom:40px}
+.inv-marca{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  font-size:12.5px;font-weight:700;color:var(--faint);
+  letter-spacing:.5px;margin-bottom:16px;
+}
+.inv-marca .dot{
+  width:22px;height:22px;border-radius:7px;background:var(--lime);color:var(--lime-ink);
+  display:grid;place-items:center;font-size:10px;font-weight:800;
+}
+
+/* La cancha: media cancha vista desde arriba, dibujada con cal. */
+.cancha{
+  position:relative;overflow:hidden;border-radius:18px;
+  background:linear-gradient(170deg,#163023,#0d1f17);
+  border:1px solid var(--line);
+  padding:26px 18px 22px;text-align:center;
+}
+.cancha.completa{border-color:#2c5c31;background:linear-gradient(170deg,#1b3d28,#102419)}
+.cancha-lineas{position:absolute;inset:0;pointer-events:none}
+/* círculo central */
+.cancha-lineas:before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:190px;height:190px;border-radius:50%;border:2px solid var(--tiza);
+}
+/* línea de mitad de cancha */
+.cancha-lineas:after{
+  content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--tiza);
+}
+.cancha-contenido{position:relative;z-index:1}
+
+.inv-invita{font-size:13.5px;color:var(--dim);margin-bottom:3px}
+.inv-invita b{color:var(--txt)}
+.inv-lugar{font-size:27px;font-weight:800;letter-spacing:-.9px;line-height:1.1}
+.inv-cuando{font-size:13.5px;color:var(--dim);margin-top:4px}
+
+/* el cupo como marcador de estadio */
+.marcador-cupo{
+  display:flex;align-items:baseline;justify-content:center;gap:6px;
+  margin-top:18px;font-variant-numeric:tabular-nums;
+}
+.marcador-cupo .mc-n{font-size:52px;font-weight:800;letter-spacing:-2.5px;color:var(--lime)}
+.marcador-cupo .mc-sep{font-size:26px;color:var(--faint);font-weight:300}
+.marcador-cupo .mc-t{font-size:26px;font-weight:700;color:var(--dim)}
+.inv-faltan{
+  font-size:12px;text-transform:uppercase;letter-spacing:1.2px;
+  font-weight:700;color:var(--dim);margin-top:2px;
+}
+.cancha.completa .inv-faltan{color:#8fdc98}
+
+.contador{
+  display:flex;align-items:center;gap:12px;
+  background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:7px 10px;
+}
+.contador button{
+  width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
+  background:var(--bg);color:var(--txt);font-size:19px;line-height:1;cursor:pointer;flex:none;
+}
+.contador button:disabled{opacity:.35;cursor:default}
+.contador span{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--dim)}
+
+.inv-pie{
+  text-align:center;font-size:12px;color:var(--faint);margin-top:26px;
+}
+.inv-pie b{color:var(--dim)}
+
+/* ---------- chips de amigos ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chipAmigo{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 11px 6px 6px;border-radius:22px;
+  background:var(--surface);border:1px solid var(--line);color:var(--txt);
+  font-size:13px;font-weight:600;cursor:pointer;
+}
+.chipAmigo:active{transform:scale(.96)}
+.chipAmigo .mini{
+  width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
+  font-size:9px;font-weight:800;color:#0b0f14;flex:none;
+}
+.chipAmigo b{color:var(--lime);font-size:15px;line-height:1}
 
 /* ---------- modal ---------- */
 .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.72);

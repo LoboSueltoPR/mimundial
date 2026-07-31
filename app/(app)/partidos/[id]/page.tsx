@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Equipos, Jugador, Partido, Resultado } from '@/lib/tipos';
+import type { Amigo, Equipos, Jugador, Partido, Resultado } from '@/lib/tipos';
 import {
   cabezas,
   cabezasLista,
@@ -31,6 +31,7 @@ export default function DetallePartido() {
   const [vista, setVista] = useState<Vista>('anotados');
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
+  const [amigos, setAmigos] = useState<Amigo[]>([]);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -52,6 +53,9 @@ export default function DetallePartido() {
 
   useEffect(() => {
     cargar();
+    crearCliente()
+      .rpc('mis_amigos')
+      .then(({ data }) => setAmigos((data ?? []) as Amigo[]));
   }, [cargar]);
 
   if (cargando) return <div className="cargando">Cargando…</div>;
@@ -190,7 +194,7 @@ export default function DetallePartido() {
       )}
 
       {vista === 'anotados' && (
-        <Anotados js={js} onInv={actualizarJugador} onQuitar={quitar} onSumar={sumar} />
+        <Anotados js={js} amigos={amigos} onInv={actualizarJugador} onQuitar={quitar} onSumar={sumar} />
       )}
       {vista === 'equipos' && (
         <EquiposVista
@@ -211,6 +215,8 @@ export default function DetallePartido() {
       )}
       {vista === 'resultado' && <ResultadoVista p={p} onGuardar={actualizarPartido} />}
 
+      <Invitar p={p} onCambio={actualizarPartido} />
+
       <div className="sec">Partido</div>
       <button className="btn danger wide sm" onClick={borrarPartido}>
         Borrar este partido
@@ -219,20 +225,96 @@ export default function DetallePartido() {
   );
 }
 
+/* ================= INVITAR ================= */
+
+function Invitar({
+  p,
+  onCambio,
+}: {
+  p: Partido;
+  onCambio: (campos: Partial<Partido>) => void;
+}) {
+  const [copiado, setCopiado] = useState(false);
+  const [link, setLink] = useState('');
+
+  useEffect(() => {
+    setLink(`${window.location.origin}/p/${p.token}`);
+  }, [p.token]);
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      // Safari/iOS sin permiso: al menos lo dejamos seleccionable
+      const i = document.getElementById('linkInv') as HTMLInputElement | null;
+      i?.select();
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  function compartir() {
+    const texto = `Se juega${p.lugar ? ' en ' + p.lugar : ''}${p.hora ? ' a las ' + p.hora : ''}. Anotate: ${link}`;
+    if (navigator.share) {
+      navigator.share({ title: 'MiMundial', text: texto, url: link }).catch(() => {});
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+    }
+  }
+
+  return (
+    <>
+      <div className="sec">
+        Invitar
+        <button className="act" onClick={() => onCambio({ abierto: !p.abierto })}>
+          {p.abierto ? 'cerrar anotaciones' : 'reabrir'}
+        </button>
+      </div>
+
+      <div className="card" style={{ padding: 14 }}>
+        <input id="linkInv" readOnly value={link} onFocus={(e) => e.target.select()} />
+        <div className="row2" style={{ marginTop: 10 }}>
+          <button className="btn pri" onClick={compartir}>
+            Compartir
+          </button>
+          <button className="btn" onClick={copiar}>
+            {copiado ? '¡Copiado!' : 'Copiar link'}
+          </button>
+        </div>
+      </div>
+
+      <div className="nota">
+        {p.abierto ? (
+          <>
+            El que abre el link <b>no necesita cuenta</b>: pone su nombre y se anota. Solo puede
+            manejar su lugar y sus invitados.
+          </>
+        ) : (
+          <>Las anotaciones están cerradas: el link se puede ver pero nadie más puede sumarse.</>
+        )}
+      </div>
+    </>
+  );
+}
+
 /* ================= ANOTADOS ================= */
 
 function Anotados({
   js,
+  amigos,
   onInv,
   onQuitar,
   onSumar,
 }: {
   js: Jugador[];
+  amigos: Amigo[];
   onInv: (id: string, campos: Partial<Jugador>) => void;
   onQuitar: (j: Jugador) => void;
   onSumar: (nombre: string) => void;
 }) {
   const [nombre, setNombre] = useState('');
+  const anotados = new Set(js.map((j) => j.nombre.toLowerCase()));
+  const disponibles = amigos.filter((a) => !anotados.has(a.nombre.toLowerCase()));
   let n = 0;
 
   return (
@@ -280,7 +362,24 @@ function Anotados({
         )}
       </div>
 
-      <div className="sec">Sumar</div>
+      {disponibles.length > 0 && (
+        <>
+          <div className="sec">Tus amigos</div>
+          <div className="chips">
+            {disponibles.map((a) => (
+              <button key={a.id} className="chipAmigo" onClick={() => onSumar(a.nombre)}>
+                <span className="mini" style={{ background: color(a.nombre) }}>
+                  {iniciales(a.nombre)}
+                </span>
+                {a.nombre}
+                <b>+</b>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="sec">Sumar a mano</div>
       <div className="row2">
         <input
           placeholder="Nombre"
@@ -390,7 +489,7 @@ function EquiposVista({
       )}
       <div className="equipos">
         <Columna arr={equipos.a} nombre="Claros" chaleco="#e8edf3" />
-        <Columna arr={equipos.b} nombre="Oscuros" chaleco="#1c2430" borde="1px solid #3a4655" />
+        <Columna arr={equipos.b} nombre="Oscuros" chaleco="#14261e" borde="1px solid #2f4d3d" />
       </div>
       <div className="row2" style={{ marginTop: 14 }}>
         <button className="btn pri" onClick={onSortear}>

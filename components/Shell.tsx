@@ -8,7 +8,8 @@ const TABS = [
   { href: '/camino', label: 'Camino' },
   { href: '/partidos', label: 'Partidos' },
   { href: '/stats', label: 'Stats' },
-  { href: '/cuentas', label: 'Cuentas' },
+  { href: '/cuentas', label: 'Plata' },
+  { href: '/amigos', label: 'Amigos' },
   { href: '/perfil', label: 'Perfil' },
 ];
 
