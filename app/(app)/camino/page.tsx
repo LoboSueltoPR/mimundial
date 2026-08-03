@@ -127,7 +127,7 @@ export default function Camino() {
           <div className="vacio">
             Cargá el resultado de un partido y empieza el camino.
             <br />
-            <Link href="/partidos" style={{ color: 'var(--lime)' }}>
+            <Link href="/partidos" style={{ color: 'var(--acento)' }}>
               Ir a tus partidos
             </Link>
           </div>

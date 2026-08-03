@@ -1,33 +1,43 @@
+/* ============================================================
+   MiMundial — noche, celeste y oro.
+
+   El fondo es el cielo nocturno sobre la cancha, no un gris de
+   dashboard. El acento es la celeste, que es la vernácula real de
+   un mundial argentino. Y el ORO está reservado a la copa: aparece
+   en tres lugares de toda la app, para que cuando aparezca
+   signifique algo.
+   ============================================================ */
 :root{
-  /* Fondo: verde nocturno de cancha bajo reflectores, no gris de dashboard. */
-  --bg:#0a1410; --surface:#0f1d17; --surface-2:#14261e;
-  --line:#1f3a2d; --line-soft:#182c22;
-  --txt:#e9f2ec; --dim:#8fa89a; --faint:#5d7568;
-  --lime:#c3f53c; --lime-ink:#16200a;
-  --green:#2ea043; --amber:#f0a92e; --red:#e5534b; --blue:#4b9fe5;
-  --tiza:rgba(233,242,236,.14);   /* las líneas de cal */
-  --cesped:#12241b;
+  --bg:#0a1424; --surface:#101b2e; --surface-2:#16243a;
+  --line:#22344f; --line-soft:#1a2942;
+  --txt:#eaf2f8; --dim:#93a8c0; --faint:#63788f;
+
+  --acento:#74c0e8; --acento-ink:#06121f;   /* la celeste */
+  --oro:#e3b44a; --oro-ink:#241a05;          /* SOLO la copa */
+
+  --green:#39a85b; --amber:#e8a33a; --red:#e5645b; --blue:#74c0e8;
+  --tiza:rgba(234,242,248,.16);              /* las líneas de cal */
+  --cesped:#0e2a1d;
+
+  --fuente-display:var(--fuente-anton), "Arial Narrow", sans-serif;
+  --fuente-cuerpo:var(--fuente-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* El césped: franjas de corte, como una cancha de verdad. */
-.pasto{
-  background-image:repeating-linear-gradient(
-    90deg, transparent 0 34px, rgba(255,255,255,.018) 34px 68px);
-}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{background:var(--bg);color:var(--txt)}
 body{
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-family:var(--fuente-cuerpo);
   font-size:15px;line-height:1.45;
   padding-bottom:40px;
   -webkit-font-smoothing:antialiased;
 }
+
 a{color:inherit;text-decoration:none}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
 
 /* ---------- header ---------- */
 header.top{
-  position:sticky;top:0;z-index:20;background:rgba(10,20,16,.94);
+  position:sticky;top:0;z-index:20;background:rgba(10,20,36,.94);
   backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft);
 }
 /* franja de cal debajo del header */
@@ -37,8 +47,8 @@ header.top:after{
 }
 .hd{display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:10px}
 .brand{display:flex;align-items:center;gap:9px;min-width:0}
-.brand .dot{width:29px;height:29px;border-radius:9px;background:var(--lime);
-  color:var(--lime-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.brand .dot{width:29px;height:29px;border-radius:9px;background:var(--acento);
+  color:var(--acento-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
 .brand h1{font-size:17px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
 .brand small{display:block;font-size:11px;color:var(--faint);font-weight:500}
 
@@ -53,7 +63,7 @@ nav.tabs a.on{background:var(--surface);border-color:var(--line);color:var(--txt
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .sec{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--faint);
   font-weight:700;margin:22px 0 9px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.sec .act{text-transform:none;letter-spacing:0;font-size:12px;color:var(--lime);
+.sec .act{text-transform:none;letter-spacing:0;font-size:12px;color:var(--acento);
   cursor:pointer;font-weight:600;background:none;border:0;font-family:inherit;padding:0}
 .vacio{padding:26px 18px;text-align:center;color:var(--faint);font-size:13.5px;line-height:1.6}
 .nota{font-size:12.5px;color:var(--faint);line-height:1.6;margin-top:12px}
@@ -67,7 +77,7 @@ button{font-family:inherit}
   justify-content:center;gap:8px;
 }
 .btn:active{transform:scale(.97)}
-.btn.pri{background:var(--lime);color:var(--lime-ink);border-color:var(--lime)}
+.btn.pri{background:var(--acento);color:var(--acento-ink);border-color:var(--acento)}
 .btn.danger{color:var(--red);border-color:#4a2624;background:transparent}
 .btn.wide{width:100%}
 .btn.sm{padding:9px 12px;font-size:13px}
@@ -80,7 +90,7 @@ input,select,textarea{
   background:var(--surface-2);border:1px solid var(--line);
   color:var(--txt);font-family:inherit;font-size:15px;
 }
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--lime)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acento)}
 input::placeholder{color:var(--faint)}
 label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
   color:var(--faint);font-weight:700;margin-bottom:6px}
@@ -102,7 +112,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .rs-meta .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint)}
 .rs-meta .v{font-size:14px;font-weight:600;margin-top:2px}
 .barra{height:7px;background:rgba(255,255,255,.09);border-radius:6px;margin-top:13px;overflow:hidden}
-.barra i{display:block;height:100%;background:var(--lime);border-radius:6px;transition:width .25s}
+.barra i{display:block;height:100%;background:var(--acento);border-radius:6px;transition:width .25s}
 
 /* ---------- jugadores ---------- */
 .jug{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--line-soft)}
@@ -147,7 +157,8 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .tot .split .n{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
 .tot .split .n.ok{color:var(--green)}
 .tot .split .n.debe{color:var(--amber)}
-.tot .split .c{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;margin-top:2px}
+.tot .split .c{font-size:10.5px;color:var(--faint);text-transform:uppercase;
+  letter-spacing:.6px;margin-top:3px;line-height:1.25;padding:0 4px}
 
 .pago{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--line-soft)}
 .pago:last-child{border-bottom:0}
@@ -164,7 +175,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .tick:disabled{cursor:default;opacity:.75}
 .chip{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;
   background:var(--surface-2);border:1px solid var(--line);color:var(--dim);margin-left:6px}
-.chip.puso{color:var(--lime);border-color:#4a5a20}
+.chip.puso{color:var(--acento);border-color:#4a5a20}
 
 /* ---------- resultado ---------- */
 .resultado{display:flex;gap:8px}
@@ -224,9 +235,9 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .copaBox{
   position:relative;overflow:hidden;border-radius:16px;padding:26px 18px 18px;
   text-align:center;border:1px solid var(--line);
-  background:linear-gradient(160deg,#16301f,#0c1a13);
+  background:linear-gradient(160deg,#152742,#0b1523);
 }
-.copaBox.ardiendo{border-color:#6b5a1e;background:linear-gradient(160deg,#2e2714,#1a1710)}
+.copaBox.ardiendo{border-color:#6b5a1e;background:linear-gradient(160deg,#33290f,#1b1608)}
 .copaBox-glow{
   position:absolute;top:-70px;left:50%;transform:translateX(-50%);
   width:220px;height:160px;border-radius:50%;
@@ -265,17 +276,17 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .ruta-paso.pasada .ruta-linea{background:var(--green)}
 .ruta-paso.pasada .ruta-txt b{color:var(--dim)}
 .ruta-paso.actual .ruta-punto{
-  background:var(--lime);border-color:var(--lime);
+  background:var(--acento);border-color:var(--acento);
   box-shadow:0 0 0 5px rgba(195,245,60,.16);
   position:relative;
 }
 /* punto interior: marca el "estás acá" sin depender de un emoji chiquito */
 .ruta-paso.actual .ruta-punto:after{
-  content:"";width:9px;height:9px;border-radius:50%;background:var(--lime-ink);
+  content:"";width:9px;height:9px;border-radius:50%;background:var(--acento-ink);
 }
-.ruta-paso.actual .ruta-txt b{color:var(--lime)}
+.ruta-paso.actual .ruta-txt b{color:var(--acento)}
 .ruta-paso.copa .ruta-punto{background:transparent;border-style:dashed;font-size:15px}
-.ruta-paso.copa.pasada .ruta-punto{background:#4a3f12;border-color:#6b5a1e;border-style:solid}
+.ruta-paso.copa.pasada .ruta-punto{background:#4a3f12;border-color:var(--oro);border-style:solid}
 
 .vitrina{
   display:flex;flex-wrap:wrap;gap:8px;padding:15px;border-radius:14px;
@@ -297,7 +308,102 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .paso-info b{display:block;font-size:14px;font-weight:600}
 .paso-info small{font-size:11.5px;color:var(--faint)}
 .paso-flecha{font-size:15px;color:var(--faint);flex:none}
-.chip.copaChip{color:#f0c97e;border-color:#6b5a1e;background:#2e2714}
+.chip.copaChip{color:var(--oro);border-color:#6b5a1e;background:#2e2714}
+
+/* ============================================================
+   La copa: arranque y transiciones
+   ============================================================ */
+
+.copa{color:var(--tiza)}
+.copa-relleno{fill:var(--oro);opacity:0}
+.copa-brillo{fill:#fff;opacity:0;clip-path:inset(0 100% 0 0)}
+
+.arranque{
+  position:fixed;inset:0;z-index:200;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  transition:opacity .5s ease, transform .5s ease;
+}
+.arranque.saliendo{opacity:0;transform:scale(1.04);pointer-events:none}
+
+/* el círculo central, como si la copa estuviera parada en la mitad de la cancha */
+.arranque-cal{
+  position:absolute;width:212px;height:212px;border-radius:50%;
+  border:1.5px solid rgba(234,242,248,.22);opacity:0;
+  animation:calAparece .8s ease-out .15s forwards;
+}
+
+/* Acá la tiza es protagonista, no una línea de cancha: va bien visible. */
+.arranque .copa{color:rgba(234,242,248,.82)}
+.arranque .copa-trazo path{
+  stroke-dasharray:1;stroke-dashoffset:1;
+  animation:trazar .75s ease-out forwards;
+}
+/* cada trazo entra escalonado, como si la mano fuera dibujando */
+.arranque .copa-trazo path:nth-child(1){animation-delay:.05s}
+.arranque .copa-trazo path:nth-child(2){animation-delay:.28s}
+.arranque .copa-trazo path:nth-child(3){animation-delay:.34s}
+.arranque .copa-trazo path:nth-child(4){animation-delay:.46s}
+.arranque .copa-trazo path:nth-child(5){animation-delay:.54s}
+.arranque .copa-trazo path:nth-child(6){animation-delay:.66s}
+
+.arranque .copa-relleno{animation:llenarDeOro .5s ease-out .78s forwards}
+.arranque .copa-brillo{animation:destello .6s ease-out 1s forwards}
+
+.arranque-marca{
+  font-family:var(--fuente-display);font-size:26px;letter-spacing:5px;
+  text-transform:uppercase;color:#fff;margin-top:10px;
+  opacity:0;animation:marcaEntra .5s ease-out .95s forwards;
+}
+
+@keyframes trazar{to{stroke-dashoffset:0}}
+@keyframes llenarDeOro{to{opacity:1}}
+@keyframes calAparece{to{opacity:1}}
+@keyframes destello{
+  0%{opacity:0;clip-path:inset(0 100% 0 0)}
+  35%{opacity:.5}
+  100%{opacity:0;clip-path:inset(0 0 0 100%)}
+}
+@keyframes marcaEntra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- transición entre páginas ---------- */
+.barrido{
+  position:fixed;top:0;left:0;right:0;height:20px;z-index:60;
+  pointer-events:none;overflow:hidden;
+}
+.barrido-linea{
+  position:absolute;top:0;left:0;height:2px;width:100%;
+  background:linear-gradient(90deg,transparent,var(--oro),transparent);
+  transform:translateX(-100%);
+  animation:barrer .6s cubic-bezier(.4,0,.2,1) forwards;
+}
+.barrido-copa{
+  position:absolute;top:1px;left:0;color:var(--oro);line-height:0;
+  transform:translateX(-40px);
+  animation:barrerCopa .6s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes barrer{to{transform:translateX(100%)}}
+@keyframes barrerCopa{
+  0%{transform:translateX(-40px);opacity:0}
+  15%{opacity:1}
+  85%{opacity:1}
+  100%{transform:translateX(100vw);opacity:0}
+}
+
+.transicion{animation:entrar .34s cubic-bezier(.2,.7,.3,1)}
+@keyframes entrar{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* Nadie tiene que marearse por una decisión estética. */
+@media (prefers-reduced-motion: reduce){
+  .arranque-cal,.arranque .copa-trazo path,.arranque .copa-relleno,
+  .arranque .copa-brillo,.arranque-marca,
+  .barrido-linea,.barrido-copa,.transicion{
+    animation:none !important;
+  }
+  .arranque .copa-relleno,.arranque-marca,.arranque-cal{opacity:1}
+  .arranque .copa-trazo path{stroke-dashoffset:0}
+  .barrido{display:none}
+}
 
 /* ---------- invitación (la página del link) ---------- */
 .invitacion{padding-top:20px;padding-bottom:40px}
@@ -307,7 +413,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
   letter-spacing:.5px;margin-bottom:16px;
 }
 .inv-marca .dot{
-  width:22px;height:22px;border-radius:7px;background:var(--lime);color:var(--lime-ink);
+  width:22px;height:22px;border-radius:7px;background:var(--acento);color:var(--acento-ink);
   display:grid;place-items:center;font-size:10px;font-weight:800;
 }
 
@@ -341,7 +447,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
   display:flex;align-items:baseline;justify-content:center;gap:6px;
   margin-top:18px;font-variant-numeric:tabular-nums;
 }
-.marcador-cupo .mc-n{font-size:52px;font-weight:800;letter-spacing:-2.5px;color:var(--lime)}
+.marcador-cupo .mc-n{font-size:52px;font-weight:800;letter-spacing:-2.5px;color:var(--acento)}
 .marcador-cupo .mc-sep{font-size:26px;color:var(--faint);font-weight:300}
 .marcador-cupo .mc-t{font-size:26px;font-weight:700;color:var(--dim)}
 .inv-faltan{
@@ -379,7 +485,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
   width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
   font-size:9px;font-weight:800;color:#0b0f14;flex:none;
 }
-.chipAmigo b{color:var(--lime);font-size:15px;line-height:1}
+.chipAmigo b{color:var(--acento);font-size:15px;line-height:1}
 
 /* ---------- modal ---------- */
 .modal{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.72);
@@ -392,7 +498,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 /* ---------- login ---------- */
 .login{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
   align-items:center;padding:24px;text-align:center}
-.login .logo{width:64px;height:64px;border-radius:20px;background:var(--lime);color:var(--lime-ink);
+.login .logo{width:64px;height:64px;border-radius:20px;background:var(--acento);color:var(--acento-ink);
   display:grid;place-items:center;font-size:26px;font-weight:800;margin-bottom:18px}
 .login h1{font-size:27px;font-weight:800;letter-spacing:-.8px}
 .login p.sub{color:var(--dim);font-size:14px;margin-top:6px;margin-bottom:28px;max-width:300px}
@@ -406,3 +512,39 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .msg.info{background:var(--surface);border:1px solid var(--line);color:var(--dim)}
 
 .cargando{padding:40px;text-align:center;color:var(--faint);font-size:13.5px}
+
+/* ============================================================
+   Tipografía de display — va al FINAL a propósito.
+
+   Anton es condensada: el tracking negativo que servía para la
+   fuente del sistema acá apelmaza las letras. Estas reglas comparten
+   especificidad con las de arriba (.login h1 y compañía), así que
+   tienen que venir después para ganar.
+   ============================================================ */
+.rs-estado, .copaBox-fase, .tot .big, .kpi .n, .inv-lugar,
+.login h1, .brand h1, .copaBox-pie b, .marcador-cupo .mc-n,
+.marcador-cupo .mc-t, .arranque-marca, .item .fec .d{
+  font-family:var(--fuente-display);
+  font-weight:400;
+}
+
+/* Los títulos gritan: mayúscula y aire entre letras. */
+.login h1, .brand h1, .inv-lugar, .copaBox-fase, .rs-estado{
+  text-transform:uppercase;
+  letter-spacing:1.6px;
+}
+.login h1{font-size:31px}
+.brand h1{font-size:16px;letter-spacing:1.2px}
+.inv-lugar{font-size:26px;line-height:1.15;letter-spacing:1.1px}
+.copaBox-fase{font-size:25px}
+.rs-estado{font-size:20px}
+
+/* Los números son marcador de estadio: sin mayúscula ni tracking. */
+.tot .big, .kpi .n, .copaBox-pie b, .marcador-cupo .mc-n,
+.marcador-cupo .mc-t, .item .fec .d{
+  letter-spacing:0;
+  text-transform:none;
+}
+.tot .big{font-size:37px}
+.marcador-cupo .mc-n{font-size:60px}
+.kpi .n{font-size:27px}
