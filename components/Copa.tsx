@@ -14,7 +14,7 @@ export default function Copa({
 }) {
   return (
     <svg
-      className={`copa ${clase}`}
+      className={`copaSvg ${clase}`}
       width={tam}
       height={tam * 1.2}
       viewBox="0 0 100 120"
@@ -22,7 +22,7 @@ export default function Copa({
       aria-hidden="true"
     >
       {/* relleno de oro, aparece despues del trazo */}
-      <g className="copa-relleno">
+      <g className="copaSvg-relleno">
         <path d="M28 18 H72 L68 52 C68 66 32 66 32 52 Z" />
         <path d="M46 64 H54 V80 H46 Z" />
         <path d="M38 80 H62 L66 92 H34 Z" />
@@ -31,7 +31,7 @@ export default function Copa({
 
       {/* el trazo de tiza */}
       <g
-        className="copa-trazo"
+        className="copaSvg-trazo"
         stroke="currentColor"
         strokeWidth="3"
         strokeLinecap="round"
@@ -46,7 +46,7 @@ export default function Copa({
       </g>
 
       {/* el destello que cruza la copa cuando ya esta de oro */}
-      <g className="copa-brillo">
+      <g className="copaSvg-brillo">
         <path d="M28 18 H72 L68 52 C68 66 32 66 32 52 Z" />
       </g>
     </svg>

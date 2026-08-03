@@ -186,9 +186,13 @@ export function presencias(partidos: (Partido & { jugadores: Jugador[] })[]) {
 
 export const plata = (n: number) => '$' + Math.round(n || 0).toLocaleString('es-AR');
 
+/**
+ * Colores de avatar. Son profundos a proposito: van sobre papel claro
+ * y llevan las iniciales en blanco, asi que un pastel no contrastaria.
+ */
 const COLORES = [
-  '#c3f53c', '#7fd1e8', '#e8a87f', '#d18fe8', '#8fe8a8', '#e8d47f',
-  '#7f9fe8', '#e88f8f', '#a8e87f', '#e8b0c8', '#9fe8d4', '#e8c47f',
+  '#0a6ea6', '#1a7a43', '#b0480e', '#7d3f9c', '#c03a30', '#0f7d84',
+  '#2f5bbf', '#a8780c', '#417a1c', '#b03a72', '#0d6b6f', '#8a5a1b',
 ];
 
 export function color(nombre: string): string {
