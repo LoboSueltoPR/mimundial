@@ -1,6 +1,12 @@
 import type { Metadata, Viewport } from 'next';
+import { Anton, Inter } from 'next/font/google';
 import './globals.css';
 import RegistrarSW from '@/components/RegistrarSW';
+import Arranque from '@/components/Arranque';
+
+// Anton: condensada y pesada, de cartel de estadio y número de camiseta.
+const anton = Anton({ subsets: ['latin'], weight: '400', variable: '--fuente-anton', display: 'swap' });
+const inter = Inter({ subsets: ['latin'], variable: '--fuente-inter', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'MiMundial',
@@ -15,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0d1117',
+  themeColor: '#0a1424',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -23,8 +29,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es-AR">
+    <html lang="es-AR" className={`${anton.variable} ${inter.variable}`}>
       <body>
+        <Arranque />
         {children}
         <RegistrarSW />
       </body>
