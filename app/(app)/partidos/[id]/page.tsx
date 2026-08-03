@@ -488,8 +488,8 @@ function EquiposVista({
         </div>
       )}
       <div className="equipos">
-        <Columna arr={equipos.a} nombre="Claros" chaleco="#e8edf3" />
-        <Columna arr={equipos.b} nombre="Oscuros" chaleco="#14261e" borde="1px solid #2f4d3d" />
+        <Columna arr={equipos.a} nombre="Claros" chaleco="#ffffff" borde="1px solid #d2dae4" />
+        <Columna arr={equipos.b} nombre="Oscuros" chaleco="#2b3a4d" borde="1px solid #1b2836" />
       </div>
       <div className="row2" style={{ marginTop: 14 }}>
         <button className="btn pri" onClick={onSortear}>
