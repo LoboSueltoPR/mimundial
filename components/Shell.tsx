@@ -1,16 +1,28 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { crearCliente } from '@/lib/supabase/client';
+import { usePathname } from 'next/navigation';
+import {
+  IconoAmigos,
+  IconoCamino,
+  IconoPartidos,
+  IconoPerfil,
+  IconoPlata,
+  IconoStats,
+} from './Iconos';
 
-const TABS = [
-  { href: '/camino', label: 'Camino' },
-  { href: '/partidos', label: 'Partidos' },
-  { href: '/stats', label: 'Stats' },
-  { href: '/cuentas', label: 'Plata' },
-  { href: '/amigos', label: 'Amigos' },
-  { href: '/perfil', label: 'Perfil' },
+/**
+ * En el celular esto se maneja como una app: barra abajo con las cinco
+ * secciones, y el perfil arriba a la derecha (donde vive "cerrar sesión").
+ * De 640px para arriba la barra pasa a pestañas arriba, que en un monitor
+ * ancho se lee mejor que una barra flotante abajo.
+ */
+const SECCIONES = [
+  { href: '/camino', label: 'Camino', Icono: IconoCamino },
+  { href: '/partidos', label: 'Partidos', Icono: IconoPartidos },
+  { href: '/stats', label: 'Stats', Icono: IconoStats },
+  { href: '/cuentas', label: 'Plata', Icono: IconoPlata },
+  { href: '/amigos', label: 'Amigos', Icono: IconoAmigos },
 ];
 
 export default function Shell({
@@ -21,45 +33,50 @@ export default function Shell({
   nombre: string;
 }) {
   const path = usePathname();
-  const router = useRouter();
-
-  async function salir() {
-    const supabase = crearCliente();
-    await supabase.auth.signOut();
-    router.replace('/login');
-    router.refresh();
-  }
+  const activa = (href: string) => path === href || path.startsWith(href + '/');
 
   return (
     <>
       <header className="top">
         <div className="wrap">
           <div className="hd">
-            <Link href="/partidos" className="brand">
+            <Link href="/camino" className="brand">
               <div className="dot">MM</div>
-              <div>
-                <h1>MiMundial</h1>
-                <small>{nombre}</small>
-              </div>
+              <h1>MiMundial</h1>
             </Link>
-            <button className="btn sm" onClick={salir}>
-              Salir
-            </button>
+
+            <Link
+              href="/perfil"
+              className={`avatarBtn ${activa('/perfil') ? 'on' : ''}`}
+              aria-label={`Tu perfil (${nombre})`}
+              title={nombre}
+            >
+              <IconoPerfil />
+            </Link>
           </div>
-          <nav className="tabs">
-            {TABS.map((t) => (
-              <Link
-                key={t.href}
-                href={t.href}
-                className={path === t.href || path.startsWith(t.href + '/') ? 'on' : ''}
-              >
-                {t.label}
+
+          {/* En escritorio la navegación vive acá arriba. */}
+          <nav className="tabs escritorio">
+            {SECCIONES.map((s) => (
+              <Link key={s.href} href={s.href} className={activa(s.href) ? 'on' : ''}>
+                {s.label}
               </Link>
             ))}
           </nav>
         </div>
       </header>
+
       <div className="wrap">{children}</div>
+
+      {/* En celular, abajo. */}
+      <nav className="barraAbajo" aria-label="Secciones">
+        {SECCIONES.map(({ href, label, Icono }) => (
+          <Link key={href} href={href} className={activa(href) ? 'on' : ''}>
+            <Icono />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
     </>
   );
 }

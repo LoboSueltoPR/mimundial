@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
+import { color, iniciales } from '@/lib/calculos';
 import type { ExportLocal, Jugador, Partido } from '@/lib/tipos';
 
 export default function Perfil() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [nombre, setNombre] = useState('');
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'err' | 'info'; texto: string } | null>(null);
@@ -125,16 +128,22 @@ export default function Perfil() {
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }
 
+  async function salir() {
+    if (!confirm('¿Cerrar sesión?')) return;
+    const supabase = crearCliente();
+    await supabase.auth.signOut();
+    router.replace('/login');
+    router.refresh();
+  }
+
   return (
     <div style={{ paddingTop: 18 }}>
-      <div className="sec">Tu cuenta</div>
-      <div className="card">
-        <div className="saldo">
-          <span className="nom">
-            <b>{nombre || '—'}</b>
-            <small>{email}</small>
-          </span>
-        </div>
+      <div className="fichaPerfil">
+        <span className="fichaPerfil-av" style={{ background: color(nombre || '?') }}>
+          {iniciales(nombre || '?')}
+        </span>
+        <b>{nombre || '—'}</b>
+        <small>{email}</small>
       </div>
 
       <div className="sec">Traer datos de Se Juega</div>
@@ -173,6 +182,11 @@ export default function Perfil() {
           notificaciones.
         </div>
       </div>
+
+      <div className="sec">Sesión</div>
+      <button className="btn danger wide" onClick={salir}>
+        Cerrar sesión
+      </button>
     </div>
   );
 }
