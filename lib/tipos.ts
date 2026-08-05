@@ -9,6 +9,20 @@ export type Jugador = {
   orden: number;
   /** true si se anotó solo por el link de invitación */
   se_anoto_solo?: boolean;
+  /** si el anotado es un usuario registrado, su id */
+  user_id?: string | null;
+};
+
+export type Posicion = 'arquero' | 'defensor' | 'mediocampista' | 'delantero';
+export type Pie = 'derecho' | 'zurdo' | 'ambos';
+
+export type Perfil = {
+  id: string;
+  nombre: string;
+  avatar_url: string | null;
+  username: string | null;
+  posicion: Posicion | null;
+  pie: Pie | null;
 };
 
 export type Cabeza = {
@@ -23,7 +37,7 @@ export type Equipos = {
   n: number;
 };
 
-/** Lo que ve alguien que entra por el link, sin cuenta. Nunca trae plata ni ids. */
+/** Lo que ve alguien que entra por el link, sin cuenta. Nunca trae plata. */
 export type PartidoPublico = {
   fecha: string;
   hora: string | null;
@@ -33,11 +47,28 @@ export type PartidoPublico = {
   cabezas: number;
   faltan: number;
   anfitrion: string | null;
-  anotados: { nombre: string; invitados: number }[];
+  anotados: AnotadoPublico[];
 };
 
-export type Amigo = { id: string; nombre: string };
+/** user_id/username/avatar_url solo vienen si quien mira está logueado. */
+export type AnotadoPublico = {
+  nombre: string;
+  invitados: number;
+  user_id: string | null;
+  username: string | null;
+  avatar_url: string | null;
+};
+
+export type Amigo = { id: string; nombre: string; username?: string | null; avatar_url?: string | null };
 export type Sugerencia = Amigo & { via: string };
+
+export type AmigoCamino = {
+  id: string;
+  nombre: string;
+  username: string | null;
+  avatar_url: string | null;
+  partidos: { id: string; fecha: string; creado_en: string; resultado: Resultado; lugar: string | null }[];
+};
 
 export type RespuestaRPC = { ok: boolean; error?: string };
 
@@ -62,19 +93,3 @@ export type Partido = {
 };
 
 export type PartidoConJugadores = Partido & { jugadores: Jugador[] };
-
-/** Lo que exporta la app local Se Juega, para poder importarlo. */
-export type ExportLocal = {
-  partidos: {
-    id: string;
-    fecha?: string;
-    hora?: string;
-    lugar?: string;
-    cupo?: number;
-    costo?: number;
-    puso?: string | null;
-    equipos?: Equipos | null;
-    jugadores: { id: string; nombre: string; invitados?: number; pagado?: number }[];
-  }[];
-  activo?: string | null;
-};

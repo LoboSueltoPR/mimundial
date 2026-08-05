@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { PartidoPublico, RespuestaRPC } from '@/lib/tipos';
+import type { Amigo, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
 import { color, fechaLarga, iniciales } from '@/lib/calculos';
+import { Copita } from '@/components/Copa';
+import { useConfirmar } from '@/components/Confirmar';
 
 /** El claim vive solo en este navegador: es lo único que te deja editar lo tuyo. */
 function claimGuardado(token: string): string {
@@ -24,6 +26,7 @@ const marcarAnotado = (token: string, v: boolean) =>
 
 export default function Invitacion() {
   const { token } = useParams<{ token: string }>();
+  const { confirmar, ui: confirmarUI } = useConfirmar();
 
   const [p, setP] = useState<PartidoPublico | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -32,6 +35,10 @@ export default function Invitacion() {
   const [mio, setMio] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+
+  const [miId, setMiId] = useState<string | null>(null);
+  const [amigos, setAmigos] = useState<Amigo[]>([]);
+  const [agregando, setAgregando] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -49,7 +56,32 @@ export default function Invitacion() {
     setMio(yaAnotado(token));
     const guardadoNombre = localStorage.getItem('mimundial.nombre') || '';
     setNombre(guardadoNombre);
+
+    // si quien mira el link tiene cuenta, puede sumar de amigo a otros
+    // anotados que también tengan cuenta
+    (async () => {
+      const supabase = crearCliente();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setMiId(user.id);
+      const { data } = await supabase.rpc('mis_amigos');
+      setAmigos((data ?? []) as Amigo[]);
+    })();
   }, [cargar, token]);
+
+  async function agregarAmigo(id: string, nombreOtro: string) {
+    setAgregando(id);
+    const supabase = crearCliente();
+    const { error } = await supabase.from('amigos').insert({ user_id: miId, amigo_id: id });
+    setAgregando(null);
+    if (error) {
+      setError(error.code === '23505' ? `${nombreOtro} ya está en tus amigos.` : error.message);
+      return;
+    }
+    setAmigos((prev) => [...prev, { id, nombre: nombreOtro }]);
+  }
 
   async function anotarse() {
     setError(null);
@@ -92,7 +124,7 @@ export default function Invitacion() {
   }
 
   async function bajarse() {
-    if (!confirm('¿Te bajás del partido?')) return;
+    if (!(await confirmar('¿Te bajás del partido?', { danger: true, boton: 'Bajarme' }))) return;
     setGuardando(true);
     const supabase = crearCliente();
     await supabase.rpc('borrarse', { p_claim: claimGuardado(token) });
@@ -119,7 +151,10 @@ export default function Invitacion() {
   return (
     <div className="wrap invitacion">
       <div className="inv-marca">
-        <span className="dot">MM</span> MiMundial
+        <span className="dot">
+          <Copita tam={11} />
+        </span>{' '}
+        MiMundial
       </div>
 
       <div className={`cancha ${completo ? 'completa' : ''}`}>
@@ -209,27 +244,44 @@ export default function Invitacion() {
         {p.anotados.length === 0 ? (
           <div className="vacio">Nadie todavía. Sé el primero.</div>
         ) : (
-          p.anotados.map((a, i) => (
-            <div className="jug" key={i}>
-              <span className="av" style={{ background: color(a.nombre) }}>
-                {iniciales(a.nombre)}
-              </span>
-              <span className="nom">
-                <b>{a.nombre}</b>
-                {a.invitados > 0 && (
+          p.anotados.map((a, i) => {
+            const yaEsAmigo = a.user_id ? amigos.some((am) => am.id === a.user_id) : false;
+            const mostrarBoton =
+              miId && a.user_id && a.user_id !== miId && !yaEsAmigo;
+            return (
+              <div className="jug" key={i}>
+                <span className="av" style={{ background: color(a.nombre) }}>
+                  {iniciales(a.nombre)}
+                </span>
+                <span className="nom">
+                  <b>{a.nombre}</b>
                   <small>
-                    +{a.invitados} invitado{a.invitados > 1 ? 's' : ''}
+                    {a.username ? '@' + a.username : ''}
+                    {a.username && a.invitados > 0 ? ' · ' : ''}
+                    {a.invitados > 0 ? `+${a.invitados} invitado${a.invitados > 1 ? 's' : ''}` : ''}
                   </small>
+                </span>
+                {mostrarBoton && (
+                  <button
+                    className="btn sm"
+                    onClick={() => agregarAmigo(a.user_id!, a.nombre)}
+                    disabled={agregando === a.user_id}
+                  >
+                    {agregando === a.user_id ? '…' : '+ Amigo'}
+                  </button>
                 )}
-              </span>
-            </div>
-          ))
+                {yaEsAmigo && <span className="chip">Amigo</span>}
+              </div>
+            );
+          })
         )}
       </div>
 
       <div className="inv-pie">
         Armado con <b>MiMundial</b>
       </div>
+
+      {confirmarUI}
     </div>
   );
 }

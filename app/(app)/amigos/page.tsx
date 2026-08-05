@@ -4,13 +4,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Amigo, Sugerencia } from '@/lib/tipos';
 import { color, iniciales } from '@/lib/calculos';
+import { useConfirmar } from '@/components/Confirmar';
 
 export default function Amigos() {
+  const { confirmar, ui: confirmarUI } = useConfirmar();
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [sugeridos, setSugeridos] = useState<Sugerencia[]>([]);
   const [email, setEmail] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null);
+
+  const [busqueda, setBusqueda] = useState('');
+  const [resultados, setResultados] = useState<Amigo[]>([]);
+  const [buscandoUsername, setBuscandoUsername] = useState(false);
+  const [sumando, setSumando] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -25,6 +32,23 @@ export default function Amigos() {
   useEffect(() => {
     cargar();
   }, [cargar]);
+
+  // buscar por username con un pequeño debounce, desde 3 caracteres
+  useEffect(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (q.length < 3) {
+      setResultados([]);
+      return;
+    }
+    setBuscandoUsername(true);
+    const id = setTimeout(async () => {
+      const supabase = crearCliente();
+      const { data } = await supabase.rpc('buscar_por_username', { p_query: q });
+      setResultados((data ?? []) as Amigo[]);
+      setBuscandoUsername(false);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [busqueda]);
 
   async function agregarPorMail(e: React.FormEvent) {
     e.preventDefault();
@@ -50,13 +74,19 @@ export default function Amigos() {
   }
 
   async function sumar(id: string, nombre: string) {
+    if (sumando) return;
+    setSumando(id);
     const supabase = crearCliente();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setSumando(null);
+      return;
+    }
 
     const { error } = await supabase.from('amigos').insert({ user_id: user.id, amigo_id: id });
+    setSumando(null);
     if (error) {
       setMsg({
         tipo: 'err',
@@ -65,11 +95,13 @@ export default function Amigos() {
       return;
     }
     setMsg({ tipo: 'ok', texto: `${nombre} se sumó a tus amigos.` });
+    setResultados((prev) => prev.filter((r) => r.id !== id));
     cargar();
   }
 
   async function sacar(a: Amigo) {
-    if (!confirm(`¿Sacar a ${a.nombre} de tus amigos?`)) return;
+    if (!(await confirmar(`¿Sacar a ${a.nombre} de tus amigos?`, { danger: true, boton: 'Sacar' })))
+      return;
     const supabase = crearCliente();
     const {
       data: { user },
@@ -83,7 +115,42 @@ export default function Amigos() {
 
   return (
     <div style={{ paddingTop: 18 }}>
-      <div className="sec">Sumar un amigo</div>
+      <div className="sec">Buscar por username</div>
+      <input
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        placeholder="@username (mínimo 3 letras)"
+      />
+      {busqueda.trim().length >= 3 && (
+        <div className="card" style={{ marginTop: 10 }}>
+          {buscandoUsername ? (
+            <div className="vacio">Buscando…</div>
+          ) : resultados.length === 0 ? (
+            <div className="vacio">Nadie con ese username.</div>
+          ) : (
+            resultados.map((r) => (
+              <div className="saldo" key={r.id}>
+                <span className="av" style={{ background: color(r.nombre) }}>
+                  {iniciales(r.nombre)}
+                </span>
+                <span className="nom">
+                  <b>{r.nombre}</b>
+                  <small>@{r.username}</small>
+                </span>
+                <button
+                  className="btn sm"
+                  onClick={() => sumar(r.id, r.nombre)}
+                  disabled={sumando === r.id}
+                >
+                  {sumando === r.id ? '…' : 'Sumar'}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      <div className="sec">O por mail</div>
       <form onSubmit={agregarPorMail}>
         <div className="row2">
           <input
@@ -146,14 +213,20 @@ export default function Amigos() {
                   <b>{s.nombre}</b>
                   <small>por {s.via}</small>
                 </span>
-                <button className="btn sm" onClick={() => sumar(s.id, s.nombre)}>
-                  Sumar
+                <button
+                  className="btn sm"
+                  onClick={() => sumar(s.id, s.nombre)}
+                  disabled={sumando === s.id}
+                >
+                  {sumando === s.id ? '…' : 'Sumar'}
                 </button>
               </div>
             ))}
           </div>
         </>
       )}
+
+      {confirmarUI}
     </div>
   );
 }
