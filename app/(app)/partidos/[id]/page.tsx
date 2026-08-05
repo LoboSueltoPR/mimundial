@@ -19,12 +19,14 @@ import {
   totalDebe,
   totalPagado,
 } from '@/lib/calculos';
+import { useConfirmar } from '@/components/Confirmar';
 
 type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
 
 export default function DetallePartido() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { confirmar, ui: confirmarUI } = useConfirmar();
 
   const [p, setP] = useState<Partido | null>(null);
   const [js, setJs] = useState<Jugador[]>([]);
@@ -114,7 +116,13 @@ export default function DetallePartido() {
   }
 
   async function quitar(j: Jugador) {
-    if (pagadoDe(j) > 0 && !confirm(`${j.nombre} tiene ${plata(pagadoDe(j))} cargados. ¿Sacarlo igual?`))
+    if (
+      pagadoDe(j) > 0 &&
+      !(await confirmar(`${j.nombre} tiene ${plata(pagadoDe(j))} cargados. ¿Sacarlo igual?`, {
+        danger: true,
+        boton: 'Sacarlo',
+      }))
+    )
       return;
     setJs((prev) => prev.filter((x) => x.id !== j.id));
     const supabase = crearCliente();
@@ -126,7 +134,8 @@ export default function DetallePartido() {
   }
 
   async function borrarPartido() {
-    if (!confirm('¿Borrar el partido con todo lo cargado?')) return;
+    if (!(await confirmar('¿Borrar el partido con todo lo cargado?', { danger: true, boton: 'Borrar' })))
+      return;
     const supabase = crearCliente();
     const { error } = await supabase.from('partidos').delete().eq('id', id);
     if (error) {
@@ -174,6 +183,9 @@ export default function DetallePartido() {
         </div>
       </div>
 
+      {/* recién creado y sin nadie anotado: lo único que tiene sentido es invitar */}
+      {cab === 0 && <Invitar p={p} onCambio={actualizarPartido} destacado />}
+
       <nav className="tabs" style={{ marginTop: 14, paddingBottom: 0 }}>
         {(['anotados', 'equipos', 'plata', 'resultado'] as Vista[]).map((v) => (
           <a
@@ -215,12 +227,15 @@ export default function DetallePartido() {
       )}
       {vista === 'resultado' && <ResultadoVista p={p} onGuardar={actualizarPartido} />}
 
-      <Invitar p={p} onCambio={actualizarPartido} />
+      {/* si todavía no hay nadie anotado, invitar es lo único que tiene sentido hacer */}
+      {cab > 0 && <Invitar p={p} onCambio={actualizarPartido} />}
 
       <div className="sec">Partido</div>
       <button className="btn danger wide sm" onClick={borrarPartido}>
         Borrar este partido
       </button>
+
+      {confirmarUI}
     </div>
   );
 }
@@ -230,9 +245,11 @@ export default function DetallePartido() {
 function Invitar({
   p,
   onCambio,
+  destacado = false,
 }: {
   p: Partido;
   onCambio: (campos: Partial<Partido>) => void;
+  destacado?: boolean;
 }) {
   const [copiado, setCopiado] = useState(false);
   const [link, setLink] = useState('');
@@ -265,11 +282,16 @@ function Invitar({
   return (
     <>
       <div className="sec">
-        Invitar
+        {destacado ? 'Partido creado — invitá gente' : 'Invitar'}
         <button className="act" onClick={() => onCambio({ abierto: !p.abierto })}>
           {p.abierto ? 'cerrar anotaciones' : 'reabrir'}
         </button>
       </div>
+      {destacado && (
+        <div className="nota" style={{ marginTop: 0, marginBottom: 10 }}>
+          Mandale este link a los pibes para que se anoten solos.
+        </div>
+      )}
 
       <div className="card" style={{ padding: 14 }}>
         <input id="linkInv" readOnly value={link} onFocus={(e) => e.target.select()} />
@@ -310,12 +332,21 @@ function Anotados({
   amigos: Amigo[];
   onInv: (id: string, campos: Partial<Jugador>) => void;
   onQuitar: (j: Jugador) => void;
-  onSumar: (nombre: string) => void;
+  onSumar: (nombre: string) => Promise<void>;
 }) {
   const [nombre, setNombre] = useState('');
+  const [enviando, setEnviando] = useState(false);
   const anotados = new Set(js.map((j) => j.nombre.toLowerCase()));
   const disponibles = amigos.filter((a) => !anotados.has(a.nombre.toLowerCase()));
   let n = 0;
+
+  async function agregar(unNombre: string) {
+    if (!unNombre.trim() || enviando) return;
+    setEnviando(true);
+    await onSumar(unNombre);
+    setEnviando(false);
+    setNombre('');
+  }
 
   return (
     <>
@@ -367,7 +398,12 @@ function Anotados({
           <div className="sec">Tus amigos</div>
           <div className="chips">
             {disponibles.map((a) => (
-              <button key={a.id} className="chipAmigo" onClick={() => onSumar(a.nombre)}>
+              <button
+                key={a.id}
+                className="chipAmigo"
+                onClick={() => agregar(a.nombre)}
+                disabled={enviando}
+              >
                 <span className="mini" style={{ background: color(a.nombre) }}>
                   {iniciales(a.nombre)}
                 </span>
@@ -385,22 +421,18 @@ function Anotados({
           placeholder="Nombre"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
+          disabled={enviando}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              onSumar(nombre);
-              setNombre('');
-            }
+            if (e.key === 'Enter') agregar(nombre);
           }}
         />
         <button
           className="btn pri"
           style={{ flex: 'none', padding: '12px 20px' }}
-          onClick={() => {
-            onSumar(nombre);
-            setNombre('');
-          }}
+          onClick={() => agregar(nombre)}
+          disabled={enviando || !nombre.trim()}
         >
-          Sumar
+          {enviando ? '…' : 'Sumar'}
         </button>
       </div>
       <div className="nota">
@@ -521,6 +553,8 @@ function PlataVista({
   onPuso: (jid: string | null) => void;
   onCosto: (costo: number) => void;
 }) {
+  const { confirmar, ui: confirmarUI } = useConfirmar();
+
   if (js.length === 0)
     return (
       <>
@@ -536,9 +570,11 @@ function PlataVista({
   const quienPuso = js.find((j) => j.id === p.puso);
   const cuantos = js.filter((j) => pagadoEfectivo(p, js, j) >= debeDe(p.costo, js, j)).length;
 
-  function editarPago(j: Jugador) {
+  async function editarPago(j: Jugador) {
     if (p.puso === j.id) {
-      alert(`${j.nombre} adelantó ${plata(p.costo)}. Su parte ya está cubierta.`);
+      await confirmar(`${j.nombre} adelantó ${plata(p.costo)}. Su parte ya está cubierta.`, {
+        soloOk: true,
+      });
       return;
     }
     const v = prompt(`¿Cuánto puso ${j.nombre}? (debe ${plata(debeDe(p.costo, js, j))})`, String(pagadoDe(j)));
@@ -647,6 +683,8 @@ function PlataVista({
         El total se divide por <b>cabeza</b>, no por persona: el que lleva 2 invitados paga 3 partes.
         Tocá el círculo para marcar pagado, o el nombre para cargar un pago parcial.
       </div>
+
+      {confirmarUI}
     </>
   );
 }

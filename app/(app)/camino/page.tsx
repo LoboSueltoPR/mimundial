@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Partido } from '@/lib/tipos';
+import type { AmigoCamino, Partido } from '@/lib/tipos';
 import {
   CAMINO,
   PARA_LA_COPA,
@@ -11,11 +11,12 @@ import {
   faltanParaLaCopa,
   frase,
 } from '@/lib/camino';
-import { fechaLarga } from '@/lib/calculos';
+import { color, fechaLarga, iniciales } from '@/lib/calculos';
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [amigos, setAmigos] = useState<AmigoCamino[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -27,6 +28,11 @@ export default function Camino() {
         return;
       }
       setPartidos((data ?? []) as Partido[]);
+    })();
+    (async () => {
+      const supabase = crearCliente();
+      const { data } = await supabase.rpc('camino_de_amigos');
+      setAmigos((data ?? []) as AmigoCamino[]);
     })();
   }, []);
 
@@ -116,6 +122,32 @@ export default function Camino() {
           <div className="nota">
             {e.copas === 1 ? 'Una copa' : `${e.copas} copas`} desde que arrancaste. Cada una son{' '}
             {PARA_LA_COPA} triunfos seguidos.
+          </div>
+        </>
+      )}
+
+      {/* ---------- tus amigos ---------- */}
+      {amigos.length > 0 && (
+        <>
+          <div className="sec">Tus amigos</div>
+          <div className="card">
+            {amigos.map((am) => {
+              const ea = calcularCamino(am.partidos);
+              return (
+                <div className="item" key={am.id}>
+                  <span className="av" style={{ background: color(am.nombre) }}>
+                    {iniciales(am.nombre)}
+                  </span>
+                  <span className="info">
+                    <b>{am.nombre}</b>
+                    <small>
+                      {ea.proxima.corto} · {ea.triunfos} al hilo
+                    </small>
+                  </span>
+                  <span style={{ fontSize: 20 }}>{ea.proxima.icono}</span>
+                </div>
+              );
+            })}
           </div>
         </>
       )}

@@ -35,7 +35,7 @@
 html,body{background:var(--bg);color:var(--txt)}
 body{
   font-family:var(--fuente-cuerpo);
-  font-size:15px;line-height:1.45;
+  font-size:15px;line-height:1.4;
   padding-bottom:40px;
   -webkit-font-smoothing:antialiased;
 }
@@ -53,7 +53,7 @@ header.top:after{
   content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
   background:linear-gradient(90deg,transparent,var(--tiza) 20%,var(--tiza) 80%,transparent);
 }
-.hd{display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:10px}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px}
 .brand{display:flex;align-items:center;gap:9px;min-width:0}
 .brand .dot{width:29px;height:29px;border-radius:9px;background:var(--acento);
   color:var(--acento-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
@@ -142,10 +142,10 @@ nav.tabs a.on{background:var(--surface);border-color:var(--line);color:var(--txt
 /* ---------- basicos ---------- */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .sec{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--faint);
-  font-weight:700;margin:22px 0 9px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  font-weight:700;margin:16px 0 7px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .sec .act{text-transform:none;letter-spacing:0;font-size:12px;color:var(--acento);
   cursor:pointer;font-weight:600;background:none;border:0;font-family:inherit;padding:0}
-.vacio{padding:26px 18px;text-align:center;color:var(--faint);font-size:13.5px;line-height:1.6}
+.vacio{padding:20px 16px;text-align:center;color:var(--faint);font-size:13.5px;line-height:1.6}
 .nota{font-size:12.5px;color:var(--faint);line-height:1.6;margin-top:12px}
 .nota b{color:var(--dim)}
 
@@ -195,7 +195,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .barra i{display:block;height:100%;background:var(--acento);border-radius:6px;transition:width .25s}
 
 /* ---------- jugadores ---------- */
-.jug{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--line-soft)}
+.jug{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft)}
 .jug:last-child{border-bottom:0}
 .num{width:26px;flex:none;font-size:12px;color:var(--faint);font-weight:600;font-variant-numeric:tabular-nums}
 .av{width:31px;height:31px;border-radius:50%;flex:none;display:grid;place-items:center;
@@ -240,7 +240,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .tot .split .c{font-size:10.5px;color:var(--faint);text-transform:uppercase;
   letter-spacing:.6px;margin-top:3px;line-height:1.25;padding:0 4px}
 
-.pago{display:flex;align-items:center;gap:10px;padding:10px 13px;border-bottom:1px solid var(--line-soft)}
+.pago{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft)}
 .pago:last-child{border-bottom:0}
 .pago .nom{flex:1;min-width:0;cursor:pointer}
 .pago .nom b{display:block;font-size:14.5px;font-weight:600}
@@ -286,7 +286,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .rachaBox .emo{font-size:28px}
 
 /* ---------- listas ---------- */
-.item{display:flex;align-items:center;gap:12px;padding:13px;border-bottom:1px solid var(--line-soft);cursor:pointer}
+.item{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line-soft);cursor:pointer}
 .item:last-child{border-bottom:0}
 .item .fec{width:46px;flex:none;text-align:center}
 .item .fec .d{display:block;font-size:17px;font-weight:800;line-height:1.1}
@@ -301,7 +301,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .estado-pill.emp{background:#e7ebf1;color:var(--dim)}
 .estado-pill.sin{background:#eef1f6;color:var(--faint)}
 
-.saldo{display:flex;align-items:center;gap:11px;padding:12px 13px;border-bottom:1px solid var(--line-soft)}
+.saldo{display:flex;align-items:center;gap:11px;padding:8px 12px;border-bottom:1px solid var(--line-soft)}
 .saldo:last-child{border-bottom:0}
 .saldo .nom{flex:1;min-width:0}
 .saldo .nom b{display:block;font-size:14.5px;font-weight:600}
@@ -313,7 +313,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 
 /* ---------- camino ---------- */
 .copaBox{
-  position:relative;overflow:hidden;border-radius:16px;padding:26px 18px 18px;
+  position:relative;overflow:hidden;border-radius:16px;padding:18px 16px 14px;
   text-align:center;border:1px solid var(--line);
   background:linear-gradient(165deg,#ffffff,#eef4fa);
 }
@@ -374,7 +374,7 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 }
 .trofeo{font-size:27px;line-height:1}
 
-.paso{display:flex;align-items:center;gap:11px;padding:11px 13px;
+.paso{display:flex;align-items:center;gap:11px;padding:8px 12px;
   border-bottom:1px solid var(--line-soft);cursor:pointer}
 .paso:last-child{border-bottom:0}
 .paso-res{
@@ -432,21 +432,35 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .arranque .copaSvg-relleno{animation:llenarDeOro .5s ease-out .78s forwards}
 .arranque .copaSvg-brillo{animation:destello .6s ease-out 1s forwards}
 
-.arranque-marca{
-  font-family:var(--fuente-display);font-size:26px;letter-spacing:5px;
-  text-transform:uppercase;color:#fff;margin-top:10px;
-  opacity:0;animation:marcaEntra .5s ease-out .95s forwards;
+/* La palabra y la copa ocupan el mismo lugar en pantalla: una se
+   desvanece justo donde aparece la otra, para que lea como una
+   transformación en vez de dos animaciones pegadas una atrás de otra. */
+.arranque-escena{
+  position:relative;display:grid;place-items:center;
+  width:min(80vw,300px);height:150px;
 }
+.arranque-palabra, .arranque-copa{grid-area:1/1;display:grid;place-items:center}
+
+.arranque .marcaSvg{color:rgba(234,242,248,.88)}
+.marca-trazo{stroke-dasharray:1;stroke-dashoffset:1;animation:trazar .2s ease-out forwards}
+
+.arranque-palabra{
+  transition:opacity .45s ease, transform .45s ease, filter .45s ease;
+}
+.arranque-palabra.colapsa{
+  opacity:0;transform:scale(.55);filter:blur(7px);
+}
+.arranque-copa{animation:apareceCopa .4s ease-out both}
 
 @keyframes trazar{to{stroke-dashoffset:0}}
 @keyframes llenarDeOro{to{opacity:1}}
 @keyframes calAparece{to{opacity:1}}
+@keyframes apareceCopa{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
 @keyframes destello{
   0%{opacity:0;clip-path:inset(0 100% 0 0)}
   35%{opacity:.5}
   100%{opacity:0;clip-path:inset(0 0 0 100%)}
 }
-@keyframes marcaEntra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 /* ---------- transición entre páginas ---------- */
 .barrido{
@@ -478,12 +492,13 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 /* Nadie tiene que marearse por una decisión estética. */
 @media (prefers-reduced-motion: reduce){
   .arranque-cal,.arranque .copaSvg-trazo path,.arranque .copaSvg-relleno,
-  .arranque .copaSvg-brillo,.arranque-marca,
+  .arranque .copaSvg-brillo,.arranque-copa,.marca-trazo,
   .barrido-linea,.barrido-copa,.transicion{
     animation:none !important;
   }
-  .arranque .copaSvg-relleno,.arranque-marca,.arranque-cal{opacity:1}
-  .arranque .copaSvg-trazo path{stroke-dashoffset:0}
+  .arranque-palabra{transition:none}
+  .arranque .copaSvg-relleno,.arranque-cal,.arranque-copa{opacity:1}
+  .arranque .copaSvg-trazo path,.marca-trazo{stroke-dashoffset:0}
   .barrido{display:none}
 }
 
@@ -575,6 +590,8 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .sheet{background:var(--bg);border:1px solid var(--line);border-radius:18px 18px 0 0;
   width:100%;max-width:560px;padding:20px 16px 26px;max-height:92vh;overflow-y:auto}
 .sheet h2{font-size:18px;margin-bottom:16px;letter-spacing:-.3px}
+.sheetConfirmar{padding-top:22px}
+.confirmarTexto{font-size:14.5px;line-height:1.55;color:var(--txt);margin-bottom:18px}
 @media(min-width:600px){.modal{align-items:center}.sheet{border-radius:18px}}
 
 /* ---------- login ---------- */
@@ -585,9 +602,21 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .login h1{font-size:27px;font-weight:800;letter-spacing:-.8px}
 .login p.sub{color:var(--dim);font-size:14px;margin-top:6px;margin-bottom:28px;max-width:300px}
 .login .caja{width:100%;max-width:340px}
-.sep{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:11.5px;
-  text-transform:uppercase;letter-spacing:1px;margin:18px 0}
-.sep:before,.sep:after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* El botón "Continuar con Google": blanco, con el logo a 4 colores tal
+   cual, como pide la guía de marca de Google — no se toca con la
+   paleta de la app. */
+.btnGoogle{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
+  padding:12px 14px;border-radius:11px;border:1px solid #dadce0;background:#fff;
+  color:#3c4043;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+  transition:background .1s, box-shadow .1s;
+}
+.btnGoogle:hover{background:#f8f9fa}
+.btnGoogle:active{background:#f1f3f4}
+.btnGoogle:disabled{opacity:.6;cursor:default}
+.btnGoogle:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+
 .msg{border-radius:11px;padding:11px 13px;font-size:13px;line-height:1.5;margin-top:14px;text-align:left}
 .msg.ok{background:#e6f5ea;border:1px solid #a9d8ba;color:#146334}
 .msg.err{background:#fbeae8;border:1px solid #e3a9a3;color:#96271e}

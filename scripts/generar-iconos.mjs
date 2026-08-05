@@ -12,8 +12,11 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = join(RAIZ, 'public', 'icons');
 
-const LIMA = [195, 245, 60];
-const TINTA = [22, 32, 10];
+// Los mismos colores y la misma silueta que public/icons/icon.svg y
+// components/Copa.tsx: la copa, dorada, sobre el celeste de la marca.
+const CELESTE = [10, 110, 166];
+const ORO = [244, 207, 130];
+const NOCHE = [10, 20, 36];
 
 /* ---------- CRC32 ---------- */
 const TABLA = (() => {
@@ -88,48 +91,56 @@ function distRoundRect(x, y, cx, cy, mx, my, r) {
 /** Antialias simple: 0 afuera, 1 adentro, con medio pixel de transicion. */
 const cobertura = (d) => Math.min(1, Math.max(0, 0.5 - d));
 
+const distSegmento = (x, y, x1, y1, x2, y2) => {
+  const vx = x2 - x1,
+    vy = y2 - y1;
+  const largo2 = vx * vx + vy * vy;
+  const t = largo2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - x1) * vx + (y - y1) * vy) / largo2));
+  return Math.hypot(x - (x1 + t * vx), y - (y1 + t * vy));
+};
+
+/** Distancia con signo a un poligono cerrado (negativa adentro). */
+function distPoligono(px, py, pts) {
+  let dMin = Infinity;
+  let dentro = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i];
+    const [xj, yj] = pts[j];
+    dMin = Math.min(dMin, distSegmento(px, py, xi, yi, xj, yj));
+    if (yi > py !== yj > py) {
+      const xInter = xi + ((py - yi) * (xj - xi)) / (yj - yi);
+      if (px < xInter) dentro = !dentro;
+    }
+  }
+  return dentro ? -dMin : dMin;
+}
+
+// La copa, en las mismas coordenadas que components/Copa.tsx (viewBox
+// 100x120), aplanando la curva del fondo del bowl a un polígono.
+const COPA = [
+  [[28, 18], [72, 18], [68, 52], [62.4, 59.9], [50, 62.5], [37.6, 59.9], [32, 52]],
+  [[46, 64], [54, 64], [54, 80], [46, 80]],
+  [[38, 80], [62, 80], [66, 92], [34, 92]],
+  [[28, 92], [72, 92], [72, 104], [28, 104]],
+];
+const COPA_MEDIO = [50, 61]; // centro visual del contenido (x:28-72, y:18-104)
+
+function distCopa(x, y) {
+  let d = Infinity;
+  for (const poligono of COPA) d = Math.min(d, distPoligono(x, y, poligono));
+  return d;
+}
+
 function dibujar(tam, maskable) {
   const rgba = Buffer.alloc(tam * tam * 4);
   const c = tam / 2;
 
-  // en maskable el contenido vive en el 80% central (safe zone)
-  const escala = maskable ? 0.62 : 0.76;
-  const radioBola = (tam / 2) * escala;
-  const grosor = tam * 0.05;
-  const radioPent = radioBola * 0.42;
-
-  // pentagono central
-  const puntas = [];
-  for (let i = 0; i < 5; i++) {
-    const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-    puntas.push([c + radioPent * Math.cos(a), c + radioPent * Math.sin(a)]);
-  }
-  const dentroPent = (x, y) => {
-    let signo = 0;
-    for (let i = 0; i < 5; i++) {
-      const [x1, y1] = puntas[i];
-      const [x2, y2] = puntas[(i + 1) % 5];
-      const cruz = (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1);
-      const s = Math.sign(cruz);
-      if (signo === 0) signo = s;
-      else if (s !== 0 && s !== signo) return false;
-    }
-    return true;
-  };
-
-  // costuras: 5 rayas del pentagono al borde
-  const costuras = puntas.map(([px, py]) => {
-    const ang = Math.atan2(py - c, px - c);
-    return [px, py, c + radioBola * Math.cos(ang), c + radioBola * Math.sin(ang)];
-  });
-
-  const distSegmento = (x, y, x1, y1, x2, y2) => {
-    const vx = x2 - x1,
-      vy = y2 - y1;
-    const largo2 = vx * vx + vy * vy;
-    const t = largo2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - x1) * vx + (y - y1) * vy) / largo2));
-    return Math.hypot(x - (x1 + t * vx), y - (y1 + t * vy));
-  };
+  // en maskable el contenido vive en el 80% central (safe zone), asi
+  // que la copa se dibuja mas chica para no comerse contra el recorte
+  const escala = (maskable ? 0.0082 : 0.01) * tam;
+  const offX = c - COPA_MEDIO[0] * escala;
+  const offY = c - COPA_MEDIO[1] * escala;
+  const grosorTrazo = Math.max(0.8, tam * 0.012);
 
   for (let y = 0; y < tam; y++) {
     for (let x = 0; x < tam; x++) {
@@ -137,31 +148,28 @@ function dibujar(tam, maskable) {
       const py = y + 0.5;
       const i = (y * tam + x) * 4;
 
-      // fondo: cuadrado redondeado lima (maskable = cuadrado completo)
-      const dFondo = maskable
-        ? -1
-        : distRoundRect(px, py, c, c, tam / 2, tam / 2, tam * 0.22);
+      // fondo: cuadrado redondeado celeste (maskable = cuadrado completo)
+      const dFondo = maskable ? -1 : distRoundRect(px, py, c, c, tam / 2, tam / 2, tam * 0.22);
       const aFondo = cobertura(dFondo);
       if (aFondo <= 0) {
         rgba[i + 3] = 0;
         continue;
       }
 
-      let color = LIMA;
+      let color = CELESTE;
 
-      // aro de la pelota
-      const dCentro = Math.hypot(px - c, py - c);
-      const aAro = cobertura(Math.abs(dCentro - radioBola) - grosor / 2);
-      if (aAro > 0) color = mezclar(color, TINTA, aAro);
+      // la copa, en coordenadas locales de su propio viewBox
+      const cx = (px - offX) / escala;
+      const cy = (py - offY) / escala;
+      const dCopaLocal = distCopa(cx, cy);
+      const dCopa = dCopaLocal * escala; // de vuelta a pixeles
 
-      // pentagono
-      if (dentroPent(px, py)) color = TINTA;
+      const aOro = cobertura(dCopa);
+      if (aOro > 0) color = mezclar(color, ORO, aOro);
 
-      // costuras
-      for (const [x1, y1, x2, y2] of costuras) {
-        const a = cobertura(distSegmento(px, py, x1, y1, x2, y2) - grosor * 0.42);
-        if (a > 0) color = mezclar(color, TINTA, a);
-      }
+      // un trazo fino oscuro en el borde, para que se lea nitida en chico
+      const aBorde = cobertura(Math.abs(dCopa) - grosorTrazo / 2);
+      if (aBorde > 0) color = mezclar(color, NOCHE, aBorde * 0.8);
 
       rgba[i] = color[0];
       rgba[i + 1] = color[1];

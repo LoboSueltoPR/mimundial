@@ -380,5 +380,7 @@ grant execute on function public.buscar_usuario(text) to authenticated;
 grant execute on function public.sugerencias_amigos() to authenticated;
 grant execute on function public.mis_amigos() to authenticated;
 
--- nuevo_token es interna
-revoke execute on function public.nuevo_token() from anon, authenticated;
+-- nuevo_token es el default de partidos.token: lo necesita quien crea un
+-- partido (authenticated). Solo anon no debe poder invocarla directo.
+revoke execute on function public.nuevo_token() from anon;
+grant execute on function public.nuevo_token() to authenticated;

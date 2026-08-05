@@ -1,18 +1,36 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import { color, iniciales } from '@/lib/calculos';
-import type { ExportLocal, Jugador, Partido } from '@/lib/tipos';
+import type { Pie, Posicion } from '@/lib/tipos';
+import { useConfirmar } from '@/components/Confirmar';
+
+const POSICIONES: { valor: Posicion; etiqueta: string }[] = [
+  { valor: 'arquero', etiqueta: 'Arquero' },
+  { valor: 'defensor', etiqueta: 'Defensor' },
+  { valor: 'mediocampista', etiqueta: 'Mediocampista' },
+  { valor: 'delantero', etiqueta: 'Delantero' },
+];
+const PIES: { valor: Pie; etiqueta: string }[] = [
+  { valor: 'derecho', etiqueta: 'Derecho' },
+  { valor: 'zurdo', etiqueta: 'Zurdo' },
+  { valor: 'ambos', etiqueta: 'Ambos' },
+];
 
 export default function Perfil() {
   const router = useRouter();
+  const { confirmar, ui: confirmarUI } = useConfirmar();
   const [email, setEmail] = useState('');
   const [nombre, setNombre] = useState('');
-  const [msg, setMsg] = useState<{ tipo: 'ok' | 'err' | 'info'; texto: string } | null>(null);
-  const [importando, setImportando] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+
+  const [username, setUsername] = useState('');
+  const [usernameGuardado, setUsernameGuardado] = useState<string | null>(null);
+  const [posicion, setPosicion] = useState<Posicion | ''>('');
+  const [pie, setPie] = useState<Pie | ''>('');
+  const [guardandoPerfil, setGuardandoPerfil] = useState(false);
+  const [msgPerfil, setMsgPerfil] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -28,108 +46,53 @@ export default function Perfil() {
           user.email?.split('@')[0] ||
           '',
       );
+
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('username, posicion, pie')
+        .eq('id', user.id)
+        .single();
+      if (perfil) {
+        setUsername(perfil.username || '');
+        setUsernameGuardado(perfil.username || null);
+        setPosicion((perfil.posicion as Posicion) || '');
+        setPie((perfil.pie as Pie) || '');
+      }
     })();
   }, []);
 
-  /* ---------- importar del Se Juega local ---------- */
-  async function importar(archivo: File) {
-    setImportando(true);
-    setMsg(null);
-    try {
-      const texto = await archivo.text();
-      const datos = JSON.parse(texto) as ExportLocal;
-
-      if (!datos || !Array.isArray(datos.partidos)) {
-        throw new Error('El archivo no tiene la forma esperada (falta la lista de partidos).');
-      }
-
-      const supabase = crearCliente();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Se cortó la sesión.');
-
-      let ok = 0;
-
-      for (const viejo of datos.partidos) {
-        const { data: creado, error: e1 } = await supabase
-          .from('partidos')
-          .insert({
-            user_id: user.id,
-            fecha: viejo.fecha || new Date().toISOString().slice(0, 10),
-            hora: viejo.hora || null,
-            lugar: viejo.lugar || null,
-            cupo: Math.max(2, Math.min(40, viejo.cupo || 12)),
-            costo: Math.max(0, viejo.costo || 0),
-            equipos: viejo.equipos ?? null,
-          })
-          .select('id')
-          .single();
-
-        if (e1 || !creado) throw new Error(e1?.message || 'No se pudo crear un partido.');
-
-        const jugadores = (viejo.jugadores || []).map((j, i) => ({
-          partido_id: creado.id,
-          nombre: j.nombre,
-          invitados: Math.max(0, j.invitados || 0),
-          pagado: Math.max(0, j.pagado || 0),
-          orden: i,
-        }));
-
-        if (jugadores.length) {
-          const { data: insertados, error: e2 } = await supabase
-            .from('jugadores')
-            .insert(jugadores)
-            .select('id, nombre');
-          if (e2) throw new Error(e2.message);
-
-          // el "puso" viejo apuntaba a un id local: lo re-apuntamos por nombre
-          if (viejo.puso) {
-            const nombrePagador = (viejo.jugadores || []).find((j) => j.id === viejo.puso)?.nombre;
-            const nuevo = insertados?.find((x) => x.nombre === nombrePagador);
-            if (nuevo) {
-              await supabase.from('partidos').update({ puso: nuevo.id }).eq('id', creado.id);
-            }
-          }
-        }
-        ok++;
-      }
-
-      setMsg({
-        tipo: 'ok',
-        texto: `Listo: se importaron ${ok} partido${ok === 1 ? '' : 's'}. Miralos en la pestaña Partidos.`,
-      });
-    } catch (e) {
-      setMsg({
-        tipo: 'err',
-        texto: e instanceof Error ? e.message : 'No se pudo leer el archivo.',
-      });
-    } finally {
-      setImportando(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  }
-
-  /* ---------- exportar todo ---------- */
-  async function exportar() {
+  async function guardarUsername(e: React.FormEvent) {
+    e.preventDefault();
+    setMsgPerfil(null);
+    setGuardandoPerfil(true);
     const supabase = crearCliente();
-    const { data, error } = await supabase.from('partidos').select('*, jugadores!jugadores_partido_id_fkey(*)');
-    if (error) {
-      setMsg({ tipo: 'err', texto: error.message });
+    const { data, error } = await supabase.rpc('fijar_username', { p_username: username });
+    setGuardandoPerfil(false);
+    const r = data as { ok: boolean; error?: string } | null;
+    if (error || !r?.ok) {
+      setMsgPerfil({ tipo: 'err', texto: r?.error || error?.message || 'No se pudo guardar.' });
       return;
     }
-    const blob = new Blob([JSON.stringify({ partidos: data as (Partido & { jugadores: Jugador[] })[] }, null, 2)], {
-      type: 'application/json',
-    });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'mimundial-' + new Date().toISOString().slice(0, 10) + '.json';
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    setUsernameGuardado(username.trim().toLowerCase());
+    setMsgPerfil({ tipo: 'ok', texto: 'Listo.' });
+  }
+
+  async function guardarJugador(campo: 'posicion' | 'pie', valor: string) {
+    if (campo === 'posicion') setPosicion(valor as Posicion);
+    else setPie(valor as Pie);
+    const supabase = crearCliente();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from('perfiles')
+      .update({ [campo]: valor || null })
+      .eq('id', user.id);
   }
 
   async function salir() {
-    if (!confirm('¿Cerrar sesión?')) return;
+    if (!(await confirmar('¿Cerrar sesión?', { boton: 'Cerrar sesión', danger: true }))) return;
     const supabase = crearCliente();
     await supabase.auth.signOut();
     router.replace('/login');
@@ -143,36 +106,62 @@ export default function Perfil() {
           {iniciales(nombre || '?')}
         </span>
         <b>{nombre || '—'}</b>
+        {usernameGuardado && <small>@{usernameGuardado}</small>}
         <small>{email}</small>
       </div>
 
-      <div className="sec">Traer datos de Se Juega</div>
-      <div className="card">
-        <div className="vacio" style={{ textAlign: 'left' }}>
-          Si venías usando la app local, exportá el JSON desde ahí (<b>Historial → Exportar copia</b>)
-          y subilo acá. Se cargan todos los partidos con sus jugadores, invitados y pagos.
+      <div className="sec">Tu username</div>
+      <div className="card" style={{ padding: 14 }}>
+        <form onSubmit={guardarUsername}>
+          <div className="row2">
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              placeholder="tu_username"
+              maxLength={20}
+            />
+            <button
+              className="btn pri"
+              type="submit"
+              style={{ flex: 'none', padding: '12px 20px' }}
+              disabled={guardandoPerfil || !username.trim()}
+            >
+              {guardandoPerfil ? '…' : 'Guardar'}
+            </button>
+          </div>
+        </form>
+        {msgPerfil && <div className={`msg ${msgPerfil.tipo}`} style={{ marginTop: 10 }}>{msgPerfil.texto}</div>}
+        <div className="nota">
+          Con esto te van a poder buscar y sumar de amigo. 3 a 20 caracteres: letras, números y
+          guión bajo.
         </div>
       </div>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json,.json"
-        style={{ display: 'none' }}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) importar(f);
-        }}
-      />
-      <div className="row2" style={{ marginTop: 12 }}>
-        <button className="btn pri" onClick={() => fileRef.current?.click()} disabled={importando}>
-          {importando ? 'Importando…' : 'Subir JSON'}
-        </button>
-        <button className="btn" onClick={exportar}>
-          Exportar todo
-        </button>
-      </div>
 
-      {msg && <div className={`msg ${msg.tipo}`}>{msg.texto}</div>}
+      <div className="sec">Tu juego</div>
+      <div className="card" style={{ padding: 14 }}>
+        <div className="campo">
+          <label>Posición</label>
+          <select value={posicion} onChange={(e) => guardarJugador('posicion', e.target.value)}>
+            <option value="">Sin definir</option>
+            {POSICIONES.map((p) => (
+              <option key={p.valor} value={p.valor}>
+                {p.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="campo" style={{ marginBottom: 0 }}>
+          <label>Pierna hábil</label>
+          <select value={pie} onChange={(e) => guardarJugador('pie', e.target.value)}>
+            <option value="">Sin definir</option>
+            {PIES.map((p) => (
+              <option key={p.valor} value={p.valor}>
+                {p.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <div className="sec">Instalar en el celular</div>
       <div className="card">
@@ -187,6 +176,8 @@ export default function Perfil() {
       <button className="btn danger wide" onClick={salir}>
         Cerrar sesión
       </button>
+
+      {confirmarUI}
     </div>
   );
 }

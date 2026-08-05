@@ -61,7 +61,9 @@ function ordenar<T extends Pick<Partido, 'fecha' | 'creado_en'>>(ps: T[]): T[] {
   });
 }
 
-export function calcularCamino(partidos: Partido[]): EstadoCamino {
+type PartidoParaCamino = Pick<Partido, 'id' | 'fecha' | 'creado_en' | 'resultado' | 'lugar'>;
+
+export function calcularCamino(partidos: PartidoParaCamino[]): EstadoCamino {
   const conResultado = ordenar(partidos.filter((p) => p.resultado));
 
   let triunfos = 0;

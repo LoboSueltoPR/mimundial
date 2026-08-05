@@ -29,6 +29,8 @@ los datos de todos.
 
 ### 3. Prender el login con Google
 
+Es la única forma de entrar, así que este paso **no se puede saltear**.
+
 En Supabase → **Authentication → Providers → Google** → activalo.
 Te va a pedir Client ID y Client Secret, que salen de
 [Google Cloud Console](https://console.cloud.google.com/apis/credentials) →
@@ -47,9 +49,6 @@ Después, en Supabase → **Authentication → URL Configuration**:
 | --- | --- |
 | Site URL | `https://<TU-APP>.vercel.app` |
 | Redirect URLs | `https://<TU-APP>.vercel.app/auth/callback` y `http://localhost:3001/auth/callback` |
-
-> El login por mail (link mágico) anda sin configurar nada extra. Si por ahora te alcanza con eso,
-> saltate este paso.
 
 ### 4. Correrlo local y después subirlo
 
@@ -90,7 +89,6 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
   elegiste nada, el resultado se deduce solo.
 - **Stats** — efectividad, racha, goles y quiénes enganchan siempre.
 - **Cuentas** — saldo acumulado por persona a través de todos los partidos.
-- **Importar** — subís el JSON de la app local *Se Juega* y se carga todo.
 
 ## Estructura
 
@@ -98,7 +96,7 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
 app/
   (app)/          pantallas con sesión: partidos, stats, cuentas, perfil
   p/[token]/      la invitación pública: entra cualquiera, sin cuenta
-  login/          Google + link por mail
+  login/          entrar con Google
   auth/callback/  vuelta del OAuth
 lib/
   calculos.ts     plata, equipos y stats (con tests)
