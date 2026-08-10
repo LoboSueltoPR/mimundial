@@ -785,12 +785,36 @@ label{
    transformación en vez de dos animaciones pegadas una atrás de otra. */
 .arranque-escena{
   position:relative;display:grid;place-items:center;
-  width:min(80vw,300px);height:150px;
+  width:min(86vw,340px);height:150px;
 }
 .arranque-palabra, .arranque-copa{grid-area:1/1;display:grid;place-items:center}
 
-.arranque .marcaSvg{color:rgba(234,242,248,.88)}
-.marca-trazo{stroke-dasharray:1;stroke-dashoffset:1;animation:trazar .2s ease-out forwards}
+/* El wordmark, en Anton de verdad. Cada letra se revela de izquierda a
+   derecha, escalonada, como si la fueran escribiendo — y engancha con la
+   copa, que se traza en tiza inmediatamente después. */
+.marcaTexto{
+  display:flex;
+  font-family:var(--fuente-display);
+  font-weight:400;
+  letter-spacing:.11em;
+  line-height:1;
+  color:#eaf2f8;
+  white-space:pre;
+  /* el tracking deja aire suelto a la derecha: se compensa para que el
+     bloque quede ópticamente centrado sobre la copa */
+  padding-left:.11em;
+}
+.marcaTexto span{
+  display:inline-block;
+  clip-path:inset(0 100% 0 0);
+  transform:translateY(.06em);
+  animation:escribir .3s cubic-bezier(.2,.7,.3,1) forwards;
+}
+.marcaTexto.quieta span{clip-path:none;transform:none;animation:none}
+
+@keyframes escribir{
+  to{clip-path:inset(0 0 0 0);transform:none}
+}
 
 .arranque-palabra{transition:opacity .45s ease, transform .45s ease, filter .45s ease}
 .arranque-palabra.colapsa{opacity:0;transform:scale(.55);filter:blur(7px)}
@@ -836,13 +860,14 @@ label{
 /* Nadie tiene que marearse por una decisión estética. */
 @media (prefers-reduced-motion: reduce){
   .arranque-cal,.arranque .copaSvg-trazo path,.arranque .copaSvg-relleno,
-  .arranque .copaSvg-brillo,.arranque-copa,.marca-trazo,
+  .arranque .copaSvg-brillo,.arranque-copa,.marcaTexto span,
   .barrido-linea,.barrido-copa,.transicion{
     animation:none !important;
   }
   .arranque-palabra{transition:none}
   .arranque .copaSvg-relleno,.arranque-cal,.arranque-copa{opacity:1}
-  .arranque .copaSvg-trazo path,.marca-trazo{stroke-dashoffset:0}
+  .arranque .copaSvg-trazo path{stroke-dashoffset:0}
+  .marcaTexto span{clip-path:none;transform:none}
   .barrido{display:none}
 }
 
