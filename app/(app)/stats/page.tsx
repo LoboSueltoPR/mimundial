@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Jugador, Partido } from '@/lib/tipos';
 import { calcularStats, plata, presencias } from '@/lib/calculos';
+import { MarcaRacha } from '@/components/Marcas';
 
 type Fila = Partido & { jugadores: Jugador[] };
 
@@ -47,8 +48,6 @@ export default function Stats() {
       </div>
     );
 
-  const emoji =
-    s.racha.tipo === 'ganamos' ? '🔥' : s.racha.tipo === 'perdimos' ? '🧊' : '😐';
   const textoRacha =
     s.racha.largo === 0
       ? 'Todavía no cargaste resultados'
@@ -85,7 +84,13 @@ export default function Stats() {
 
       <div className="card" style={{ marginTop: 9 }}>
         <div className="rachaBox">
-          <span className="emo">{emoji}</span>
+          <span
+            className={`emo ${
+              s.racha.tipo === 'ganamos' ? 'g' : s.racha.tipo === 'perdimos' ? 'p' : 'e'
+            }`}
+          >
+            <MarcaRacha tipo={s.racha.tipo} />
+          </span>
           <span className="txt">
             <b>{textoRacha}</b>
             <small>

@@ -13,8 +13,8 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SALIDA = join(RAIZ, 'public', 'icons');
 
 // Los mismos colores y la misma silueta que public/icons/icon.svg y
-// components/Copa.tsx: la copa, dorada, sobre el celeste de la marca.
-const CELESTE = [10, 110, 166];
+// components/Copa.tsx: la copa, dorada, sobre el azul birome de la marca.
+const CELESTE = [38, 65, 143];
 const ORO = [244, 207, 130];
 const NOCHE = [10, 20, 36];
 

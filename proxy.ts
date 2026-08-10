@@ -2,7 +2,11 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // '/p' es la invitación: entra cualquiera, sin cuenta.
-const PUBLICAS = ['/login', '/auth', '/p/'];
+// '/estilo' es el taller de estilo: muestra el sistema visual con datos
+// inventados, sin tocar la base. Es público a propósito, para poder
+// revisar el diseño desde el celular sin iniciar sesión. No hay ningún
+// link hacia él desde la app.
+const PUBLICAS = ['/login', '/auth', '/p/', '/estilo'];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

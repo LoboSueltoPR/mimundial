@@ -1,34 +1,69 @@
 /* ============================================================
-   MiMundial — la planilla.
+   MiMundial — LA PLANILLA
 
-   Esta app reemplaza una lista numerada que antes se escribía a mano
-   y hoy se re-pega en WhatsApp. Así que la interfaz ES esa planilla:
-   papel frío de fotocopia (NO el crema tibio de catálogo), renglones
-   de verdad, y la columna de números separada por una regla vertical
-   como en una planilla de partido.
+   Esto no es un dashboard con tarjetas: es el formulario que el
+   encargado de la cancha completa antes del partido. Esa decisión
+   manda sobre todo lo demás:
 
-   La celeste es la tinta. El ORO sigue reservado a la copa: aparece
-   en tres lugares de toda la app, para que cuando aparezca signifique
-   algo.
+   · Hoja, no tarjeta. El papel no tiene esquinas de 14px ni sombra
+     flotante. Radio 3px y una regla de 1px. Si algo parece elevarse
+     sobre el fondo, está mal.
+   · Rótulo sobre la regla. Cada sección se anuncia como un campo de
+     formulario: versalita chica apoyada en una línea que cruza.
+   · Columna de números. El orden de llegada es información (quién
+     entra en el cupo), así que vive en su propia columna con regla
+     vertical, como en una planilla de verdad.
+   · La cifra es mecanografiada. Plata, cantidades y rótulos van en
+     mono: en una planilla las cifras se alinean en columna. Es
+     función antes que estética.
+   · El sello, no la pastilla. Los estados (GANAMOS, DEBE) son sellos
+     de goma: caja con borde, versalita, tracking abierto.
 
-   El arranque queda oscuro a propósito: es la noche del estadio, y al
-   salir revela el papel.
+   Paleta: papel de fotocopia (gris verdoso, NUNCA crema de catálogo),
+   tinta de imprenta, y el azul de la birome — un azul de lapicera,
+   violáceo y profundo, no el celeste corporativo de cualquier app.
+
+   El ORO es solo de la copa. Aparece en cuatro lugares contados: el
+   casillero final del camino, la vitrina, el arranque y el ícono. Si
+   aparece en un quinto lugar, deja de significar algo.
    ============================================================ */
+
 :root{
-  --bg:#eceff4; --surface:#ffffff; --surface-2:#f4f7fa;
-  --line:#d2dae4; --line-soft:#e4e9f0;
-  --txt:#111e2c; --dim:#4e6076; --faint:#64778e;
+  /* el papel */
+  --bg:#e6e8e2;                              /* la mesa: cartón de carpeta */
+  --surface:#fcfcfa;                         /* la hoja */
+  --surface-2:#f2f3ee;                       /* la copia, un tono más */
 
-  --acento:#0a6ea6; --acento-ink:#ffffff;    /* la tinta celeste */
-  --oro:#a8780c; --oro-ink:#ffffff;          /* SOLO la copa */
+  /* las reglas */
+  --line:#d2d5cd;                            /* regla estructural */
+  --line-soft:#e0e2da;
+  --regla:#e0e2da;                           /* el renglón de la fila */
 
-  --green:#1a7a43; --amber:#a06a08; --red:#c03a30; --blue:#0a6ea6;
-  --tiza:rgba(17,30,44,.13);                 /* las líneas de cal */
-  --regla:#e2e8f0;                           /* el renglón */
-  --cesped:#eef4ef;
+  /* la tinta */
+  --txt:#151a24;
+  --dim:#4a5462;
+  /* --faint llega justo a 4.5:1 sobre la hoja. Es el gris más claro que
+     se puede usar para texto: si lo aclarás, los rótulos de 10px dejan
+     de leerse al sol, que es donde se usa esta app. */
+  --faint:#5a6472;
+
+  --acento:#26418f; --acento-ink:#ffffff;    /* LA BIROME */
+  --acento-suave:#e7eaf5;                    /* su aguada, para fondos */
+  --oro:#96690c; --oro-ink:#ffffff;          /* SOLO la copa */
+  --oro-suave:#fbf5e7;
+  --oro-txt:#7a5507;                         /* oro legible sobre oro-suave */
+
+  --green:#1c6b3f; --amber:#8a5c07; --red:#b03028; --blue:#26418f;
+  --green-suave:#e2efe6; --amber-suave:#f7eeda; --red-suave:#f8e6e4;
+
+  --tiza:rgba(21,26,36,.14);                 /* las líneas de cal */
+  --cesped:#dcebde;
 
   --fuente-display:var(--fuente-anton), "Arial Narrow", sans-serif;
   --fuente-cuerpo:var(--fuente-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --fuente-dato:var(--fuente-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radio:3px;                               /* el papel casi no se redondea */
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -43,357 +78,663 @@ body{
 a{color:inherit;text-decoration:none}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
 
+/* ============================================================
+   El rótulo de campo — el device que estructura toda la app.
+   Versalita apoyada sobre una regla que cruza el ancho.
+   ============================================================ */
+.sec{
+  font-family:var(--fuente-dato);
+  font-size:10px;text-transform:uppercase;letter-spacing:1.4px;
+  color:var(--faint);font-weight:600;
+  margin:20px 0 0;padding:0 0 5px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:10px;
+  /* 1px, no 1.5: el rótulo se repite seis u ocho veces por pantalla y a
+     1.5 la página se vuelve un cebrado. El peso fuerte queda para el
+     bloque principal de cada pantalla, que es uno solo. */
+  border-bottom:1px solid var(--txt);
+}
+/* el contenido se apoya en el rótulo: sin aire muerto entre los dos */
+.sec + .card, .sec + .chips, .sec + .row2, .sec + .equipos,
+.sec + .tot, .sec + form, .sec + input, .sec + .vitrina{margin-top:9px}
+.sec .act{
+  font-family:var(--fuente-cuerpo);
+  text-transform:none;letter-spacing:0;font-size:12.5px;color:var(--acento);
+  cursor:pointer;font-weight:600;background:none;border:0;padding:0;line-height:1.2;
+}
+.sec .act:active{opacity:.6}
+
 /* ---------- header ---------- */
 header.top{
-  position:sticky;top:0;z-index:20;background:rgba(236,239,244,.94);
-  backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft);
+  position:sticky;top:0;z-index:20;background:var(--bg);
+  border-bottom:1px solid var(--line);
 }
-/* franja de cal debajo del header */
+/* la doble regla del encabezado de un formulario */
 header.top:after{
-  content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
-  background:linear-gradient(90deg,transparent,var(--tiza) 20%,var(--tiza) 80%,transparent);
+  content:"";position:absolute;left:0;right:0;bottom:-3px;height:1px;background:var(--line);
 }
 .hd{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px}
-.brand{display:flex;align-items:center;gap:9px;min-width:0}
-.brand .dot{width:29px;height:29px;border-radius:9px;background:var(--acento);
-  color:var(--acento-ink);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
-.brand h1{font-size:17px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
-.brand small{display:block;font-size:11px;color:var(--faint);font-weight:500}
-
-nav.tabs{display:flex;gap:3px;padding-bottom:10px}
-nav.tabs a{
-  flex:1;padding:8px 2px;border-radius:9px;border:1px solid transparent;
-  color:var(--faint);font-size:12.5px;font-weight:600;text-align:center;white-space:nowrap;
+.brand{display:flex;align-items:center;gap:8px;min-width:0}
+.brand .dot{
+  width:26px;height:26px;border-radius:var(--radio);background:var(--acento);
+  color:var(--acento-ink);display:grid;place-items:center;flex:none;
 }
-nav.tabs a.on{background:var(--surface);border-color:var(--line);color:var(--txt)}
+.brand h1{font-size:16px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
 
-/* ============================================================
-   Estructura de app: perfil arriba a la derecha, secciones abajo.
-   ============================================================ */
+/* ---------- pestañas: las lengüetas del formulario ---------- */
+nav.tabs{display:flex;gap:0;padding-bottom:0;border-bottom:1.5px solid var(--txt)}
+nav.tabs a{
+  flex:1;padding:8px 2px 7px;
+  border:1px solid transparent;border-bottom:0;
+  margin-bottom:-1.5px;
+  color:var(--faint);font-size:11.5px;font-weight:600;text-align:center;white-space:nowrap;
+  font-family:var(--fuente-dato);text-transform:uppercase;letter-spacing:.6px;
+  cursor:pointer;
+}
+nav.tabs a.on{
+  background:var(--surface);border-color:var(--txt);
+  border-bottom:1.5px solid var(--surface);
+  color:var(--txt);
+}
 
 /* ---------- el botón de perfil ---------- */
 .avatarBtn{
   position:relative;flex:none;
-  width:36px;height:36px;border-radius:50%;
+  width:34px;height:34px;border-radius:var(--radio);
   display:grid;place-items:center;
   border:1px solid var(--line);background:var(--surface);
   color:var(--dim);
 }
 .avatarBtn:active{background:var(--surface-2)}
-.avatarBtn.on{
-  color:var(--acento);
-  border-color:var(--acento);
-  background:#e8f3fa;
-}
+.avatarBtn.on{color:var(--acento);border-color:var(--acento);background:var(--acento-suave)}
 
 /* ---------- la barra de abajo ---------- */
 .barraAbajo{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
   display:flex;
-  background:rgba(255,255,255,.96);
-  backdrop-filter:blur(12px);
-  border-top:1px solid var(--line);
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  background:var(--surface);
+  border-top:1.5px solid var(--txt);
+  padding:5px 4px calc(5px + env(safe-area-inset-bottom));
 }
 .barraAbajo a{
+  position:relative;
   flex:1;min-width:0;
-  display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:6px 2px;border-radius:11px;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:5px 2px;
   color:var(--faint);
 }
 .barraAbajo a span{
-  font-size:10.5px;font-weight:600;letter-spacing:.2px;
+  font-family:var(--fuente-dato);
+  font-size:9.5px;font-weight:500;letter-spacing:.3px;text-transform:uppercase;
   white-space:nowrap;
 }
 .barraAbajo a.on{color:var(--acento)}
-/* la marca de sección activa: una línea de cal arriba del ícono */
+/* la sección activa se marca como en un formulario: la casilla tildada */
 .barraAbajo a.on:before{
-  content:"";position:absolute;top:0;width:26px;height:2.5px;border-radius:2px;
-  background:var(--acento);
+  content:"";position:absolute;top:0;width:22px;height:2px;background:var(--acento);
 }
-.barraAbajo a{position:relative}
 .barraAbajo a:active{background:var(--surface-2)}
 
-/* ---------- quién manda en cada tamaño ---------- */
 @media (max-width:639px){
   nav.tabs.escritorio{display:none}
-  /* que la barra no tape el final del contenido */
-  body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
 }
 @media (min-width:640px){
   .barraAbajo{display:none}
 }
 
-/* ---------- la ficha del perfil ---------- */
-.fichaPerfil{
-  background:var(--surface);border:1px solid var(--line);border-radius:14px;
-  padding:22px 18px;text-align:center;
-  box-shadow:0 1px 2px rgba(17,30,44,.04);
+/* ============================================================
+   La hoja
+   ============================================================ */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radio);
+  overflow:hidden;
 }
-.fichaPerfil-av{
-  width:66px;height:66px;border-radius:50%;margin:0 auto 12px;
-  display:grid;place-items:center;
-  font-size:24px;font-weight:800;color:#fff;
-  font-family:var(--fuente-display);
+.vacio{
+  padding:20px 14px;text-align:center;color:var(--faint);font-size:13.5px;line-height:1.6;
 }
-.fichaPerfil b{display:block;font-size:19px;font-weight:700}
-.fichaPerfil small{display:block;font-size:13px;color:var(--faint);margin-top:2px}
+.nota{font-size:12.5px;color:var(--faint);line-height:1.55;margin-top:10px}
+.nota b{color:var(--dim);font-weight:600}
 
-/* ---------- basicos ---------- */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.sec{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--faint);
-  font-weight:700;margin:16px 0 7px;display:flex;justify-content:space-between;align-items:center;gap:10px}
-.sec .act{text-transform:none;letter-spacing:0;font-size:12px;color:var(--acento);
-  cursor:pointer;font-weight:600;background:none;border:0;font-family:inherit;padding:0}
-.vacio{padding:20px 16px;text-align:center;color:var(--faint);font-size:13.5px;line-height:1.6}
-.nota{font-size:12.5px;color:var(--faint);line-height:1.6;margin-top:12px}
-.nota b{color:var(--dim)}
-
+/* ---------- botones ---------- */
 button{font-family:inherit}
 .btn{
-  padding:12px 14px;border-radius:11px;border:1px solid var(--line);
+  padding:11px 14px;border-radius:var(--radio);border:1.5px solid var(--txt);
   background:var(--surface);color:var(--txt);font-size:14px;font-weight:700;
-  cursor:pointer;transition:transform .07s;display:inline-flex;align-items:center;
+  cursor:pointer;transition:transform .06s;display:inline-flex;align-items:center;
   justify-content:center;gap:8px;
 }
-.btn:active{transform:scale(.97)}
+.btn:active{transform:translateY(1px)}
 .btn.pri{background:var(--acento);color:var(--acento-ink);border-color:var(--acento)}
-.btn.danger{color:var(--red);border-color:#e6bab5;background:transparent}
+.btn.danger{color:var(--red);border-color:var(--red);background:transparent}
 .btn.wide{width:100%}
-.btn.sm{padding:9px 12px;font-size:13px}
-.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:8px 12px;font-size:12.5px}
+.btn:disabled{opacity:.4;cursor:default}
 .row2{display:flex;gap:9px}
 .row2>*{flex:1}
 
+/* ---------- campos: rótulo arriba, línea abajo ---------- */
 input,select,textarea{
-  width:100%;padding:11px 12px;border-radius:10px;
-  background:var(--surface-2);border:1px solid var(--line);
+  width:100%;padding:10px 11px;border-radius:var(--radio);
+  background:var(--surface);border:1px solid var(--line);
   color:var(--txt);font-family:inherit;font-size:15px;
 }
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acento)}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--acento);box-shadow:inset 0 -2px 0 var(--acento);
+}
 input::placeholder{color:var(--faint)}
-label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
-  color:var(--faint);font-weight:700;margin-bottom:6px}
-.campo{margin-bottom:13px}
+label{
+  display:block;font-family:var(--fuente-dato);
+  font-size:9.5px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--faint);font-weight:600;margin-bottom:4px;
+}
+.campo{margin-bottom:11px}
 .campos{display:flex;gap:10px}
 .campos>*{flex:1}
 
-/* ---------- resumen del partido ---------- */
-.resumen{border-radius:14px;padding:16px;border:1px solid var(--line);background:var(--surface)}
-.resumen.completo{background:linear-gradient(140deg,#e6f5ea,#f3fbf5);border-color:#a9d8ba}
-.resumen.falta{background:linear-gradient(140deg,#fdf2df,#fffaf1);border-color:#eed9ac}
-.rs-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.pulso{width:9px;height:9px;border-radius:50%;flex:none;background:var(--amber)}
-.completo .pulso{background:var(--green)}
-.rs-estado{font-size:21px;font-weight:800;letter-spacing:-.5px}
-.rs-sub{font-size:13px;color:var(--dim)}
-.rs-meta{display:flex;gap:16px;margin-top:14px;padding-top:13px;
-  border-top:1px solid rgba(17,30,44,.1);flex-wrap:wrap}
-.rs-meta .k{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint)}
-.rs-meta .v{font-size:14px;font-weight:600;margin-top:2px}
-.barra{height:7px;background:rgba(17,30,44,.09);border-radius:6px;margin-top:13px;overflow:hidden}
-.barra i{display:block;height:100%;background:var(--acento);border-radius:6px;transition:width .25s}
+/* ============================================================
+   EL CAMINO — la firma de la app.
 
-/* ---------- jugadores ---------- */
-.jug{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft)}
-.jug:last-child{border-bottom:0}
-.num{width:26px;flex:none;font-size:12px;color:var(--faint);font-weight:600;font-variant-numeric:tabular-nums}
-.av{width:31px;height:31px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-size:12px;font-weight:800;color:#fff}
-.jug .nom{flex:1;min-width:0}
-.jug .nom b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jug .nom small{font-size:11.5px;color:var(--faint)}
-.inv{display:flex;align-items:center;gap:2px;flex:none}
-.inv button{width:25px;height:25px;border-radius:7px;border:1px solid var(--line);
+   Los siete casilleros son el elemento memorable: son a la vez un
+   device de formulario y exactamente la información (siete triunfos
+   al hilo y levantás la copa). El último lleva el oro porque ahí
+   está el premio.
+   ============================================================ */
+.copaBox{
+  position:relative;overflow:hidden;border-radius:var(--radio);
+  padding:14px 15px 15px;
+  border:1.5px solid var(--txt);
+  background:var(--surface);
+}
+.copaBox-glow{display:none}                  /* el papel no brilla */
+
+.copaBox-eyebrow{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-family:var(--fuente-dato);
+  font-size:9.5px;text-transform:uppercase;letter-spacing:1.4px;
+  color:var(--faint);font-weight:600;
+  padding-bottom:8px;margin-bottom:11px;border-bottom:1px solid var(--line);
+}
+.copaBox-ico{display:none}                   /* lo reemplaza el casillero */
+.copaBox-fase{
+  font-size:34px;line-height:.93;letter-spacing:.5px;
+  text-transform:uppercase;
+}
+.copaBox-frase{
+  font-size:13px;color:var(--dim);margin-top:7px;line-height:1.45;
+}
+
+/* --- los casilleros --- */
+.casilleros{display:flex;gap:5px;margin-top:14px}
+.casillero{
+  flex:1;height:30px;border-radius:2px;
+  border:1.5px solid var(--line);background:var(--surface-2);
+  display:grid;place-items:center;
+  color:transparent;
+}
+.casillero.ganada{
+  background:var(--acento);border-color:var(--acento);color:var(--acento-ink);
+}
+/* La que te toca va punteada: en un formulario, el casillero a completar
+   se marca así. Además la distingue del resto a un metro de distancia,
+   que es como se mira un teléfono en una cancha. */
+.casillero.actual{
+  border-color:var(--acento);border-width:2px;border-style:dashed;
+  background:var(--acento-suave);color:var(--acento);
+}
+/* el séptimo es la copa: el oro vive acá */
+.casillero.premio{border-color:var(--oro);background:var(--oro-suave);color:var(--oro)}
+.casillero.premio.ganada{background:var(--oro);border-color:var(--oro);color:var(--oro-ink)}
+
+.copaBox-pie{
+  display:flex;gap:5px;align-items:baseline;
+  margin-top:9px;
+  font-family:var(--fuente-dato);
+  font-size:10px;text-transform:uppercase;letter-spacing:.9px;
+  color:var(--faint);font-weight:500;
+}
+.copaBox-pie b{color:var(--txt);font-weight:600}
+.copaBox-pie .sep{opacity:.45}
+
+/* cuando estás en la final, la hoja se pone de oro */
+.copaBox.ardiendo{border-color:var(--oro);background:var(--oro-suave)}
+.copaBox.ardiendo .copaBox-eyebrow{border-bottom-color:#e0cb96}
+
+/* ---------- la ruta ---------- */
+.ruta{list-style:none;padding:0}
+.ruta-paso{
+  position:relative;display:flex;align-items:center;gap:11px;
+  padding:8px 13px;border-bottom:1px solid var(--regla);
+}
+.ruta-paso:last-child{border-bottom:0}
+.ruta-linea{display:none}                    /* la regla de la fila ya ordena */
+.ruta-punto{
+  width:24px;height:24px;border-radius:2px;flex:none;display:grid;place-items:center;
+  font-family:var(--fuente-dato);font-size:11px;font-weight:600;
+  border:1.5px solid var(--line);background:var(--surface-2);color:var(--faint);
+}
+.ruta-txt{min-width:0;flex:1}
+.ruta-txt b{display:block;font-size:13.5px;font-weight:600}
+.ruta-txt small{
+  font-family:var(--fuente-dato);font-size:10px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.5px;
+}
+
+.ruta-paso.pasada{background:var(--surface)}
+.ruta-paso.pasada .ruta-punto{background:var(--acento);border-color:var(--acento);color:var(--acento-ink)}
+.ruta-paso.pasada .ruta-txt b{color:var(--dim)}
+.ruta-paso.actual{background:var(--acento-suave)}
+.ruta-paso.actual .ruta-punto{
+  background:var(--surface);border-color:var(--acento);border-width:2px;color:var(--acento);
+}
+.ruta-paso.actual .ruta-txt b{color:var(--acento)}
+.ruta-paso.copa .ruta-punto{border-color:var(--oro);background:var(--oro-suave);color:var(--oro)}
+.ruta-paso.copa.pasada .ruta-punto{background:var(--oro);border-color:var(--oro);color:var(--oro-ink)}
+
+/* ---------- la vitrina ---------- */
+.vitrina{
+  display:flex;flex-wrap:wrap;gap:10px;padding:13px;border-radius:var(--radio);
+  background:var(--surface);border:1px solid var(--line);
+}
+.trofeo{color:var(--oro);line-height:0}
+
+/* ---------- historial ---------- */
+.paso{display:flex;align-items:center;gap:10px;padding:8px 13px;
+  border-bottom:1px solid var(--regla);cursor:pointer}
+.paso:last-child{border-bottom:0}
+.paso-res{
+  width:24px;height:24px;border-radius:2px;flex:none;display:grid;place-items:center;
+  font-family:var(--fuente-dato);font-size:12px;font-weight:600;
+  border:1.5px solid;
+}
+.paso-res.ganamos{border-color:var(--green);color:var(--green);background:var(--green-suave)}
+.paso-res.empate{border-color:var(--faint);color:var(--dim);background:var(--surface-2)}
+.paso-res.perdimos{border-color:var(--red);color:var(--red);background:var(--red-suave)}
+.paso-info{flex:1;min-width:0}
+.paso-info b{display:block;font-size:13.5px;font-weight:600}
+.paso-info small{font-family:var(--fuente-dato);font-size:10px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.4px}
+.paso-flecha{font-size:14px;color:var(--faint);flex:none}
+
+/* ============================================================
+   El marcador: G · E · P.
+   Reemplaza a la grilla de tres tarjetas — que es exactamente el
+   lugar común que esta app no quiere ser. Una línea de tabla de
+   posiciones dice lo mismo en un quinto del espacio.
+   ============================================================ */
+.grid{
+  display:flex;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radio);
+  overflow:hidden;
+}
+.kpi{
+  flex:1;padding:9px 6px;text-align:center;
+  border-right:1px solid var(--line-soft);
+}
+.kpi:last-child{border-right:0}
+.kpi .n{font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.kpi .n.g{color:var(--green)} .kpi .n.e{color:var(--dim)} .kpi .n.p{color:var(--red)}
+.kpi .c{
+  font-family:var(--fuente-dato);
+  font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:1px;
+  margin-top:4px;font-weight:500;
+}
+
+.rachaBox{display:flex;align-items:center;gap:11px;padding:11px 13px}
+.rachaBox .txt{flex:1}
+.rachaBox .txt b{display:block;font-size:14.5px}
+.rachaBox .txt small{font-family:var(--fuente-dato);font-size:10.5px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.5px}
+/* la racha se colorea como viene: el trazo sube o baja, el color confirma */
+.rachaBox .emo{color:var(--dim);line-height:0;flex:none}
+.rachaBox .emo.g{color:var(--green)}
+.rachaBox .emo.p{color:var(--red)}
+.rachaBox .emo.e{color:var(--faint)}
+
+/* ============================================================
+   El resumen del partido: la cabecera de la planilla
+   ============================================================ */
+.resumen{
+  border-radius:var(--radio);padding:13px 14px;
+  border:1.5px solid var(--txt);background:var(--surface);
+}
+.resumen.completo{background:var(--green-suave);border-color:var(--green)}
+.resumen.falta{background:var(--surface)}
+.rs-top{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.pulso{width:8px;height:8px;border-radius:50%;flex:none;background:var(--amber)}
+.completo .pulso{background:var(--green)}
+.rs-estado{font-size:24px;line-height:1;letter-spacing:1px;text-transform:uppercase}
+.completo .rs-estado{color:var(--green)}
+.rs-sub{font-size:13px;color:var(--dim);margin-top:4px}
+.rs-meta{
+  display:flex;gap:0;margin-top:12px;padding-top:10px;
+  border-top:1px solid var(--line);flex-wrap:wrap;
+}
+.rs-meta > div{flex:1;min-width:0;padding-right:10px}
+.rs-meta .k{
+  font-family:var(--fuente-dato);
+  font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--faint);font-weight:500;
+}
+.rs-meta .v{font-size:13.5px;font-weight:600;margin-top:2px}
+.barra{height:5px;background:var(--line-soft);border-radius:1px;margin-top:11px;overflow:hidden}
+.barra i{display:block;height:100%;background:var(--acento);transition:width .25s}
+.completo .barra i{background:var(--green)}
+
+/* ============================================================
+   LA COLUMNA — filas de planilla con su regla y su numeración
+   ============================================================ */
+.jug, .pago, .saldo, .item{
+  display:flex;align-items:center;gap:10px;padding:7px 12px;
+  border-bottom:1px solid var(--regla);
+}
+.jug:last-child, .pago:last-child, .saldo:last-child, .item:last-child{border-bottom:0}
+.item{cursor:pointer;gap:11px}
+
+/* la columna de números: existe porque el orden es información */
+.jug .num{
+  font-family:var(--fuente-dato);
+  font-size:12px;font-weight:500;
+  color:var(--acento);
+  width:36px;flex:none;
+  padding-right:9px;margin-right:2px;
+  text-align:right;
+  border-right:1px solid var(--line);
+  align-self:stretch;
+  display:flex;align-items:center;justify-content:flex-end;
+  font-variant-numeric:tabular-nums;
+}
+
+.av{width:29px;height:29px;border-radius:2px;flex:none;display:grid;place-items:center;
+  font-size:11px;font-weight:700;color:#fff;font-family:var(--fuente-dato)}
+.nom{flex:1;min-width:0}
+.nom b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nom small{font-family:var(--fuente-dato);font-size:10px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.4px}
+
+.inv{display:flex;align-items:center;gap:1px;flex:none}
+.inv button{width:27px;height:27px;border-radius:2px;border:1px solid var(--line);
   background:var(--surface-2);color:var(--dim);font-size:15px;line-height:1;cursor:pointer}
 .inv button:disabled{opacity:.3;cursor:default}
-.inv span{min-width:26px;text-align:center;font-size:12px;color:var(--dim);font-weight:600}
-.quitar{background:none;border:0;color:var(--faint);font-size:17px;cursor:pointer;padding:2px 4px;flex:none}
+.inv span{min-width:26px;text-align:center;font-size:11px;color:var(--dim);font-weight:600;
+  font-family:var(--fuente-dato)}
+.quitar{background:none;border:0;color:var(--faint);font-size:17px;cursor:pointer;padding:2px 3px;flex:none}
 .quitar:hover{color:var(--red)}
 
-/* ---------- equipos ---------- */
-.equipos{display:flex;gap:10px}
-.eq{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px}
-.eq-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;
-  padding-bottom:10px;border-bottom:1px solid var(--line-soft)}
-.chaleco{width:15px;height:15px;border-radius:5px;flex:none}
-.eq-head b{font-size:13.5px;flex:1}
-.eq-head span{font-size:11px;color:var(--faint);font-weight:600}
-.eq ul{list-style:none;display:flex;flex-direction:column;gap:9px}
-.eq li{font-size:13px;display:flex;align-items:center;gap:8px;min-width:0}
-.eq li .mini{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
-  font-size:9px;font-weight:800;color:#fff;flex:none}
-.eq li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq li.invitado span{color:var(--dim);font-size:12.5px}
-.aviso-cambio{background:#fdf2df;border:1px solid #eed9ac;color:#7a5406;
-  border-radius:11px;padding:11px 13px;font-size:12.5px;line-height:1.5;margin-bottom:12px}
+/* ---------- la fecha, como el talón de una entrada ---------- */
+.item .fec{
+  width:40px;flex:none;text-align:center;
+  padding-right:10px;border-right:1px solid var(--line);
+  align-self:stretch;display:flex;flex-direction:column;justify-content:center;
+}
+.item .fec .d{display:block;font-size:17px;line-height:1}
+.item .fec .m{display:block;font-family:var(--fuente-dato);font-size:9px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.8px;margin-top:1px}
+.item .info{flex:1;min-width:0}
+.item .info b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .info small{font-family:var(--fuente-dato);font-size:10px;color:var(--faint);letter-spacing:.2px}
 
-/* ---------- plata ---------- */
-.tot{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;text-align:center}
-.tot .big{font-size:33px;font-weight:800;letter-spacing:-1.4px;font-variant-numeric:tabular-nums}
-.tot .lbl{font-size:12px;color:var(--faint);margin-top:3px}
-.tot .split{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex}
-.tot .split div{flex:1;min-width:0}
-.tot .split .n{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+/* ============================================================
+   EL SELLO — estados como sello de goma, no como pastilla
+   ============================================================ */
+.estado-pill{
+  font-family:var(--fuente-dato);
+  font-size:9px;padding:3px 6px;border-radius:2px;font-weight:600;flex:none;
+  text-transform:uppercase;letter-spacing:.9px;
+  border:1.5px solid;white-space:nowrap;
+}
+.estado-pill.ok{color:var(--green);border-color:var(--green);background:var(--green-suave)}
+.estado-pill.debe{color:var(--amber);border-color:var(--amber);background:var(--amber-suave)}
+.estado-pill.perd{color:var(--red);border-color:var(--red);background:var(--red-suave)}
+.estado-pill.emp{color:var(--dim);border-color:var(--faint);background:var(--surface-2)}
+.estado-pill.sin{color:var(--faint);border-color:var(--line);background:transparent}
+
+.chip{
+  font-family:var(--fuente-dato);
+  font-size:9px;padding:1px 5px;border-radius:2px;font-weight:600;
+  background:var(--surface);border:1px solid var(--line);color:var(--dim);
+  margin-left:5px;text-transform:uppercase;letter-spacing:.6px;
+  white-space:nowrap;
+}
+.chip.puso{color:var(--acento);border-color:var(--acento);background:var(--acento-suave)}
+.chip.copaChip{color:var(--oro-txt);border-color:var(--oro);background:var(--oro-suave)}
+
+/* ---------- equipos ---------- */
+.equipos{display:flex;gap:9px}
+.eq{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--radio);padding:0;overflow:hidden}
+.eq-head{display:flex;align-items:center;gap:7px;padding:8px 11px;
+  border-bottom:1.5px solid var(--txt);background:var(--surface-2)}
+/* las pecheras: claras y oscuras, como se reparten en la cancha */
+.chaleco{width:13px;height:13px;border-radius:2px;flex:none;border:1px solid}
+.chaleco.claros{background:var(--surface);border-color:var(--dim)}
+.chaleco.oscuros{background:#2b3648;border-color:#2b3648}
+.eq-head b{font-size:12.5px;flex:1;text-transform:uppercase;letter-spacing:.4px}
+.eq-head span{font-family:var(--fuente-dato);font-size:10px;color:var(--faint);font-weight:600}
+.eq ul{list-style:none;padding:0}
+.eq li{font-size:12.5px;display:flex;align-items:center;gap:7px;min-width:0;
+  padding:6px 11px;border-bottom:1px solid var(--regla)}
+.eq li:last-child{border-bottom:0}
+.eq li .mini{width:20px;height:20px;border-radius:2px;display:grid;place-items:center;
+  font-size:8px;font-weight:700;color:#fff;flex:none;font-family:var(--fuente-dato)}
+.eq li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* :not(.mini) — sin esto la regla del invitado le pisa el blanco a las
+   iniciales del avatar y quedan gris sobre color, ilegibles. */
+.eq li.invitado span:not(.mini){color:var(--faint);font-size:12px;font-style:italic}
+.aviso-cambio{
+  background:var(--amber-suave);border:1px solid var(--amber);color:#6b4805;
+  border-radius:var(--radio);padding:9px 11px;font-size:12.5px;line-height:1.45;margin-bottom:10px;
+}
+
+/* ============================================================
+   La plata — el total como cifra de planilla
+   ============================================================ */
+.tot{
+  background:var(--surface);border:1.5px solid var(--txt);border-radius:var(--radio);
+  padding:14px;text-align:center;
+}
+.tot .big{font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.tot .lbl{
+  font-family:var(--fuente-dato);font-size:10px;color:var(--faint);margin-top:5px;
+  text-transform:uppercase;letter-spacing:.9px;
+}
+.tot .split{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);display:flex}
+.tot .split div{flex:1;min-width:0;border-right:1px solid var(--line-soft);padding:0 4px}
+.tot .split div:last-child{border-right:0}
+.tot .split .n{font-family:var(--fuente-dato);font-size:14px;font-weight:600;
+  font-variant-numeric:tabular-nums}
 .tot .split .n.ok{color:var(--green)}
 .tot .split .n.debe{color:var(--amber)}
-.tot .split .c{font-size:10.5px;color:var(--faint);text-transform:uppercase;
-  letter-spacing:.6px;margin-top:3px;line-height:1.25;padding:0 4px}
+.tot .split .c{font-family:var(--fuente-dato);font-size:8.5px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:.8px;margin-top:4px;line-height:1.3;font-weight:500}
 
-.pago{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line-soft)}
-.pago:last-child{border-bottom:0}
-.pago .nom{flex:1;min-width:0;cursor:pointer}
-.pago .nom b{display:block;font-size:14.5px;font-weight:600}
-.pago .nom small{font-size:11.5px;color:var(--faint)}
-.pago .monto{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;flex:none}
+.pago .nom{cursor:pointer}
+.pago .monto{font-family:var(--fuente-dato);font-size:13px;font-weight:600;
+  font-variant-numeric:tabular-nums;text-align:right;flex:none}
 .pago .monto.ok{color:var(--green)}
 .pago .monto.debe{color:var(--amber)}
-.tick{width:27px;height:27px;border-radius:50%;flex:none;cursor:pointer;
-  display:grid;place-items:center;font-size:13px;font-weight:800;
-  border:1.5px dashed var(--line);background:transparent;color:var(--faint)}
-.tick.ok{background:var(--green);border:1.5px solid var(--green);color:#fff}
-.tick:disabled{cursor:default;opacity:.75}
-.chip{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700;
-  background:var(--surface-2);border:1px solid var(--line);color:var(--dim);margin-left:6px}
-.chip.puso{color:var(--acento);border-color:#a9d0e6;background:#e8f3fa}
-
-/* ---------- resultado ---------- */
-.resultado{display:flex;gap:8px}
-.resultado button{
-  flex:1;padding:16px 6px;border-radius:12px;border:1px solid var(--line);
-  background:var(--surface);color:var(--dim);cursor:pointer;
-  font-size:13px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:5px;
+/* la casilla de tildar de la planilla */
+.tick{
+  width:28px;height:28px;border-radius:2px;flex:none;cursor:pointer;
+  display:grid;place-items:center;font-size:13px;font-weight:700;
+  border:1.5px solid var(--line);background:var(--surface);color:var(--faint);
+  font-family:var(--fuente-dato);
 }
-.resultado button .ico{font-size:20px;line-height:1}
-.resultado button.on.gano{background:#e6f5ea;border-color:#7cc396;color:#146334}
-.resultado button.on.emp{background:#eceff4;border-color:#bcc7d5;color:var(--txt)}
-.resultado button.on.perd{background:#fbeae8;border-color:#e3a9a3;color:#96271e}
+.tick.ok{background:var(--green);border-color:var(--green);color:#fff}
+.tick:disabled{cursor:default;opacity:.8}
 
-.marcador{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:14px}
-.marcador input{width:64px;text-align:center;font-size:22px;font-weight:800;padding:10px 4px}
-.marcador span{font-size:15px;color:var(--faint);font-weight:700}
-
-/* ---------- stats ---------- */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:14px 10px;text-align:center}
-.kpi .n{font-size:24px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}
-.kpi .n.g{color:var(--green)} .kpi .n.e{color:var(--dim)} .kpi .n.p{color:var(--red)}
-.kpi .c{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
-.rachaBox{display:flex;align-items:center;gap:12px;padding:14px}
-.rachaBox .txt{flex:1}
-.rachaBox .txt b{display:block;font-size:15px}
-.rachaBox .txt small{font-size:12px;color:var(--faint)}
-.rachaBox .emo{font-size:28px}
-
-/* ---------- listas ---------- */
-.item{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--line-soft);cursor:pointer}
-.item:last-child{border-bottom:0}
-.item .fec{width:46px;flex:none;text-align:center}
-.item .fec .d{display:block;font-size:17px;font-weight:800;line-height:1.1}
-.item .fec .m{display:block;font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.5px}
-.item .info{flex:1;min-width:0}
-.item .info b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item .info small{font-size:11.5px;color:var(--faint)}
-.estado-pill{font-size:10.5px;padding:4px 9px;border-radius:20px;font-weight:700;flex:none}
-.estado-pill.ok{background:#e0f2e6;color:#146334}
-.estado-pill.debe{background:#fbeed6;color:#7a5406}
-.estado-pill.perd{background:#fbe3e0;color:#96271e}
-.estado-pill.emp{background:#e7ebf1;color:var(--dim)}
-.estado-pill.sin{background:#eef1f6;color:var(--faint)}
-
-.saldo{display:flex;align-items:center;gap:11px;padding:8px 12px;border-bottom:1px solid var(--line-soft)}
-.saldo:last-child{border-bottom:0}
-.saldo .nom{flex:1;min-width:0}
-.saldo .nom b{display:block;font-size:14.5px;font-weight:600}
-.saldo .nom small{font-size:11.5px;color:var(--faint)}
-.saldo .m{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;flex:none}
+.saldo .m{font-family:var(--fuente-dato);font-size:14px;font-weight:600;
+  font-variant-numeric:tabular-nums;flex:none}
 .saldo .m.debe{color:var(--amber)}
 .saldo .m.ok{color:var(--faint)}
 .saldo .m.favor{color:var(--green)}
 
-/* ---------- camino ---------- */
-.copaBox{
-  position:relative;overflow:hidden;border-radius:16px;padding:18px 16px 14px;
-  text-align:center;border:1px solid var(--line);
-  background:linear-gradient(165deg,#ffffff,#eef4fa);
+/* ---------- resultado ---------- */
+.resultado{display:flex;gap:8px}
+.resultado button{
+  flex:1;padding:13px 6px;border-radius:var(--radio);border:1.5px solid var(--line);
+  background:var(--surface);color:var(--faint);cursor:pointer;
+  font-family:var(--fuente-dato);
+  font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
 }
-.copaBox.ardiendo{border-color:#e0be6a;background:linear-gradient(165deg,#fffaee,#fdf1d6)}
-.copaBox-glow{
-  position:absolute;top:-70px;left:50%;transform:translateX(-50%);
-  width:220px;height:160px;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(10,110,166,.13),transparent);
-  pointer-events:none;
-}
-.copaBox.ardiendo .copaBox-glow{background:radial-gradient(closest-side,rgba(168,120,12,.2),transparent)}
-.copaBox-ico{font-size:40px;line-height:1;margin-bottom:10px}
-.copaBox-fase{font-size:25px;font-weight:800;letter-spacing:-.7px}
-.copaBox-frase{font-size:13.5px;color:var(--dim);margin-top:5px;max-width:290px;
-  margin-left:auto;margin-right:auto;line-height:1.5}
-.copaBox-pie{
-  display:flex;margin-top:18px;padding-top:15px;
-  border-top:1px solid rgba(17,30,44,.1);
-}
-.copaBox-pie div{flex:1;min-width:0}
-.copaBox-pie b{display:block;font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
-.copaBox-pie span{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px}
+.resultado button .ico{line-height:0}
+.resultado button.on.gano{background:var(--green-suave);border-color:var(--green);color:var(--green)}
+.resultado button.on.emp{background:var(--surface-2);border-color:var(--dim);color:var(--txt)}
+.resultado button.on.perd{background:var(--red-suave);border-color:var(--red);color:var(--red)}
 
-.ruta{list-style:none;padding:6px 0}
-.ruta-paso{position:relative;display:flex;align-items:center;gap:13px;padding:9px 15px}
-.ruta-linea{
-  position:absolute;left:29px;top:-14px;width:2px;height:28px;background:var(--line);
-}
-.ruta-paso:first-child .ruta-linea{display:none}
-.ruta-punto{
-  width:29px;height:29px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-size:13px;font-weight:800;z-index:1;
-  border:2px solid var(--line);background:var(--surface-2);color:var(--faint);
-}
-.ruta-txt{min-width:0}
-.ruta-txt b{display:block;font-size:14px;font-weight:600}
-.ruta-txt small{font-size:11.5px;color:var(--faint)}
+.marcador{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:12px}
+.marcador input{width:62px;text-align:center;font-size:24px;padding:8px 4px;
+  font-family:var(--fuente-display);font-variant-numeric:tabular-nums}
+.marcador span{font-family:var(--fuente-dato);font-size:11px;color:var(--faint);
+  text-transform:uppercase;letter-spacing:1px}
 
-.ruta-paso.pasada .ruta-punto{background:var(--green);border-color:var(--green);color:#fff}
-.ruta-paso.pasada .ruta-linea{background:var(--green)}
-.ruta-paso.pasada .ruta-txt b{color:var(--dim)}
-.ruta-paso.actual .ruta-punto{
-  background:var(--acento);border-color:var(--acento);
-  box-shadow:0 0 0 5px rgba(10,110,166,.15);
-  position:relative;
+/* ---------- la ficha de perfil ---------- */
+.fichaPerfil{
+  background:var(--surface);border:1.5px solid var(--txt);border-radius:var(--radio);
+  padding:18px 16px;text-align:center;
 }
-/* punto interior: marca el "estás acá" sin depender de un emoji chiquito */
-.ruta-paso.actual .ruta-punto:after{
-  content:"";width:9px;height:9px;border-radius:50%;background:var(--acento-ink);
+.fichaPerfil-av{
+  width:58px;height:58px;border-radius:var(--radio);margin:0 auto 10px;
+  display:grid;place-items:center;
+  font-size:21px;font-weight:700;color:#fff;
+  font-family:var(--fuente-display);
 }
-.ruta-paso.actual .ruta-txt b{color:var(--acento)}
-.ruta-paso.copa .ruta-punto{background:transparent;border-style:dashed;font-size:15px}
-.ruta-paso.copa.pasada .ruta-punto{background:#fbf0d4;border-color:var(--oro);border-style:solid}
+.fichaPerfil b{display:block;font-size:18px;font-weight:700}
+.fichaPerfil small{display:block;font-family:var(--fuente-dato);font-size:11.5px;
+  color:var(--faint);margin-top:3px}
 
-.vitrina{
-  display:flex;flex-wrap:wrap;gap:8px;padding:15px;border-radius:14px;
-  background:var(--surface);border:1px solid var(--line);
+/* ---------- chips de amigos ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chipAmigo{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 9px 5px 5px;border-radius:var(--radio);
+  background:var(--surface);border:1px solid var(--line);color:var(--txt);
+  font-size:12.5px;font-weight:600;cursor:pointer;
 }
-.trofeo{font-size:27px;line-height:1}
+.chipAmigo:active{transform:translateY(1px)}
+.chipAmigo:disabled{opacity:.4;cursor:default}
+.chipAmigo .mini{
+  width:20px;height:20px;border-radius:2px;display:grid;place-items:center;
+  font-size:8px;font-weight:700;color:#fff;flex:none;font-family:var(--fuente-dato);
+}
+.chipAmigo b{color:var(--acento);font-size:14px;line-height:1}
 
-.paso{display:flex;align-items:center;gap:11px;padding:8px 12px;
-  border-bottom:1px solid var(--line-soft);cursor:pointer}
-.paso:last-child{border-bottom:0}
-.paso-res{
-  width:27px;height:27px;border-radius:8px;flex:none;display:grid;place-items:center;
-  font-size:12px;font-weight:800;
+/* ---------- contador ---------- */
+.contador{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radio);padding:5px 8px;
 }
-.paso-res.ganamos{background:#e0f2e6;color:#146334}
-.paso-res.empate{background:#e7ebf1;color:var(--dim)}
-.paso-res.perdimos{background:#fbe3e0;color:#96271e}
-.paso-info{flex:1;min-width:0}
-.paso-info b{display:block;font-size:14px;font-weight:600}
-.paso-info small{font-size:11.5px;color:var(--faint)}
-.paso-flecha{font-size:15px;color:var(--faint);flex:none}
-.chip.copaChip{color:#7a5406;border-color:#e0be6a;background:#fdf3dd}
+.contador button{
+  width:32px;height:32px;border-radius:2px;border:1.5px solid var(--line);
+  background:var(--surface-2);color:var(--txt);font-size:17px;line-height:1;cursor:pointer;flex:none;
+}
+.contador button:disabled{opacity:.3;cursor:default}
+.contador span{flex:1;text-align:center;font-family:var(--fuente-dato);
+  font-size:12px;font-weight:500;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(21,26,36,.5);
+  display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);border-top:2px solid var(--txt);
+  width:100%;max-width:560px;padding:18px 16px 24px;max-height:92vh;overflow-y:auto}
+.sheet h2{font-size:17px;margin-bottom:14px;letter-spacing:-.2px}
+.sheetConfirmar{padding-top:20px}
+.confirmarTexto{font-size:14.5px;line-height:1.5;color:var(--txt);margin-bottom:16px}
+@media(min-width:600px){
+  .modal{align-items:center}
+  .sheet{border:1.5px solid var(--txt);border-radius:var(--radio)}
+}
+
+/* ---------- mensajes ---------- */
+.msg{border-radius:var(--radio);padding:10px 12px;font-size:13px;line-height:1.45;
+  margin-top:12px;text-align:left;border:1px solid}
+.msg.ok{background:var(--green-suave);border-color:var(--green);color:#11512e}
+.msg.err{background:var(--red-suave);border-color:var(--red);color:#8a231c}
+.msg.info{background:var(--surface);border-color:var(--line);color:var(--dim)}
+
+.cargando{padding:36px;text-align:center;font-family:var(--fuente-dato);
+  color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:1.5px}
+
+/* ---------- login ---------- */
+.login{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;padding:24px;text-align:center}
+.login .logo{width:60px;height:60px;border-radius:var(--radio);background:var(--acento);
+  color:var(--acento-ink);display:grid;place-items:center;margin-bottom:16px}
+.login h1{font-size:29px;font-weight:800;letter-spacing:-.8px}
+.login p.sub{color:var(--dim);font-size:14px;margin-top:6px;margin-bottom:26px;max-width:300px}
+.login .caja{width:100%;max-width:340px}
+
+/* El botón de Google va tal cual lo pide su guía de marca: blanco,
+   con el logo a cuatro colores. No se toca con la paleta de la app. */
+.btnGoogle{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
+  padding:12px 14px;border-radius:var(--radio);border:1px solid #dadce0;background:#fff;
+  color:#3c4043;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+  transition:background .1s;
+}
+.btnGoogle:hover{background:#f8f9fa}
+.btnGoogle:active{background:#f1f3f4}
+.btnGoogle:disabled{opacity:.6;cursor:default}
+.btnGoogle:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+
+/* ============================================================
+   La invitación — acá sí se sale del papel: es la cancha
+   ============================================================ */
+.invitacion{padding-top:18px;padding-bottom:36px}
+.inv-marca{
+  display:flex;align-items:center;gap:7px;justify-content:center;
+  font-family:var(--fuente-dato);
+  font-size:11px;font-weight:600;color:var(--faint);
+  letter-spacing:1.2px;text-transform:uppercase;margin-bottom:14px;
+}
+.inv-marca .dot{
+  width:20px;height:20px;border-radius:2px;background:var(--acento);color:var(--acento-ink);
+  display:grid;place-items:center;
+}
+.cancha{
+  position:relative;overflow:hidden;border-radius:var(--radio);
+  background:var(--cesped);
+  border:1.5px solid #a8c9b0;
+  padding:22px 16px 20px;text-align:center;
+}
+.cancha.completa{border-color:var(--green);background:#cfe6d6}
+.cancha-lineas{position:absolute;inset:0;pointer-events:none}
+.cancha-lineas:before{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:180px;height:180px;border-radius:50%;border:2px solid rgba(255,255,255,.85);
+}
+.cancha-lineas:after{
+  content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(255,255,255,.85);
+}
+.cancha-contenido{position:relative;z-index:1}
+.inv-invita{font-size:13px;color:#2c4433;margin-bottom:3px}
+.inv-invita b{color:var(--txt)}
+.inv-lugar{font-size:27px;line-height:1.1;letter-spacing:1px;text-transform:uppercase}
+.inv-cuando{font-family:var(--fuente-dato);font-size:11.5px;color:#2c4433;margin-top:4px;
+  text-transform:uppercase;letter-spacing:1px}
+.marcador-cupo{
+  display:flex;align-items:baseline;justify-content:center;gap:5px;
+  margin-top:14px;font-variant-numeric:tabular-nums;
+}
+.marcador-cupo .mc-n{font-size:56px;line-height:1;color:var(--txt)}
+.marcador-cupo .mc-sep{font-size:24px;color:#5c7a66;font-weight:300}
+.marcador-cupo .mc-t{font-size:24px;color:#2c4433}
+.inv-faltan{
+  font-family:var(--fuente-dato);
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1.6px;
+  font-weight:600;color:#2c4433;margin-top:3px;
+}
+.cancha.completa .inv-faltan{color:#11512e}
+.inv-pie{
+  text-align:center;font-family:var(--fuente-dato);font-size:10px;color:var(--faint);
+  margin-top:22px;text-transform:uppercase;letter-spacing:1.2px;
+}
+.inv-pie b{color:var(--dim)}
 
 /* ============================================================
    La copa: arranque y transiciones
    ============================================================ */
-
 .copaSvg{color:var(--tiza)}
 .copaSvg-relleno{fill:var(--oro);opacity:0}
 .copaSvg-brillo{fill:#fff;opacity:0;clip-path:inset(0 100% 0 0)}
@@ -408,20 +749,17 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 }
 .arranque.saliendo{opacity:0;transform:scale(1.04);pointer-events:none}
 
-/* el círculo central, como si la copa estuviera parada en la mitad de la cancha */
 .arranque-cal{
   position:absolute;width:212px;height:212px;border-radius:50%;
   border:1.5px solid rgba(234,242,248,.22);opacity:0;
   animation:calAparece .8s ease-out .15s forwards;
 }
 
-/* Acá la tiza es protagonista, no una línea de cancha: va bien visible. */
 .arranque .copaSvg{color:rgba(234,242,248,.82)}
 .arranque .copaSvg-trazo path{
   stroke-dasharray:1;stroke-dashoffset:1;
   animation:trazar .75s ease-out forwards;
 }
-/* cada trazo entra escalonado, como si la mano fuera dibujando */
 .arranque .copaSvg-trazo path:nth-child(1){animation-delay:.05s}
 .arranque .copaSvg-trazo path:nth-child(2){animation-delay:.28s}
 .arranque .copaSvg-trazo path:nth-child(3){animation-delay:.34s}
@@ -444,12 +782,8 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
 .arranque .marcaSvg{color:rgba(234,242,248,.88)}
 .marca-trazo{stroke-dasharray:1;stroke-dashoffset:1;animation:trazar .2s ease-out forwards}
 
-.arranque-palabra{
-  transition:opacity .45s ease, transform .45s ease, filter .45s ease;
-}
-.arranque-palabra.colapsa{
-  opacity:0;transform:scale(.55);filter:blur(7px);
-}
+.arranque-palabra{transition:opacity .45s ease, transform .45s ease, filter .45s ease}
+.arranque-palabra.colapsa{opacity:0;transform:scale(.55);filter:blur(7px)}
 .arranque-copa{animation:apareceCopa .4s ease-out both}
 
 @keyframes trazar{to{stroke-dashoffset:0}}
@@ -486,8 +820,8 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
   100%{transform:translateX(100vw);opacity:0}
 }
 
-.transicion{animation:entrar .34s cubic-bezier(.2,.7,.3,1)}
-@keyframes entrar{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.transicion{animation:entrar .3s cubic-bezier(.2,.7,.3,1)}
+@keyframes entrar{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* Nadie tiene que marearse por una decisión estética. */
 @media (prefers-reduced-motion: reduce){
@@ -502,206 +836,34 @@ label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;
   .barrido{display:none}
 }
 
-/* ---------- invitación (la página del link) ---------- */
-.invitacion{padding-top:20px;padding-bottom:40px}
-.inv-marca{
-  display:flex;align-items:center;gap:8px;justify-content:center;
-  font-size:12.5px;font-weight:700;color:var(--faint);
-  letter-spacing:.5px;margin-bottom:16px;
-}
-.inv-marca .dot{
-  width:22px;height:22px;border-radius:7px;background:var(--acento);color:var(--acento-ink);
-  display:grid;place-items:center;font-size:10px;font-weight:800;
-}
-
-/* La cancha: media cancha vista desde arriba, dibujada con cal. */
-.cancha{
-  position:relative;overflow:hidden;border-radius:18px;
-  background:linear-gradient(170deg,#dceee2,#eef7f1);
-  border:1px solid var(--line);
-  padding:26px 18px 22px;text-align:center;
-}
-.cancha.completa{border-color:#7cc396;background:linear-gradient(170deg,#cfe9d8,#e6f4ec)}
-.cancha-lineas{position:absolute;inset:0;pointer-events:none}
-/* círculo central */
-.cancha-lineas:before{
-  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:190px;height:190px;border-radius:50%;border:2px solid var(--tiza);
-}
-/* línea de mitad de cancha */
-.cancha-lineas:after{
-  content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:var(--tiza);
-}
-.cancha-contenido{position:relative;z-index:1}
-
-.inv-invita{font-size:13.5px;color:var(--dim);margin-bottom:3px}
-.inv-invita b{color:var(--txt)}
-.inv-lugar{font-size:27px;font-weight:800;letter-spacing:-.9px;line-height:1.1}
-.inv-cuando{font-size:13.5px;color:var(--dim);margin-top:4px}
-
-/* el cupo como marcador de estadio */
-.marcador-cupo{
-  display:flex;align-items:baseline;justify-content:center;gap:6px;
-  margin-top:18px;font-variant-numeric:tabular-nums;
-}
-.marcador-cupo .mc-n{font-size:52px;font-weight:800;letter-spacing:-2.5px;color:var(--acento)}
-.marcador-cupo .mc-sep{font-size:26px;color:var(--faint);font-weight:300}
-.marcador-cupo .mc-t{font-size:26px;font-weight:700;color:var(--dim)}
-.inv-faltan{
-  font-size:12px;text-transform:uppercase;letter-spacing:1.2px;
-  font-weight:700;color:var(--dim);margin-top:2px;
-}
-.cancha.completa .inv-faltan{color:#146334}
-
-.contador{
-  display:flex;align-items:center;gap:12px;
-  background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:7px 10px;
-}
-.contador button{
-  width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
-  background:var(--bg);color:var(--txt);font-size:19px;line-height:1;cursor:pointer;flex:none;
-}
-.contador button:disabled{opacity:.35;cursor:default}
-.contador span{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--dim)}
-
-.inv-pie{
-  text-align:center;font-size:12px;color:var(--faint);margin-top:26px;
-}
-.inv-pie b{color:var(--dim)}
-
-/* ---------- chips de amigos ---------- */
-.chips{display:flex;flex-wrap:wrap;gap:7px}
-.chipAmigo{
-  display:inline-flex;align-items:center;gap:7px;
-  padding:6px 11px 6px 6px;border-radius:22px;
-  background:var(--surface);border:1px solid var(--line);color:var(--txt);
-  font-size:13px;font-weight:600;cursor:pointer;
-}
-.chipAmigo:active{transform:scale(.96)}
-.chipAmigo .mini{
-  width:22px;height:22px;border-radius:50%;display:grid;place-items:center;
-  font-size:9px;font-weight:800;color:#fff;flex:none;
-}
-.chipAmigo b{color:var(--acento);font-size:15px;line-height:1}
-
-/* ---------- modal ---------- */
-.modal{position:fixed;inset:0;z-index:60;background:rgba(17,30,44,.45);
-  display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);border:1px solid var(--line);border-radius:18px 18px 0 0;
-  width:100%;max-width:560px;padding:20px 16px 26px;max-height:92vh;overflow-y:auto}
-.sheet h2{font-size:18px;margin-bottom:16px;letter-spacing:-.3px}
-.sheetConfirmar{padding-top:22px}
-.confirmarTexto{font-size:14.5px;line-height:1.55;color:var(--txt);margin-bottom:18px}
-@media(min-width:600px){.modal{align-items:center}.sheet{border-radius:18px}}
-
-/* ---------- login ---------- */
-.login{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
-  align-items:center;padding:24px;text-align:center}
-.login .logo{width:64px;height:64px;border-radius:20px;background:var(--acento);color:var(--acento-ink);
-  display:grid;place-items:center;font-size:26px;font-weight:800;margin-bottom:18px}
-.login h1{font-size:27px;font-weight:800;letter-spacing:-.8px}
-.login p.sub{color:var(--dim);font-size:14px;margin-top:6px;margin-bottom:28px;max-width:300px}
-.login .caja{width:100%;max-width:340px}
-
-/* El botón "Continuar con Google": blanco, con el logo a 4 colores tal
-   cual, como pide la guía de marca de Google — no se toca con la
-   paleta de la app. */
-.btnGoogle{
-  width:100%;display:flex;align-items:center;justify-content:center;gap:12px;
-  padding:12px 14px;border-radius:11px;border:1px solid #dadce0;background:#fff;
-  color:#3c4043;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
-  transition:background .1s, box-shadow .1s;
-}
-.btnGoogle:hover{background:#f8f9fa}
-.btnGoogle:active{background:#f1f3f4}
-.btnGoogle:disabled{opacity:.6;cursor:default}
-.btnGoogle:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
-
-.msg{border-radius:11px;padding:11px 13px;font-size:13px;line-height:1.5;margin-top:14px;text-align:left}
-.msg.ok{background:#e6f5ea;border:1px solid #a9d8ba;color:#146334}
-.msg.err{background:#fbeae8;border:1px solid #e3a9a3;color:#96271e}
-.msg.info{background:var(--surface);border:1px solid var(--line);color:var(--dim)}
-
-.cargando{padding:40px;text-align:center;color:var(--faint);font-size:13.5px}
-
 /* ============================================================
    Tipografía de display — va al FINAL a propósito.
 
-   Anton es condensada: el tracking negativo que servía para la
-   fuente del sistema acá apelmaza las letras. Estas reglas comparten
-   especificidad con las de arriba (.login h1 y compañía), así que
-   tienen que venir después para ganar.
+   Anton es condensada: el tracking negativo que sirve para la fuente
+   del sistema acá apelmaza las letras. Estas reglas comparten
+   especificidad con las de arriba, así que tienen que venir después
+   para ganar.
    ============================================================ */
 .rs-estado, .copaBox-fase, .tot .big, .kpi .n, .inv-lugar,
-.login h1, .brand h1, .copaBox-pie b, .marcador-cupo .mc-n,
-.marcador-cupo .mc-t, .arranque-marca, .item .fec .d{
+.login h1, .brand h1, .marcador-cupo .mc-n, .marcador-cupo .mc-t,
+.item .fec .d, .marcador input{
   font-family:var(--fuente-display);
   font-weight:400;
 }
 
 /* Los títulos gritan: mayúscula y aire entre letras. */
-.login h1, .brand h1, .inv-lugar, .copaBox-fase, .rs-estado{
+.login h1, .brand h1{
   text-transform:uppercase;
-  letter-spacing:1.6px;
+  letter-spacing:1.4px;
 }
-.login h1{font-size:31px}
-.brand h1{font-size:16px;letter-spacing:1.2px}
-.inv-lugar{font-size:26px;line-height:1.15;letter-spacing:1.1px}
-.copaBox-fase{font-size:25px}
-.rs-estado{font-size:20px}
+.brand h1{font-size:15px;letter-spacing:1.1px}
+.login h1{font-size:32px}
 
 /* Los números son marcador de estadio: sin mayúscula ni tracking. */
-.tot .big, .kpi .n, .copaBox-pie b, .marcador-cupo .mc-n,
-.marcador-cupo .mc-t, .item .fec .d{
+.tot .big, .kpi .n, .marcador-cupo .mc-n, .marcador-cupo .mc-t, .item .fec .d{
   letter-spacing:0;
   text-transform:none;
 }
-.tot .big{font-size:37px}
-.marcador-cupo .mc-n{font-size:60px}
-.kpi .n{font-size:27px}
-
-/* ============================================================
-   LA PLANILLA — el diferencial
-
-   Las filas no van separadas por un borde de tarjeta cualquiera:
-   se apoyan sobre renglones, y los números viven en una columna
-   con su regla vertical, como en una planilla de partido de verdad.
-   Es estructura, no decoración: la columna existe porque el orden
-   de la lista es información (quién entró primero, quién ocupa qué
-   lugar del cupo).
-   ============================================================ */
-.jug, .pago, .saldo, .item, .paso{
-  border-bottom:1px solid var(--regla);
-}
-.card{box-shadow:0 1px 2px rgba(17,30,44,.04)}
-
-/* la columna de números */
-.jug .num{
-  font-family:var(--fuente-display);
-  font-size:14px;
-  color:var(--acento);
-  width:34px;
-  padding-right:10px;
-  margin-right:2px;
-  text-align:right;
-  border-right:1px solid var(--regla);
-  align-self:stretch;
-  display:flex;align-items:center;justify-content:flex-end;
-}
-
-/* el encabezado de sección se lee como el rótulo de un formulario */
-.sec{
-  border-bottom:1px solid var(--regla);
-  padding-bottom:7px;
-}
-
-/* La cancha de la invitación: en papel, las líneas de cal van blancas
-   sobre el verde, como se ven de día. */
-.cancha-lineas:before, .cancha-lineas:after{
-  border-color:rgba(255,255,255,.85);
-  background:rgba(255,255,255,.85);
-}
-.cancha-lineas:before{background:transparent}
 
 /* Foco visible: en claro el outline del navegador se pierde. */
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible{

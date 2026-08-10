@@ -12,6 +12,8 @@ import {
   frase,
 } from '@/lib/camino';
 import { color, fechaLarga, iniciales } from '@/lib/calculos';
+import { Copita } from '@/components/Copa';
+import { MarcaTilde } from '@/components/Marcas';
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
@@ -46,34 +48,51 @@ export default function Camino() {
 
   const e = calcularCamino(partidos);
   const enFinal = e.triunfos === CAMINO.length - 1;
+  const faltan = faltanParaLaCopa(e);
 
   return (
-    <div style={{ paddingTop: 18 }}>
-      {/* ---------- cabecera ---------- */}
+    <div style={{ paddingTop: 16 }}>
+      {/* ---------- la cabecera: dónde estás y cuánto falta ---------- */}
       <div className={`copaBox ${enFinal ? 'ardiendo' : ''}`}>
-        <div className="copaBox-glow" />
-        <div className="copaBox-ico">{e.proxima.icono}</div>
+        <div className="copaBox-eyebrow">
+          <span>Mundial #{e.mundial}</span>
+          <span>
+            {e.copas === 0 ? 'Sin copas' : `${e.copas} copa${e.copas > 1 ? 's' : ''}`}
+          </span>
+        </div>
+
         <div className="copaBox-fase">{e.proxima.nombre}</div>
         <div className="copaBox-frase">{frase(e)}</div>
 
+        {/* Los siete casilleros: la firma. Uno por triunfo, el último
+            es la copa. Tildás siete al hilo y la levantás. */}
+        <div className="casilleros" role="img" aria-label={`${e.triunfos} de ${PARA_LA_COPA} triunfos`}>
+          {CAMINO.map((inst, i) => {
+            const ganada = i < e.triunfos;
+            const premio = i === CAMINO.length - 1;
+            return (
+              <span
+                key={inst.id}
+                className={`casillero ${ganada ? 'ganada' : ''} ${
+                  i === e.triunfos ? 'actual' : ''
+                } ${premio ? 'premio' : ''}`}
+                title={inst.nombre}
+              >
+                {ganada ? <MarcaTilde tam={15} /> : premio ? <Copita tam={13} /> : null}
+              </span>
+            );
+          })}
+        </div>
+
         <div className="copaBox-pie">
-          <div>
-            <b>{e.triunfos}</b>
-            <span>al hilo</span>
-          </div>
-          <div>
-            <b>{faltanParaLaCopa(e)}</b>
-            <span>para la copa</span>
-          </div>
-          <div>
-            <b>{e.copas} 🏆</b>
-            <span>{e.copas === 1 ? 'copa' : 'copas'}</span>
-          </div>
+          <b>{e.triunfos}</b> al hilo
+          <span className="sep">·</span>
+          faltan <b>{faltan}</b> para la copa
         </div>
       </div>
 
-      {/* ---------- el camino ---------- */}
-      <div className="sec">Mundial #{e.mundial}</div>
+      {/* ---------- el mapa de lo que viene ---------- */}
+      <div className="sec">El camino</div>
       <div className="card">
         <ol className="ruta">
           {CAMINO.map((inst, i) => {
@@ -81,8 +100,9 @@ export default function Camino() {
               i < e.triunfos ? 'pasada' : i === e.triunfos ? 'actual' : 'pendiente';
             return (
               <li key={inst.id} className={`ruta-paso ${estado}`}>
-                <span className="ruta-linea" />
-                <span className="ruta-punto">{estado === 'pasada' ? '✓' : ''}</span>
+                <span className="ruta-punto">
+                  {estado === 'pasada' ? <MarcaTilde tam={14} /> : i + 1}
+                </span>
                 <span className="ruta-txt">
                   <b>{inst.nombre}</b>
                   <small>
@@ -97,25 +117,27 @@ export default function Camino() {
             );
           })}
           <li className={`ruta-paso copa ${e.triunfos >= PARA_LA_COPA ? 'pasada' : 'pendiente'}`}>
-            <span className="ruta-linea" />
-            <span className="ruta-punto">🏆</span>
+            <span className="ruta-punto">
+              <Copita tam={13} />
+            </span>
             <span className="ruta-txt">
               <b>Campeón del mundo</b>
               <small>
-                {faltanParaLaCopa(e)} triunfo{faltanParaLaCopa(e) > 1 ? 's' : ''} y la levantás
+                {faltan} triunfo{faltan > 1 ? 's' : ''} y la levantás
               </small>
             </span>
           </li>
         </ol>
       </div>
 
+      {/* ---------- la vitrina ---------- */}
       {e.copas > 0 && (
         <>
           <div className="sec">La vitrina</div>
           <div className="vitrina">
             {Array.from({ length: e.copas }).map((_, i) => (
               <span key={i} className="trofeo" title={`Mundial ${i + 1}`}>
-                🏆
+                <Copita tam={24} />
               </span>
             ))}
           </div>
@@ -126,7 +148,7 @@ export default function Camino() {
         </>
       )}
 
-      {/* ---------- tus amigos ---------- */}
+      {/* ---------- en qué anda el resto ---------- */}
       {amigos.length > 0 && (
         <>
           <div className="sec">Tus amigos</div>
@@ -134,17 +156,18 @@ export default function Camino() {
             {amigos.map((am) => {
               const ea = calcularCamino(am.partidos);
               return (
-                <div className="item" key={am.id}>
+                <div className="item" key={am.id} style={{ cursor: 'default' }}>
                   <span className="av" style={{ background: color(am.nombre) }}>
                     {iniciales(am.nombre)}
                   </span>
                   <span className="info">
                     <b>{am.nombre}</b>
                     <small>
-                      {ea.proxima.corto} · {ea.triunfos} al hilo
+                      {ea.copas > 0 ? `${ea.copas} copa${ea.copas > 1 ? 's' : ''} · ` : ''}
+                      {ea.triunfos} al hilo
                     </small>
                   </span>
-                  <span style={{ fontSize: 20 }}>{ea.proxima.icono}</span>
+                  <span className="estado-pill emp">{ea.proxima.corto}</span>
                 </div>
               );
             })}
@@ -159,7 +182,7 @@ export default function Camino() {
           <div className="vacio">
             Cargá el resultado de un partido y empieza el camino.
             <br />
-            <Link href="/partidos" style={{ color: 'var(--acento)' }}>
+            <Link href="/partidos" style={{ color: 'var(--acento)', fontWeight: 600 }}>
               Ir a tus partidos
             </Link>
           </div>
@@ -174,7 +197,7 @@ export default function Camino() {
               <span className="paso-info">
                 <b>
                   {h.instancia.nombre}
-                  {h.copa && <span className="chip copaChip">🏆 campeón</span>}
+                  {h.copa && <span className="chip copaChip">campeón</span>}
                 </b>
                 <small>
                   {fechaLarga(h.fecha)}

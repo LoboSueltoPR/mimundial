@@ -15,9 +15,11 @@ export default function Amigos() {
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null);
 
   const [busqueda, setBusqueda] = useState('');
-  const [resultados, setResultados] = useState<Amigo[]>([]);
-  const [buscandoUsername, setBuscandoUsername] = useState(false);
   const [sumando, setSumando] = useState<string | null>(null);
+  /* Se guarda junto con la búsqueda que lo produjo. Así "hay resultados"
+     y "estoy buscando" salen de comparar, no de limpiar estado a mano
+     cada vez que cambia el texto. */
+  const [hallazgo, setHallazgo] = useState<{ q: string; lista: Amigo[] }>({ q: '', lista: [] });
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -33,22 +35,21 @@ export default function Amigos() {
     cargar();
   }, [cargar]);
 
+  const q = busqueda.trim().toLowerCase();
+  const hayQueBuscar = q.length >= 3;
+  const resultados = hallazgo.q === q ? hallazgo.lista : [];
+  const buscandoUsername = hayQueBuscar && hallazgo.q !== q;
+
   // buscar por username con un pequeño debounce, desde 3 caracteres
   useEffect(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (q.length < 3) {
-      setResultados([]);
-      return;
-    }
-    setBuscandoUsername(true);
+    if (q.length < 3) return;
     const id = setTimeout(async () => {
       const supabase = crearCliente();
       const { data } = await supabase.rpc('buscar_por_username', { p_query: q });
-      setResultados((data ?? []) as Amigo[]);
-      setBuscandoUsername(false);
+      setHallazgo({ q, lista: (data ?? []) as Amigo[] });
     }, 300);
     return () => clearTimeout(id);
-  }, [busqueda]);
+  }, [q]);
 
   async function agregarPorMail(e: React.FormEvent) {
     e.preventDefault();
@@ -95,7 +96,7 @@ export default function Amigos() {
       return;
     }
     setMsg({ tipo: 'ok', texto: `${nombre} se sumó a tus amigos.` });
-    setResultados((prev) => prev.filter((r) => r.id !== id));
+    setHallazgo((h) => ({ ...h, lista: h.lista.filter((r) => r.id !== id) }));
     cargar();
   }
 
