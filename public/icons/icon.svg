@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <!-- La copa, la misma silueta que components/Copa.tsx, en los colores de marca. -->
-  <rect width="512" height="512" rx="112" fill="#0a6ea6"/>
+  <rect width="512" height="512" rx="112" fill="#26418f"/>
   <g transform="translate(96 64) scale(3.2)" fill="#f4cf82" stroke="#0a1424" stroke-width="1.4" stroke-linejoin="round">
     <path d="M28 18 H72 L68 52 C68 66 32 66 32 52 Z" />
     <path d="M46 64 H54 V80 H46 Z" />

@@ -20,6 +20,8 @@ import {
   totalPagado,
 } from '@/lib/calculos';
 import { useConfirmar } from '@/components/Confirmar';
+import { Copita } from '@/components/Copa';
+import { MarcaEmpate, MarcaPerdio } from '@/components/Marcas';
 
 type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
 
@@ -445,6 +447,41 @@ function Anotados({
 
 /* ================= EQUIPOS ================= */
 
+/**
+ * Va a nivel de módulo, no dentro del render de EquiposVista: un
+ * componente definido en el render es uno nuevo en cada pasada, así que
+ * React desmonta y remonta la lista entera cada vez que algo cambia.
+ */
+function ColumnaEquipo({
+  arr,
+  nombre,
+  tono,
+}: {
+  arr: Equipos['a'];
+  nombre: string;
+  tono: 'claros' | 'oscuros';
+}) {
+  return (
+    <div className="eq">
+      <div className="eq-head">
+        <span className={`chaleco ${tono}`} />
+        <b>{nombre}</b>
+        <span>{arr.length}</span>
+      </div>
+      <ul>
+        {arr.map((x, i) => (
+          <li key={i} className={x.inv ? 'invitado' : ''}>
+            <span className="mini" style={{ background: x.inv ? '#5a6472' : color(x.label) }}>
+              {x.inv ? '+' : iniciales(x.label)}
+            </span>
+            <span>{x.inv ? 'Inv. de ' + x.de : x.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function EquiposVista({
   js,
   equipos,
@@ -490,26 +527,6 @@ function EquiposVista({
 
   const cambio = equipos.n !== lista.length;
 
-  const Columna = ({ arr, nombre, chaleco, borde }: { arr: Equipos['a']; nombre: string; chaleco: string; borde?: string }) => (
-    <div className="eq">
-      <div className="eq-head">
-        <span className="chaleco" style={{ background: chaleco, border: borde }} />
-        <b>{nombre}</b>
-        <span>{arr.length}</span>
-      </div>
-      <ul>
-        {arr.map((x, i) => (
-          <li key={i} className={x.inv ? 'invitado' : ''}>
-            <span className="mini" style={{ background: x.inv ? '#5b6675' : color(x.label) }}>
-              {x.inv ? '+' : iniciales(x.label)}
-            </span>
-            <span>{x.inv ? 'Inv. de ' + x.de : x.label}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-
   return (
     <>
       <div className="sec">Equipos</div>
@@ -520,8 +537,8 @@ function EquiposVista({
         </div>
       )}
       <div className="equipos">
-        <Columna arr={equipos.a} nombre="Claros" chaleco="#ffffff" borde="1px solid #d2dae4" />
-        <Columna arr={equipos.b} nombre="Oscuros" chaleco="#2b3a4d" borde="1px solid #1b2836" />
+        <ColumnaEquipo arr={equipos.a} nombre="Claros" tono="claros" />
+        <ColumnaEquipo arr={equipos.b} nombre="Oscuros" tono="oscuros" />
       </div>
       <div className="row2" style={{ marginTop: 14 }}>
         <button className="btn pri" onClick={onSortear}>
@@ -691,10 +708,10 @@ function PlataVista({
 
 /* ================= RESULTADO ================= */
 
-const OPCIONES: { v: Resultado; ico: string; txt: string; cls: string }[] = [
-  { v: 'ganamos', ico: '🏆', txt: 'Ganamos', cls: 'gano' },
-  { v: 'empate', ico: '🤝', txt: 'Empate', cls: 'emp' },
-  { v: 'perdimos', ico: '💀', txt: 'Perdimos', cls: 'perd' },
+const OPCIONES: { v: Resultado; Ico: () => React.ReactElement; txt: string; cls: string }[] = [
+  { v: 'ganamos', Ico: () => <Copita tam={19} />, txt: 'Ganamos', cls: 'gano' },
+  { v: 'empate', Ico: () => <MarcaEmpate />, txt: 'Empate', cls: 'emp' },
+  { v: 'perdimos', Ico: () => <MarcaPerdio />, txt: 'Perdimos', cls: 'perd' },
 ];
 
 function ResultadoVista({
@@ -728,7 +745,9 @@ function ResultadoVista({
             className={`${p.resultado === o.v ? 'on ' + o.cls : ''}`}
             onClick={() => onGuardar({ resultado: p.resultado === o.v ? null : o.v })}
           >
-            <span className="ico">{o.ico}</span>
+            <span className="ico">
+              <o.Ico />
+            </span>
             {o.txt}
           </button>
         ))}

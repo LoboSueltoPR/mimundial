@@ -140,7 +140,9 @@ export default function Invitacion() {
   if (!p)
     return (
       <div className="login">
-        <div className="logo">⚽</div>
+        <div className="logo">
+          <Copita tam={28} />
+        </div>
         <h1>Link inválido</h1>
         <p className="sub">Este partido no existe o el anfitrión lo borró.</p>
       </div>
