@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Copa from './Copa';
-import { MarcaTrazo } from './Marca';
+import { MarcaTexto } from './Marca';
 
 type Fase = 'oculto' | 'letras' | 'copa' | 'saliendo';
 
 /**
- * El arranque: "MIMUNDIAL" se traza letra por letra, en líneas rectas
- * como las de cal de la cancha, y esas mismas líneas se cierran en la
- * copa — que se traza, se llena de oro y brilla tal como ya estaba
- * (ver Copa.tsx, sin tocar). Palabra y copa ocupan el mismo lugar en
- * pantalla: una se desvanece justo donde aparece la otra, para que
- * lea como una transformación y no como dos animaciones pegadas.
+ * El arranque: "MIMUNDIAL" se escribe letra por letra y la palabra se
+ * cierra en la copa, que se traza en tiza, se llena de oro y brilla.
+ * Palabra y copa ocupan el mismo lugar en pantalla: una se desvanece
+ * justo donde aparece la otra, para que lea como una transformación y no
+ * como dos animaciones pegadas.
  *
  * Se ve una vez por sesión del navegador.
  */
@@ -26,24 +25,41 @@ export default function Arranque() {
 
     const corto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     setReducido(corto);
-    setFase('letras');
 
-    const marcas = corto
-      ? [
-          [() => setFase('copa'), 80],
-          [() => setFase('saliendo'), 420],
-          [() => setFase('oculto'), 820],
-        ]
-      : [
-          // la palabra tarda ~950ms en trazarse entera; a los 1050ms
-          // ya está completa y arranca el pase a la copa
-          [() => setFase('copa'), 1050],
-          [() => setFase('saliendo'), 2500],
-          [() => setFase('oculto'), 3000],
-        ];
+    let vivo = true;
+    const relojes: ReturnType<typeof setTimeout>[] = [];
 
-    const ids = (marcas as [() => void, number][]).map(([fn, ms]) => setTimeout(fn, ms));
-    return () => ids.forEach(clearTimeout);
+    function arrancar() {
+      if (!vivo) return;
+      setFase('letras');
+      const marcas: [() => void, number][] = corto
+        ? [
+            [() => setFase('copa'), 80],
+            [() => setFase('saliendo'), 420],
+            [() => setFase('oculto'), 820],
+          ]
+        : [
+            // la palabra termina de escribirse cerca de los 700ms
+            [() => setFase('copa'), 1150],
+            [() => setFase('saliendo'), 2600],
+            [() => setFase('oculto'), 3100],
+          ];
+      marcas.forEach(([fn, ms]) => relojes.push(setTimeout(fn, ms)));
+    }
+
+    // Sin esperar a Anton, la primera pasada se dibuja con la tipografía
+    // de reemplazo y las letras saltan de ancho al llegar la buena. El
+    // tope evita que una fuente que nunca carga se coma el arranque.
+    const fuenteLista: Promise<unknown> = document.fonts
+      ? document.fonts.ready
+      : Promise.resolve();
+    const tope = new Promise((listo) => relojes.push(setTimeout(listo, 700)));
+    Promise.race([fuenteLista, tope]).then(arrancar);
+
+    return () => {
+      vivo = false;
+      relojes.forEach(clearTimeout);
+    };
   }, []);
 
   if (fase === 'oculto') return null;
@@ -54,7 +70,7 @@ export default function Arranque() {
 
       <div className="arranque-escena">
         <div className={`arranque-palabra ${fase !== 'letras' ? 'colapsa' : ''}`}>
-          <MarcaTrazo ancho={reducido ? 260 : 280} estatica={reducido} />
+          <MarcaTexto estatica={reducido} />
         </div>
 
         {(fase === 'copa' || fase === 'saliendo') && (

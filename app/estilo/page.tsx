@@ -15,7 +15,7 @@
 
 import { useState } from 'react';
 import Copa, { Copita } from '@/components/Copa';
-import { MarcaTrazo } from '@/components/Marca';
+import { MarcaTexto } from '@/components/Marca';
 import { MarcaEmpate, MarcaPerdio, MarcaRacha, MarcaTilde } from '@/components/Marcas';
 import BotonGoogle from '@/components/BotonGoogle';
 import { CAMINO } from '@/lib/camino';
@@ -672,8 +672,22 @@ export default function Taller() {
               gap: 14,
             }}
           >
-            <MarcaTrazo ancho={260} estatica />
+            <MarcaTexto estatica />
             <Copa tam={90} />
+          </div>
+          <button
+            className="btn wide"
+            style={{ marginTop: 10 }}
+            onClick={() => {
+              sessionStorage.removeItem('mimundial.arranque');
+              location.reload();
+            }}
+          >
+            Ver el arranque otra vez
+          </button>
+          <div className="nota">
+            El arranque se muestra una sola vez por sesión del navegador: es un regalo la primera
+            vez y un peaje la quinta.
           </div>
         </Bloque>
 
