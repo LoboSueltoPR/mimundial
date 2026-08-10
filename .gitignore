@@ -42,3 +42,6 @@ next-env.d.ts
 
 # el ejemplo si va al repo (no tiene secretos)
 !.env.example
+
+.vercel
+.env*

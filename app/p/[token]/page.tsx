@@ -7,6 +7,7 @@ import type { Amigo, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
 import { color, fechaLarga, iniciales } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
 import { useConfirmar } from '@/components/Confirmar';
+import BotonGoogle from '@/components/BotonGoogle';
 
 /** El claim vive solo en este navegador: es lo único que te deja editar lo tuyo. */
 function claimGuardado(token: string): string {
@@ -37,6 +38,7 @@ export default function Invitacion() {
   const [guardando, setGuardando] = useState(false);
 
   const [miId, setMiId] = useState<string | null>(null);
+  const [miUsername, setMiUsername] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
   const [agregando, setAgregando] = useState<string | null>(null);
 
@@ -57,8 +59,9 @@ export default function Invitacion() {
     const guardadoNombre = localStorage.getItem('mimundial.nombre') || '';
     setNombre(guardadoNombre);
 
-    // si quien mira el link tiene cuenta, puede sumar de amigo a otros
-    // anotados que también tengan cuenta
+    // Si el que abre el link tiene cuenta: se anota con su nombre real,
+    // queda enlazado al partido y puede sumar de amigo a los demás
+    // anotados que también tengan cuenta.
     (async () => {
       const supabase = crearCliente();
       const {
@@ -66,8 +69,21 @@ export default function Invitacion() {
       } = await supabase.auth.getUser();
       if (!user) return;
       setMiId(user.id);
-      const { data } = await supabase.rpc('mis_amigos');
-      setAmigos((data ?? []) as Amigo[]);
+
+      const [{ data: perfil }, { data: mis }] = await Promise.all([
+        supabase.from('perfiles').select('nombre, username').eq('id', user.id).single(),
+        supabase.rpc('mis_amigos'),
+      ]);
+      setAmigos((mis ?? []) as Amigo[]);
+
+      const suNombre =
+        perfil?.nombre ||
+        (user.user_metadata?.full_name as string) ||
+        user.email?.split('@')[0] ||
+        '';
+      setMiUsername(perfil?.username ?? null);
+      // el nombre de la cuenta manda sobre lo que quedó guardado en el navegador
+      if (suNombre) setNombre(suNombre);
     })();
   }, [cargar, token]);
 
@@ -190,7 +206,37 @@ export default function Invitacion() {
 
       {p.abierto && (
         <>
-          <div className="sec">{mio ? 'Tu anotación' : 'Anotate'}</div>
+          {/* El que llega sin cuenta: primero el camino que le deja algo
+              después del partido, y recién abajo el atajo de invitado. */}
+          {!miId && !mio && (
+            <>
+              <div className="sec">Anotate con tu cuenta</div>
+              <div className="card" style={{ padding: 14 }}>
+                <BotonGoogle destino={`/p/${token}`} texto="Entrar con Google" />
+                <div className="nota" style={{ marginTop: 12 }}>
+                  Te anotás con tu nombre y arrancás <b>tu propio Mundial</b>: cada partido que
+                  ganás te hace avanzar una instancia. Siete al hilo y levantás la copa.
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="sec">
+            {mio ? 'Tu anotación' : miId ? 'Anotate' : 'O anotate sin cuenta'}
+          </div>
+
+          {miId && !mio && (
+            <div className="comoEntras">
+              <span className="av" style={{ background: color(nombre || '?') }}>
+                {iniciales(nombre || '?')}
+              </span>
+              <span>
+                Entrás como <b>{nombre}</b>
+                {miUsername ? ` · @${miUsername}` : ''}
+              </span>
+            </div>
+          )}
+
           <div className="card" style={{ padding: 14 }}>
             <div className="campo">
               <label>Tu nombre</label>
@@ -227,16 +273,39 @@ export default function Invitacion() {
               </>
             ) : (
               <button className="btn pri wide" onClick={anotarse} disabled={guardando || completo}>
-                {completo ? 'Ya está completo' : guardando ? 'Anotando…' : 'Anotate'}
+                {completo
+                  ? 'Ya está completo'
+                  : guardando
+                    ? 'Anotando…'
+                    : miId
+                      ? 'Anotarme'
+                      : 'Anotarme sin cuenta'}
               </button>
             )}
           </div>
 
           {error && <div className="msg err">{error}</div>}
 
-          <div className="nota">
-            No hace falta que te crees una cuenta. Solo podés manejar <b>tu</b> lugar y los que
-            llevás vos.
+          {!miId && (
+            <div className="nota">
+              Sin cuenta solo podés manejar <b>tu</b> lugar y los que llevás vos, y desde este
+              teléfono. {mio ? 'Si entrás con Google se te guarda el historial.' : ''}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Ya se anotó como invitado: recién ahí se le ofrece la cuenta,
+          cuando el trámite que vino a hacer ya está resuelto. */}
+      {mio && !miId && (
+        <>
+          <div className="sec">Llevá tu propio Mundial</div>
+          <div className="card" style={{ padding: 14 }}>
+            <BotonGoogle destino={`/p/${token}`} texto="Entrar con Google" />
+            <div className="nota" style={{ marginTop: 12 }}>
+              Cada partido que ganás te hace avanzar una instancia: grupos, octavos, cuartos,
+              semi y final. Siete al hilo y levantás la copa.
+            </div>
           </div>
         </>
       )}
