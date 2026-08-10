@@ -726,6 +726,16 @@ label{
   font-weight:600;color:#2c4433;margin-top:3px;
 }
 .cancha.completa .inv-faltan{color:#11512e}
+/* "Entrás como Fulano": la identidad con la que vas a quedar anotado */
+.comoEntras{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 11px;margin-bottom:9px;
+  background:var(--acento-suave);border:1px solid var(--acento);
+  border-radius:var(--radio);
+  font-size:13px;color:var(--dim);
+}
+.comoEntras b{color:var(--txt);font-weight:600}
+
 .inv-pie{
   text-align:center;font-family:var(--fuente-dato);font-size:10px;color:var(--faint);
   margin-top:22px;text-transform:uppercase;letter-spacing:1.2px;

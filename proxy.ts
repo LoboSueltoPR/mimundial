@@ -44,12 +44,18 @@ export async function proxy(request: NextRequest) {
   if (!user && !esPublica) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    // para volver a donde querías ir despues de entrar
+    url.search = `?next=${encodeURIComponent(path)}`;
     return NextResponse.redirect(url);
   }
 
   if (user && path === '/login') {
+    const next = request.nextUrl.searchParams.get('next');
+    // Solo rutas internas: un `next` absoluto seria un redirector abierto.
+    const destino = next && next.startsWith('/') && !next.startsWith('//') ? next : '/camino';
     const url = request.nextUrl.clone();
-    url.pathname = '/camino';
+    url.search = '';
+    url.pathname = destino;
     return NextResponse.redirect(url);
   }
 

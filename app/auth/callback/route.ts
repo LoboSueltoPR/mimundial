@@ -5,8 +5,12 @@ import { crearClienteServidor } from '@/lib/supabase/server';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const destino = searchParams.get('next') ?? '/camino';
   const errorDescripcion = searchParams.get('error_description');
+
+  // Solo rutas internas: un `next` absoluto convertiria esta ruta en un
+  // redirector abierto hacia cualquier dominio.
+  const pedido = searchParams.get('next');
+  const destino = pedido && pedido.startsWith('/') && !pedido.startsWith('//') ? pedido : '/camino';
 
   if (errorDescripcion) {
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorDescripcion)}`);

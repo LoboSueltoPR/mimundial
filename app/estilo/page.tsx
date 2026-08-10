@@ -17,6 +17,7 @@ import { useState } from 'react';
 import Copa, { Copita } from '@/components/Copa';
 import { MarcaTrazo } from '@/components/Marca';
 import { MarcaEmpate, MarcaPerdio, MarcaRacha, MarcaTilde } from '@/components/Marcas';
+import BotonGoogle from '@/components/BotonGoogle';
 import { CAMINO } from '@/lib/camino';
 import { color, iniciales, plata } from '@/lib/calculos';
 
@@ -560,6 +561,93 @@ export default function Taller() {
               </div>
               <div className="inv-faltan">Faltan 2</div>
             </div>
+          </div>
+        </Bloque>
+
+        <Bloque titulo="Invitación · sin cuenta (los dos caminos)">
+          <div className="sec">Anotate con tu cuenta</div>
+          <div className="card" style={{ padding: 14 }}>
+            <BotonGoogle destino="/estilo" texto="Entrar con Google" />
+            <div className="nota" style={{ marginTop: 12 }}>
+              Te anotás con tu nombre y arrancás <b>tu propio Mundial</b>: cada partido que ganás
+              te hace avanzar una instancia. Siete al hilo y levantás la copa.
+            </div>
+          </div>
+
+          <div className="sec">O anotate sin cuenta</div>
+          <div className="card" style={{ padding: 14 }}>
+            <div className="campo">
+              <label>Tu nombre</label>
+              <input placeholder="Cómo te conocen" />
+            </div>
+            <div className="campo" style={{ marginBottom: 0 }}>
+              <label>¿Llevás a alguien?</label>
+              <div className="contador">
+                <button disabled>−</button>
+                <span>Voy solo</span>
+                <button>+</button>
+              </div>
+            </div>
+          </div>
+          <div className="row2" style={{ marginTop: 12 }}>
+            <button className="btn pri wide">Anotarme sin cuenta</button>
+          </div>
+          <div className="nota">
+            Sin cuenta solo podés manejar <b>tu</b> lugar y los que llevás vos, y desde este
+            teléfono.
+          </div>
+        </Bloque>
+
+        <Bloque titulo="Invitación · con cuenta">
+          <div className="sec">Anotate</div>
+          <div className="comoEntras">
+            <span className="av" style={{ background: color('Alejo Lobos') }}>
+              AL
+            </span>
+            <span>
+              Entrás como <b>Alejo Lobos</b> · @alejo
+            </span>
+          </div>
+          <div className="card" style={{ padding: 14 }}>
+            <div className="campo" style={{ marginBottom: 0 }}>
+              <label>Tu nombre</label>
+              <input defaultValue="Alejo Lobos" />
+            </div>
+          </div>
+          <div className="row2" style={{ marginTop: 12 }}>
+            <button className="btn pri wide">Anotarme</button>
+          </div>
+
+          <div className="sec">Quiénes van · 4</div>
+          <div className="card">
+            {GENTE.slice(0, 3).map((n, i) => (
+              <div className="jug" key={n}>
+                <span className="av" style={{ background: color(n) }}>
+                  {iniciales(n)}
+                </span>
+                <span className="nom">
+                  <b>{n}</b>
+                  <small>@{n.split(' ')[0].toLowerCase()}</small>
+                </span>
+                {i === 0 ? (
+                  <span className="chip">Amigo</span>
+                ) : (
+                  <button className="btn sm">+ Amigo</button>
+                )}
+              </div>
+            ))}
+            <div className="jug">
+              <span className="av" style={{ background: color('Tincho') }}>
+                TI
+              </span>
+              <span className="nom">
+                <b>Tincho</b>
+                <small>+1 invitado</small>
+              </span>
+            </div>
+          </div>
+          <div className="nota">
+            El último no tiene cuenta, así que no se le puede mandar solicitud de amistad.
           </div>
         </Bloque>
 
