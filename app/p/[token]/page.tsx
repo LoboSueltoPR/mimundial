@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Amigo, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
@@ -34,6 +34,10 @@ export default function Invitacion() {
   const [nombre, setNombre] = useState('');
   const [invitados, setInvitados] = useState(0);
   const [mio, setMio] = useState(false);
+  /** true si mi anotación quedó identificada por la cuenta (auth.uid), no
+   *  por el claim del navegador: ahí las acciones van por las RPC nuevas,
+   *  que no dependen de localStorage y funcionan desde cualquier dispositivo. */
+  const [viaCuenta, setViaCuenta] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -41,6 +45,10 @@ export default function Invitacion() {
   const [miUsername, setMiUsername] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
   const [agregando, setAgregando] = useState<string | null>(null);
+  /** cargar() y el fetch del perfil corren en paralelo y ninguno espera al
+   *  otro: esta ref evita que el nombre de perfil pise el de la anotación
+   *  ya existente, gane quien gane la carrera. */
+  const tengoFilaPropia = useRef(false);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -50,7 +58,17 @@ export default function Invitacion() {
       setError(error.message);
       return;
     }
-    setP(data as PartidoPublico | null);
+    const partido = data as PartidoPublico | null;
+    setP(partido);
+    // El logueado que ya tiene fila acá se reconoce por la cuenta, sin
+    // depender de que este sea el mismo navegador donde se anotó.
+    if (partido?.soy_anotado) {
+      tengoFilaPropia.current = true;
+      setMio(true);
+      setViaCuenta(true);
+      setNombre(partido.mi_nombre ?? '');
+      setInvitados(partido.mi_invitados ?? 0);
+    }
   }, [token]);
 
   useEffect(() => {
@@ -82,8 +100,9 @@ export default function Invitacion() {
         user.email?.split('@')[0] ||
         '';
       setMiUsername(perfil?.username ?? null);
-      // el nombre de la cuenta manda sobre lo que quedó guardado en el navegador
-      if (suNombre) setNombre(suNombre);
+      // el nombre de la cuenta manda sobre lo que quedó guardado en el
+      // navegador, pero nunca sobre el nombre con el que ya está anotado
+      if (suNombre && !tengoFilaPropia.current) setNombre(suNombre);
     })();
   }, [cargar, token]);
 
@@ -125,11 +144,17 @@ export default function Invitacion() {
     setError(null);
     setGuardando(true);
     const supabase = crearCliente();
-    const { data, error } = await supabase.rpc('actualizar_anotado', {
-      p_claim: claimGuardado(token),
-      p_nombre: nombre,
-      p_invitados: invitados,
-    });
+    const { data, error } = viaCuenta
+      ? await supabase.rpc('actualizar_mi_anotacion', {
+          p_partido_id: p!.id,
+          p_nombre: nombre,
+          p_invitados: invitados,
+        })
+      : await supabase.rpc('actualizar_anotado', {
+          p_claim: claimGuardado(token),
+          p_nombre: nombre,
+          p_invitados: invitados,
+        });
     setGuardando(false);
     const r = data as RespuestaRPC | null;
     if (error || !r?.ok) {
@@ -143,10 +168,15 @@ export default function Invitacion() {
     if (!(await confirmar('¿Te bajás del partido?', { danger: true, boton: 'Bajarme' }))) return;
     setGuardando(true);
     const supabase = crearCliente();
-    await supabase.rpc('borrarse', { p_claim: claimGuardado(token) });
+    if (viaCuenta) {
+      await supabase.rpc('bajarme_de_partido', { p_partido_id: p!.id });
+    } else {
+      await supabase.rpc('borrarse', { p_claim: claimGuardado(token) });
+    }
     setGuardando(false);
     marcarAnotado(token, false);
     setMio(false);
+    setViaCuenta(false);
     setInvitados(0);
     cargar();
   }
