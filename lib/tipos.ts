@@ -39,6 +39,7 @@ export type Equipos = {
 
 /** Lo que ve alguien que entra por el link, sin cuenta. Nunca trae plata. */
 export type PartidoPublico = {
+  id: string;
   fecha: string;
   hora: string | null;
   lugar: string | null;
@@ -47,7 +48,26 @@ export type PartidoPublico = {
   cabezas: number;
   faltan: number;
   anfitrion: string | null;
+  /** true si quien mira, logueado, ya tiene una fila en este partido — no depende del navegador. */
+  soy_anotado: boolean;
+  mi_nombre: string | null;
+  mi_invitados: number | null;
   anotados: AnotadoPublico[];
+};
+
+/** Un partido ajeno en el que el logueado está anotado como jugador. */
+export type MiPartidoAnotado = {
+  id: string;
+  token: string;
+  fecha: string;
+  hora: string | null;
+  lugar: string | null;
+  cupo: number;
+  abierto: boolean;
+  anfitrion: string | null;
+  cabezas: number;
+  faltan: number;
+  mi_invitados: number;
 };
 
 /** user_id/username/avatar_url solo vienen si quien mira está logueado. */

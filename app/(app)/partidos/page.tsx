@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Jugador, Partido } from '@/lib/tipos';
+import type { Jugador, MiPartidoAnotado, Partido } from '@/lib/tipos';
 import { cabezas, calcularStats, fechaCorta, plata, totalDebe } from '@/lib/calculos';
 
 type Fila = Partido & { jugadores: Jugador[] };
@@ -15,6 +15,11 @@ export default function Partidos() {
   const [filas, setFilas] = useState<Fila[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState(false);
+
+  // Partidos ajenos en los que sos jugador: sección aparte, RPC aparte.
+  // Si la migración 0005 todavía no corrió en Supabase, esto falla solo
+  // a ella — "Tus partidos" tiene que seguir andando igual.
+  const [anotados, setAnotados] = useState<MiPartidoAnotado[] | null>(null);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -32,9 +37,16 @@ export default function Partidos() {
     setFilas((data ?? []) as Fila[]);
   }, []);
 
+  const cargarAnotados = useCallback(async () => {
+    const supabase = crearCliente();
+    const { data, error } = await supabase.rpc('mis_partidos_anotado');
+    setAnotados(error ? [] : ((data ?? []) as MiPartidoAnotado[]));
+  }, []);
+
   useEffect(() => {
     cargar();
-  }, [cargar]);
+    cargarAnotados();
+  }, [cargar, cargarAnotados]);
 
   if (error) {
     return (
@@ -73,6 +85,42 @@ export default function Partidos() {
             <div className="c">Perdidos</div>
           </div>
         </div>
+      )}
+
+      {anotados !== null && anotados.length > 0 && (
+        <>
+          <div className="sec">Anotado en</div>
+          <div className="card">
+            {anotados.map((a) => {
+              const f = fechaCorta(a.fecha);
+              const completo = a.faltan === 0;
+              return (
+                <div
+                  key={a.id}
+                  className="item"
+                  onClick={() => router.push(`/p/${a.token}`)}
+                >
+                  <span className="fec">
+                    <span className="d">{f.d}</span>
+                    <span className="m">{f.m}</span>
+                  </span>
+                  <span className="info">
+                    <b>{a.lugar || 'Partido'}</b>
+                    <small>
+                      {a.anfitrion ? 'de ' + a.anfitrion + ' · ' : ''}
+                      {a.cabezas}/{a.cupo}
+                      {a.hora ? ' · ' + a.hora : ''}
+                      {a.mi_invitados > 0 ? ` · llevás +${a.mi_invitados}` : ''}
+                    </small>
+                  </span>
+                  <span className={`estado-pill ${completo ? 'ok' : 'sin'}`}>
+                    {completo ? 'Se juega' : 'Falta gente'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <div className="sec">

@@ -107,6 +107,10 @@ a{color:inherit;text-decoration:none}
 header.top{
   position:sticky;top:0;z-index:20;background:var(--bg);
   border-bottom:1px solid var(--line);
+  /* En PWA instalada (viewport-fit=cover + status bar black-translucent),
+     el header queda por debajo del notch/status bar si no se le da este
+     aire: sigue en position:sticky top:0 pero pintado detrás del sistema. */
+  padding-top:env(safe-area-inset-top);
 }
 /* la doble regla del encabezado de un formulario */
 header.top:after{
@@ -658,7 +662,8 @@ label{
 
 /* ---------- login ---------- */
 .login{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
-  align-items:center;padding:24px;text-align:center}
+  align-items:center;padding:calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
+  text-align:center}
 .login .logo{width:60px;height:60px;border-radius:var(--radio);background:var(--acento);
   color:var(--acento-ink);display:grid;place-items:center;margin-bottom:16px}
 .login h1{font-size:29px;font-weight:800;letter-spacing:-.8px}
@@ -681,7 +686,8 @@ label{
 /* ============================================================
    La invitación — acá sí se sale del papel: es la cancha
    ============================================================ */
-.invitacion{padding-top:18px;padding-bottom:36px}
+/* Esta pantalla no tiene header.top: es su propia parte de arriba. */
+.invitacion{padding-top:calc(18px + env(safe-area-inset-top));padding-bottom:36px}
 .inv-marca{
   display:flex;align-items:center;gap:7px;justify-content:center;
   font-family:var(--fuente-dato);
