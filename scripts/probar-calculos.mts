@@ -111,7 +111,7 @@ const lobo = cuentas.find((c) => c.nombre === 'Lobo')!;
 chequear('Lobo pago una de las dos veces', [lobo.debe, lobo.pago], [10000, 5000]);
 
 /* ---------- el camino del mundial ---------- */
-const { calcularCamino, PARA_LA_COPA } = await import('../lib/camino.ts');
+const { calcularCamino, frase, INSTANCIAS, GRUPOS } = await import('../lib/camino.ts');
 
 const pt = (fecha: string, resultado: Partido['resultado']) =>
   ({
@@ -125,45 +125,107 @@ const d = (n: number) => `2026-08-${String(n).padStart(2, '0')}`;
 chequear('sin partidos arranca en grupos', calcularCamino([]).proxima.id, 'g1');
 chequear('sin partidos, cero copas', calcularCamino([]).copas, 0);
 
-const tresGanados = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), 'ganamos'), pt(d(3), 'ganamos')]);
-chequear('3 triunfos -> octavos', tresGanados.proxima.id, 'oc');
-chequear('3 triunfos acumulados', tresGanados.triunfos, 3);
+/* --- fase de grupos: los tres se juegan igual, pasás con 3 puntos --- */
+const grupo = (...rs: Partido['resultado'][]) => calcularCamino(rs.map((r, i) => pt(d(i + 1), r)));
 
-const conEmpate = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), 'empate'), pt(d(3), 'ganamos')]);
-chequear('el empate no hace retroceder', conEmpate.triunfos, 2);
+const unaDerrota = grupo('ganamos', 'perdimos', 'ganamos');
+chequear('perder uno de grupos no elimina', unaDerrota.proxima.id, 'oc');
+chequear('y suma 6 puntos', unaDerrota.puntos, 6);
+chequear('sigue el mismo mundial', unaDerrota.mundial, 1);
 
-const conDerrota = calcularCamino([
-  pt(d(1), 'ganamos'), pt(d(2), 'ganamos'), pt(d(3), 'ganamos'),
-  pt(d(4), 'perdimos'),
+chequear('un triunfo y un empate alcanzan (4 pts)', grupo('ganamos', 'empate', 'perdimos').proxima.id, 'oc');
+
+/* el umbral es 4: 3 puntos ya no alcanzan */
+chequear('un triunfo y dos derrotas no alcanza (3 pts)', grupo('ganamos', 'perdimos', 'perdimos').proxima.id, 'g1');
+chequear('tres empates no alcanzan (3 pts)', grupo('empate', 'empate', 'empate').proxima.id, 'g1');
+chequear('2 puntos no alcanzan', grupo('perdimos', 'empate', 'empate').proxima.id, 'g1');
+
+const afuera = grupo('perdimos', 'perdimos', 'perdimos');
+chequear('tres derrotas: afuera', afuera.proxima.id, 'g1');
+chequear('y arranca un mundial nuevo', afuera.mundial, 2);
+chequear('la 3a fecha queda marcada como eliminacion', afuera.historial[0].eliminado, true);
+
+/* se juegan las tres aunque los numeros ya no den */
+chequear('no se elimina antes de jugar las tres', grupo('perdimos', 'perdimos').proxima.id, 'g3');
+chequear('con dos jugados sigue el mundial 1', grupo('perdimos', 'perdimos').mundial, 1);
+chequear(
+  'avisa cuando ya no dan los numeros',
+  frase(grupo('perdimos', 'perdimos')).includes('ya no dan los números'),
+  true,
+);
+
+/* --- bajarse sin jugar la ultima (0007) --- */
+const liquidado = grupo('perdimos', 'perdimos');
+chequear('dos derrotas dejan el grupo liquidado', liquidado.liquidado, true);
+chequear('y ofrece cerrar desde el ultimo jugado', liquidado.cerrarDesde, 'p' + d(2));
+chequear('una sola derrota todavia no liquida', grupo('perdimos').liquidado, false);
+chequear('sin jugar nada no hay nada que liquidar', calcularCamino([]).liquidado, false);
+chequear('con 3 puntos y una fecha por jugar no esta liquidado', grupo('ganamos').liquidado, false);
+
+const cerrado = calcularCamino([
+  pt(d(1), 'perdimos'),
+  { ...pt(d(2), 'perdimos'), cierra_mundial: true },
+  pt(d(3), 'ganamos'),
 ]);
-chequear('la derrota manda a cero', conDerrota.triunfos, 0);
-chequear('la derrota abre un mundial nuevo', conDerrota.mundial, 2);
-chequear('pero queda registrada la mejor instancia', conDerrota.mejorInstancia, 3);
+chequear('cerrado a mano: el siguiente arranca mundial nuevo', cerrado.mundial, 2);
+chequear('y ese triunfo es la 1a fecha del nuevo', cerrado.jugadosGrupo, 1);
+chequear('con sus 3 puntos limpios', cerrado.puntos, 3);
+chequear('el partido del cierre queda marcado', cerrado.historial[1].eliminado, true);
+
+/* el flag en un partido que ya cerraba el mundial solo no cuenta dos veces */
+const cierreDoble = calcularCamino([
+  pt(d(1), 'perdimos'),
+  pt(d(2), 'perdimos'),
+  { ...pt(d(3), 'perdimos'), cierra_mundial: true },
+]);
+chequear('no abre dos mundiales de un saque', cierreDoble.mundial, 2);
+
+/* --- de octavos en adelante no hay red --- */
+const enOctavos: Partido['resultado'][] = ['ganamos', 'ganamos', 'ganamos'];
+
+const empateEnLlave = grupo(...enOctavos, 'empate');
+chequear('el empate en llave te deja donde estabas', empateEnLlave.proxima.id, 'oc');
+
+const derrotaEnLlave = grupo(...enOctavos, 'perdimos');
+chequear('la derrota en llave manda a cero', derrotaEnLlave.proxima.id, 'g1');
+chequear('la derrota en llave abre mundial nuevo', derrotaEnLlave.mundial, 2);
+chequear('pero queda registrada la mejor instancia', derrotaEnLlave.mejorInstancia, 3);
 
 const campeon = calcularCamino(
-  Array.from({ length: PARA_LA_COPA }, (_, i) => pt(d(i + 1), 'ganamos')),
+  Array.from({ length: INSTANCIAS }, (_, i) => pt(d(i + 1), 'ganamos')),
 );
-chequear('7 al hilo -> una copa', campeon.copas, 1);
-chequear('despues de la copa vuelve a cero', campeon.triunfos, 0);
+chequear('3 de grupos + 4 de llave -> una copa', campeon.copas, 1);
+chequear('despues de la copa vuelve a cero', campeon.etapa, 0);
 chequear('y arranca el mundial 2', campeon.mundial, 2);
 chequear('el ultimo paso marca la copa', campeon.historial[0].copa, true);
 chequear('el ultimo triunfo fue la final', campeon.historial[0].instancia.id, 'fi');
 
+/* campeón perdiendo uno en grupos: 8 partidos, no 7 */
+const campeonSufrido = grupo('perdimos', 'ganamos', 'ganamos', 'ganamos', 'ganamos', 'ganamos', 'ganamos');
+chequear('se puede salir campeon habiendo perdido en grupos', campeonSufrido.copas, 1);
+
 const dosCopas = calcularCamino(
-  Array.from({ length: PARA_LA_COPA * 2 }, (_, i) => pt(d(i + 1), 'ganamos')),
+  Array.from({ length: INSTANCIAS * 2 }, (_, i) => pt(d(i + 1), 'ganamos')),
 );
 chequear('14 al hilo -> dos copas', dosCopas.copas, 2);
 
+/* el estado del mundial en curso, que es lo que dibuja los casilleros */
+const enCuartos = grupo('ganamos', 'empate', 'perdimos', 'ganamos');
+chequear('actual tiene un casillero por instancia superada', enCuartos.actual.length, 4);
+chequear('y guarda el resultado de cada fecha de grupos', enCuartos.actual.slice(0, GRUPOS), [
+  'ganamos', 'empate', 'perdimos',
+]);
+chequear('largo de actual = etapa', enCuartos.actual.length, enCuartos.etapa);
+
 /* el orden cronologico manda, no el orden en que vienen */
 const desordenado = calcularCamino([
-  pt(d(3), 'perdimos'), pt(d(1), 'ganamos'), pt(d(2), 'ganamos'),
+  pt(d(3), 'perdimos'), pt(d(1), 'perdimos'), pt(d(2), 'perdimos'),
 ]);
-chequear('ordena por fecha antes de contar', desordenado.triunfos, 0);
-chequear('y la derrota final deja mejor instancia en 2', desordenado.mejorInstancia, 2);
+chequear('ordena por fecha antes de contar', desordenado.mundial, 2);
 
 /* los partidos sin resultado no cuentan */
 const conPendientes = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), null), pt(d(3), 'ganamos')]);
-chequear('los partidos sin cargar se ignoran', conPendientes.triunfos, 2);
+chequear('los partidos sin cargar se ignoran', conPendientes.puntos, 6);
 chequear('el historial solo trae los jugados', conPendientes.historial.length, 2);
 
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);

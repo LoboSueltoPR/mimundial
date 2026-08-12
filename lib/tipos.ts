@@ -109,6 +109,8 @@ export type Partido = {
   goles_contra: number | null;
   equipos: Equipos | null;
   notas: string | null;
+  /** true si con este partido se dio por terminado el mundial (ver 0007) */
+  cierra_mundial: boolean;
   creado_en: string;
 };
 

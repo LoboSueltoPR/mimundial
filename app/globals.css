@@ -287,6 +287,14 @@ label{
   border-color:var(--acento);border-width:2px;border-style:dashed;
   background:var(--acento-suave);color:var(--acento);
 }
+/* Los tres de grupos se juegan igual: un empate o una derrota ahí no dejan
+   el casillero vacío como si no hubiera pasado nada, lo marcan jugado. */
+.casillero.empatada{
+  background:var(--surface-2);border-color:var(--faint);color:var(--dim);
+}
+.casillero.perdida{
+  background:var(--red-suave);border-color:var(--red);color:var(--red);
+}
 /* el séptimo es la copa: el oro vive acá */
 .casillero.premio{border-color:var(--oro);background:var(--oro-suave);color:var(--oro)}
 .casillero.premio.ganada{background:var(--oro);border-color:var(--oro);color:var(--oro-ink)}
@@ -502,6 +510,12 @@ label{
 }
 .chip.puso{color:var(--acento);border-color:var(--acento);background:var(--acento-suave)}
 .chip.copaChip{color:var(--oro-txt);border-color:var(--oro);background:var(--oro-suave)}
+.chip.afueraChip{color:var(--red);border-color:var(--red);background:var(--red-suave)}
+
+/* La salida de emergencia: aparece sola cuando el grupo ya no da. */
+.cerrarBox{margin-top:12px;display:grid;gap:9px}
+.cerrarBox b{font-size:14.5px}
+.cerrarBox p{margin:0;font-size:13px;line-height:1.45;color:var(--dim)}
 
 /* ---------- equipos ---------- */
 .equipos{display:flex;gap:9px}

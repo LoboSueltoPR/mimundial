@@ -77,24 +77,34 @@ export default function Taller() {
               <span>Mundial #3</span>
               <span>2 copas</span>
             </div>
-            <div className="copaBox-fase">{CAMINO[4].nombre}</div>
-            <div className="copaBox-frase">En cuartos. Empieza lo lindo.</div>
+            <div className="copaBox-fase">{CAMINO[2].nombre}</div>
+            <div className="copaBox-frase">
+              4 puntos en 2 fechas. El pase ya está.
+            </div>
+            {/* Fase de grupos: los jugados se marcan con lo que salió, no solo
+                los ganados. Acá: ganó, empató, y le queda la tercera. */}
             <div className="casilleros">
               {CAMINO.map((inst, i) => {
-                const ganada = i < 4;
+                const res = ['ganada', 'empatada'][i] ?? '';
                 const premio = i === CAMINO.length - 1;
                 return (
                   <span
                     key={inst.id}
-                    className={`casillero ${ganada ? 'ganada' : ''} ${i === 4 ? 'actual' : ''} ${premio ? 'premio' : ''}`}
+                    className={`casillero ${res} ${i === 2 ? 'actual' : ''} ${premio ? 'premio' : ''}`}
                   >
-                    {ganada ? <MarcaTilde tam={15} /> : premio ? <Copita tam={13} /> : null}
+                    {res === 'ganada' ? (
+                      <MarcaTilde tam={15} />
+                    ) : res === 'empatada' ? (
+                      <MarcaEmpate tam={15} />
+                    ) : premio ? (
+                      <Copita tam={13} />
+                    ) : null}
                   </span>
                 );
               })}
             </div>
             <div className="copaBox-pie">
-              <b>4</b> al hilo<span className="sep">·</span>faltan <b>3</b> para la copa
+              <b>4</b> puntos<span className="sep">·</span>pase asegurado
             </div>
           </div>
 
@@ -107,21 +117,28 @@ export default function Taller() {
             <div className="copaBox-fase">{CAMINO[6].nombre}</div>
             <div className="copaBox-frase">La final. Ganás esto y sos campeón.</div>
             <div className="casilleros">
+              {/* Camino a la final habiendo perdido la 1ª de grupos */}
               {CAMINO.map((inst, i) => {
-                const ganada = i < 6;
+                const res = i === 0 ? 'perdida' : i < 6 ? 'ganada' : '';
                 const premio = i === CAMINO.length - 1;
                 return (
                   <span
                     key={inst.id}
-                    className={`casillero ${ganada ? 'ganada' : ''} ${i === 6 ? 'actual' : ''} ${premio ? 'premio' : ''}`}
+                    className={`casillero ${res} ${i === 6 ? 'actual' : ''} ${premio ? 'premio' : ''}`}
                   >
-                    {ganada ? <MarcaTilde tam={15} /> : premio ? <Copita tam={13} /> : null}
+                    {res === 'ganada' ? (
+                      <MarcaTilde tam={15} />
+                    ) : res === 'perdida' ? (
+                      <MarcaPerdio tam={15} />
+                    ) : premio ? (
+                      <Copita tam={13} />
+                    ) : null}
                   </span>
                 );
               })}
             </div>
             <div className="copaBox-pie">
-              <b>6</b> al hilo<span className="sep">·</span>falta <b>1</b> para la copa
+              <b>3</b> de 4 llaves<span className="sep">·</span>falta <b>1</b> para la copa
             </div>
           </div>
         </Bloque>
@@ -140,7 +157,9 @@ export default function Taller() {
                       <b>{inst.nombre}</b>
                       <small>
                         {estado === 'pasada'
-                          ? 'superada'
+                          ? i < 3
+                            ? 'jugada'
+                            : 'superada'
                           : estado === 'actual'
                             ? 'te toca ahora'
                             : `a ${i - 4} triunfo${i - 4 > 1 ? 's' : ''}`}

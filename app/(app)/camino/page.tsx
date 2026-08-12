@@ -6,19 +6,24 @@ import { crearCliente } from '@/lib/supabase/client';
 import type { AmigoCamino, Partido } from '@/lib/tipos';
 import {
   CAMINO,
-  PARA_LA_COPA,
+  GRUPOS,
+  INSTANCIAS,
+  LLAVES,
+  PARA_PASAR,
   calcularCamino,
   faltanParaLaCopa,
+  faltanParaPasar,
   frase,
 } from '@/lib/camino';
 import { color, fechaLarga, iniciales } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
-import { MarcaTilde } from '@/components/Marcas';
+import { MarcaEmpate, MarcaPerdio, MarcaTilde } from '@/components/Marcas';
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<AmigoCamino[]>([]);
+  const [cerrando, setCerrando] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -47,8 +52,30 @@ export default function Camino() {
   if (!partidos) return <div className="cargando">Cargando…</div>;
 
   const e = calcularCamino(partidos);
-  const enFinal = e.triunfos === CAMINO.length - 1;
+  const enFinal = e.etapa === INSTANCIAS - 1;
   const faltan = faltanParaLaCopa(e);
+  const paraPasar = faltanParaPasar(e);
+
+  /* Marcar el último jugado como el cierre: el próximo resultado que cargues
+     ya cuenta como la 1ª fecha de un mundial nuevo. */
+  const cerrarMundial = async () => {
+    const id = e.cerrarDesde;
+    if (!id) return;
+    setCerrando(true);
+    const supabase = crearCliente();
+    const { error } = await supabase
+      .from('partidos')
+      .update({ cierra_mundial: true })
+      .eq('id', id);
+    setCerrando(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setPartidos((ps) =>
+      (ps ?? []).map((p) => (p.id === id ? { ...p, cierra_mundial: true } : p)),
+    );
+  };
 
   return (
     <div style={{ paddingTop: 16 }}>
@@ -64,40 +91,91 @@ export default function Camino() {
         <div className="copaBox-fase">{e.proxima.nombre}</div>
         <div className="copaBox-frase">{frase(e)}</div>
 
-        {/* Los siete casilleros: la firma. Uno por triunfo, el último
-            es la copa. Tildás siete al hilo y la levantás. */}
-        <div className="casilleros" role="img" aria-label={`${e.triunfos} de ${PARA_LA_COPA} triunfos`}>
+        {/* Los siete casilleros: la firma. Los tres primeros son los de
+            grupos y se marcan con lo que haya salido; de octavos para
+            arriba solo se tildan ganando. El último es la copa. */}
+        <div
+          className="casilleros"
+          role="img"
+          aria-label={`${e.etapa} de ${INSTANCIAS} instancias superadas`}
+        >
           {CAMINO.map((inst, i) => {
-            const ganada = i < e.triunfos;
-            const premio = i === CAMINO.length - 1;
+            const res = e.actual[i];
+            const premio = i === INSTANCIAS - 1;
+            const clase =
+              res === 'ganamos'
+                ? 'ganada'
+                : res === 'empate'
+                  ? 'empatada'
+                  : res === 'perdimos'
+                    ? 'perdida'
+                    : '';
             return (
               <span
                 key={inst.id}
-                className={`casillero ${ganada ? 'ganada' : ''} ${
-                  i === e.triunfos ? 'actual' : ''
-                } ${premio ? 'premio' : ''}`}
+                className={`casillero ${clase} ${i === e.etapa ? 'actual' : ''} ${
+                  premio ? 'premio' : ''
+                }`}
                 title={inst.nombre}
               >
-                {ganada ? <MarcaTilde tam={15} /> : premio ? <Copita tam={13} /> : null}
+                {res === 'ganamos' ? (
+                  <MarcaTilde tam={15} />
+                ) : res === 'empate' ? (
+                  <MarcaEmpate tam={15} />
+                ) : res === 'perdimos' ? (
+                  <MarcaPerdio tam={15} />
+                ) : premio ? (
+                  <Copita tam={13} />
+                ) : null}
               </span>
             );
           })}
         </div>
 
         <div className="copaBox-pie">
-          <b>{e.triunfos}</b> al hilo
-          <span className="sep">·</span>
-          faltan <b>{faltan}</b> para la copa
+          {e.enGrupos ? (
+            <>
+              <b>{e.puntos}</b> punto{e.puntos === 1 ? '' : 's'}
+              <span className="sep">·</span>
+              {paraPasar === 0 ? (
+                <>pase asegurado</>
+              ) : (
+                <>
+                  faltan <b>{paraPasar}</b> para pasar
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              <b>{e.etapa - GRUPOS}</b> de {LLAVES} llaves
+              <span className="sep">·</span>
+              faltan <b>{faltan}</b> para la copa
+            </>
+          )}
         </div>
       </div>
+
+      {/* ---------- bajarse cuando ya no dan los números ---------- */}
+      {e.liquidado && e.cerrarDesde && (
+        <div className="card cerrarBox">
+          <b>Ya no llegás a {PARA_PASAR} puntos.</b>
+          <p>
+            Podés jugar {GRUPOS - e.jugadosGrupo === 1 ? 'la última' : 'las que quedan'} igual, o
+            dar el mundial por terminado acá y que el próximo partido arranque uno nuevo.
+          </p>
+          <button className="btn wide" onClick={cerrarMundial} disabled={cerrando}>
+            {cerrando ? 'Cerrando…' : 'Dar por terminado este mundial'}
+          </button>
+        </div>
+      )}
 
       {/* ---------- el mapa de lo que viene ---------- */}
       <div className="sec">El camino</div>
       <div className="card">
         <ol className="ruta">
           {CAMINO.map((inst, i) => {
-            const estado =
-              i < e.triunfos ? 'pasada' : i === e.triunfos ? 'actual' : 'pendiente';
+            const estado = i < e.etapa ? 'pasada' : i === e.etapa ? 'actual' : 'pendiente';
+            const esGrupo = i < GRUPOS;
             return (
               <li key={inst.id} className={`ruta-paso ${estado}`}>
                 <span className="ruta-punto">
@@ -107,23 +185,29 @@ export default function Camino() {
                   <b>{inst.nombre}</b>
                   <small>
                     {estado === 'pasada'
-                      ? 'superada'
+                      ? esGrupo
+                        ? 'jugada'
+                        : 'superada'
                       : estado === 'actual'
                         ? 'te toca ahora'
-                        : `a ${i - e.triunfos} triunfo${i - e.triunfos > 1 ? 's' : ''}`}
+                        : esGrupo
+                          ? 'se juega igual'
+                          : `a ${i - e.etapa} triunfo${i - e.etapa > 1 ? 's' : ''}`}
                   </small>
                 </span>
               </li>
             );
           })}
-          <li className={`ruta-paso copa ${e.triunfos >= PARA_LA_COPA ? 'pasada' : 'pendiente'}`}>
+          <li className="ruta-paso copa pendiente">
             <span className="ruta-punto">
               <Copita tam={13} />
             </span>
             <span className="ruta-txt">
               <b>Campeón del mundo</b>
               <small>
-                {faltan} triunfo{faltan > 1 ? 's' : ''} y la levantás
+                {e.enGrupos
+                  ? `primero hay que pasar de fase`
+                  : `${faltan} triunfo${faltan > 1 ? 's' : ''} y la levantás`}
               </small>
             </span>
           </li>
@@ -143,7 +227,7 @@ export default function Camino() {
           </div>
           <div className="nota">
             {e.copas === 1 ? 'Una copa' : `${e.copas} copas`} desde que arrancaste. Cada una son{' '}
-            {PARA_LA_COPA} triunfos seguidos.
+            {GRUPOS} fechas de grupos y {LLAVES} triunfos de llave.
           </div>
         </>
       )}
@@ -164,7 +248,9 @@ export default function Camino() {
                     <b>{am.nombre}</b>
                     <small>
                       {ea.copas > 0 ? `${ea.copas} copa${ea.copas > 1 ? 's' : ''} · ` : ''}
-                      {ea.triunfos} al hilo
+                      {ea.enGrupos
+                        ? `${ea.puntos} pt${ea.puntos === 1 ? '' : 's'} en grupos`
+                        : `${ea.etapa - GRUPOS} de ${LLAVES} llaves`}
                     </small>
                   </span>
                   <span className="estado-pill emp">{ea.proxima.corto}</span>
@@ -198,6 +284,7 @@ export default function Camino() {
                 <b>
                   {h.instancia.nombre}
                   {h.copa && <span className="chip copaChip">campeón</span>}
+                  {h.eliminado && <span className="chip afueraChip">afuera</span>}
                 </b>
                 <small>
                   {fechaLarga(h.fecha)}
@@ -205,7 +292,7 @@ export default function Camino() {
                 </small>
               </span>
               <span className="paso-flecha">
-                {h.resultado === 'ganamos' ? '↑' : h.resultado === 'perdimos' ? '↺' : '→'}
+                {h.eliminado ? '↺' : h.resultado === 'ganamos' ? '↑' : '→'}
               </span>
             </Link>
           ))}
@@ -213,8 +300,9 @@ export default function Camino() {
       )}
 
       <div className="nota">
-        Ganás y avanzás. Empatás y te quedás donde estabas. <b>Perdés y volvés a cero</b>, con
-        mundial nuevo.
+        Los {GRUPOS} de grupos se juegan igual: ganar suma 3, empatar 1, perder 0. Con{' '}
+        <b>{PARA_PASAR} puntos o más pasás</b> a octavos — ahí sí, perdés y volvés a cero con
+        mundial nuevo. El empate en llave te deja donde estabas.
       </div>
     </div>
   );

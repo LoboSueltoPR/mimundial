@@ -58,6 +58,30 @@ chequear(
   claimAjeno.data?.error,
 );
 
+// Los tres caminos que 0005 abrió para el logueado: sin sesión, ni tocarlos.
+const rpcMisPartidos = await sb.rpc('mis_partidos_anotado');
+chequear(
+  'no puede llamar mis_partidos_anotado',
+  !!rpcMisPartidos.error,
+  rpcMisPartidos.error?.message?.slice(0, 60) || `PASÓ (${JSON.stringify(rpcMisPartidos.data)})`,
+);
+
+const rpcEditarMia = await sb.rpc('actualizar_mi_anotacion', {
+  p_partido_id: randomUUID(), p_nombre: 'Hackeado', p_invitados: 0,
+});
+chequear(
+  'no puede llamar actualizar_mi_anotacion',
+  !!rpcEditarMia.error,
+  rpcEditarMia.error?.message?.slice(0, 60) || `PASÓ (${JSON.stringify(rpcEditarMia.data)})`,
+);
+
+const rpcBajarme = await sb.rpc('bajarme_de_partido', { p_partido_id: randomUUID() });
+chequear(
+  'no puede llamar bajarme_de_partido',
+  !!rpcBajarme.error,
+  rpcBajarme.error?.message?.slice(0, 60) || `PASÓ (${JSON.stringify(rpcBajarme.data)})`,
+);
+
 if (!TOKEN) {
   console.log('\n(Pasá un token real como argumento para probar el flujo del invitado.)');
   console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
@@ -76,6 +100,20 @@ if (ver.data) {
   chequear('no expone el user_id del anfitrión', !campos.includes('user_id'));
   chequear('no expone ningún claim', !JSON.stringify(ver.data).includes('claim'));
   chequear('no expone lo que pagó cada uno', !JSON.stringify(ver.data).includes('pagado'));
+
+  // 0005 devuelve user_id/username/avatar de cada anotado SOLO si hay sesión.
+  const anotados = ver.data.anotados || [];
+  chequear(
+    'sin sesión, ningún anotado trae user_id',
+    anotados.every((a) => a.user_id === null),
+    anotados.map((a) => a.user_id).join(','),
+  );
+  chequear(
+    'sin sesión, ningún anotado trae username ni avatar',
+    anotados.every((a) => a.username === null && a.avatar_url === null),
+  );
+  chequear('sin sesión, no dice que estoy anotado', ver.data.soy_anotado === false);
+  chequear('sin sesión, no manda mi_nombre', ver.data.mi_nombre === null);
 }
 
 const miClaim = randomUUID();
