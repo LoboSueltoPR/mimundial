@@ -23,6 +23,7 @@ import { useConfirmar } from '@/components/Confirmar';
 import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio } from '@/components/Marcas';
 import Avatar from '@/components/Avatar';
+import PerfilModal from '@/components/PerfilModal';
 
 type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
 type AvatarInfo = { avatar_url: string | null; username: string | null };
@@ -39,6 +40,9 @@ export default function DetallePartido() {
   const [cargando, setCargando] = useState(true);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
   const [avatares, setAvatares] = useState<Record<string, AvatarInfo>>({});
+  const [solicitudesEnviadas, setSolicitudesEnviadas] = useState<Set<string>>(new Set());
+  const [enviandoSolicitud, setEnviandoSolicitud] = useState<string | null>(null);
+  const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -72,7 +76,27 @@ export default function DetallePartido() {
         });
         setAvatares(mapa);
       });
+    crearCliente()
+      .rpc('mis_solicitudes_enviadas')
+      .then(({ data }) => {
+        setSolicitudesEnviadas(new Set(((data ?? []) as { id_usuario: string }[]).map((s) => s.id_usuario)));
+      });
   }, [cargar, id]);
+
+  async function enviarSolicitud(uid: string) {
+    setEnviandoSolicitud(uid);
+    const supabase = crearCliente();
+    const { data } = await supabase.rpc('enviar_solicitud', { p_para: uid });
+    setEnviandoSolicitud(null);
+    const r = data as { ok: boolean; estado?: 'pendiente' | 'aceptada' } | null;
+    if (r?.estado === 'aceptada') {
+      crearCliente()
+        .rpc('mis_amigos')
+        .then(({ data: mis }) => setAmigos((mis ?? []) as Amigo[]));
+    } else if (r?.ok) {
+      setSolicitudesEnviadas((prev) => new Set(prev).add(uid));
+    }
+  }
 
   if (cargando) return <div className="cargando">Cargando…</div>;
   if (error || !p)
@@ -224,9 +248,12 @@ export default function DetallePartido() {
           js={js}
           amigos={amigos}
           avatares={avatares}
+          miId={p.user_id}
+          solicitudesEnviadas={solicitudesEnviadas}
           onInv={actualizarJugador}
           onQuitar={quitar}
           onSumar={sumar}
+          onAbrirPerfil={(uid, nombreJ) => setPerfilAbierto({ id: uid, nombre: nombreJ })}
         />
       )}
       {vista === 'equipos' && (
@@ -257,6 +284,23 @@ export default function DetallePartido() {
       </button>
 
       {confirmarUI}
+
+      {perfilAbierto && (
+        <PerfilModal
+          userId={perfilAbierto.id}
+          nombreFallback={perfilAbierto.nombre}
+          estado={
+            amigos.some((am) => am.id === perfilAbierto.id)
+              ? 'amigo'
+              : solicitudesEnviadas.has(perfilAbierto.id)
+                ? 'pendiente'
+                : 'ninguno'
+          }
+          procesando={enviandoSolicitud === perfilAbierto.id}
+          onEnviarSolicitud={(uid) => enviarSolicitud(uid)}
+          onCerrar={() => setPerfilAbierto(null)}
+        />
+      )}
     </div>
   );
 }
@@ -346,16 +390,22 @@ function Anotados({
   js,
   amigos,
   avatares,
+  miId,
+  solicitudesEnviadas,
   onInv,
   onQuitar,
   onSumar,
+  onAbrirPerfil,
 }: {
   js: Jugador[];
   amigos: Amigo[];
   avatares: Record<string, AvatarInfo>;
+  miId: string;
+  solicitudesEnviadas: Set<string>;
   onInv: (id: string, campos: Partial<Jugador>) => void;
   onQuitar: (j: Jugador) => void;
   onSumar: (nombre: string) => Promise<void>;
+  onAbrirPerfil: (uid: string, nombre: string) => void;
 }) {
   const [nombre, setNombre] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -383,17 +433,32 @@ function Anotados({
             n++;
             const etiqueta = inv > 0 ? `${n}–${n + inv}` : String(n);
             n += inv;
+            const esOtroLogueado = !!(j.user_id && j.user_id !== miId);
             return (
               <div className="jug" key={j.id}>
                 <span className="num">{etiqueta}</span>
-                <Avatar nombre={j.nombre} url={j.user_id ? avatares[j.user_id]?.avatar_url : null} />
-                <span className="nom">
-                  <b>{j.nombre}</b>
-                  {inv > 0 && (
-                    <small>
-                      +{inv} invitado{inv > 1 ? 's' : ''} · {1 + inv} lugares
-                    </small>
-                  )}
+                <span
+                  className="jug-clic"
+                  style={esOtroLogueado ? { cursor: 'pointer', display: 'contents' } : { display: 'contents' }}
+                  onClick={() => esOtroLogueado && onAbrirPerfil(j.user_id!, j.nombre)}
+                >
+                  <Avatar nombre={j.nombre} url={j.user_id ? avatares[j.user_id]?.avatar_url : null} />
+                  <span className="nom">
+                    <b>{j.nombre}</b>
+                    {inv > 0 ? (
+                      <small>
+                        +{inv} invitado{inv > 1 ? 's' : ''} · {1 + inv} lugares
+                      </small>
+                    ) : esOtroLogueado ? (
+                      <small>
+                        {solicitudesEnviadas.has(j.user_id!)
+                          ? 'Solicitud pendiente'
+                          : amigos.some((a) => a.id === j.user_id)
+                            ? 'Tu amigo'
+                            : 'Ver perfil'}
+                      </small>
+                    ) : null}
+                  </span>
                 </span>
                 <span className="inv">
                   <button

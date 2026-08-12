@@ -82,6 +82,19 @@ export type AnotadoPublico = {
 export type Amigo = { id: string; nombre: string; username?: string | null; avatar_url?: string | null };
 export type Sugerencia = Amigo & { via: string };
 
+export type Solicitud = {
+  id: string;
+  id_usuario: string;
+  nombre: string;
+  avatar_url: string | null;
+  username: string | null;
+  creado_en: string;
+};
+
+/** Con quién ya sos amigo, a quién le mandaste solicitud (pendiente), o
+ *  ninguna de las dos — lo que decide qué botón mostrar en un perfil. */
+export type EstadoAmistad = 'amigo' | 'pendiente' | 'ninguno';
+
 export type PartidoParaCamino = {
   id: string;
   fecha: string;

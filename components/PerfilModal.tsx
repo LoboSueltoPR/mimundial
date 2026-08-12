@@ -2,29 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
-import type { PerfilPublico } from '@/lib/tipos';
+import type { EstadoAmistad, PerfilPublico } from '@/lib/tipos';
 import { GRUPOS, LLAVES, calcularCamino } from '@/lib/camino';
 import Avatar from './Avatar';
 
 /**
- * El perfil de otro jugador logueado, visto desde un partido compartido.
- * perfil_publico() en la base ya filtra que compartan un partido, así que
- * acá no hay que volver a chequear nada: si vino vacío es que no comparten
- * ninguno (o se cortó la sesión).
+ * El perfil de otro jugador logueado: quiénes son amigos o comparten un
+ * partido pueden abrirlo desde cualquier lista de la app (Partidos,
+ * Amigos, Camino, o el link de invitación), no solo desde uno de esos
+ * lugares. perfil_publico() en la base filtra eso mismo del lado del
+ * servidor, así que acá no hay que volver a chequear nada: si vino
+ * vacío es que ninguna de las dos condiciones se cumple.
  */
 export default function PerfilModal({
   userId,
   nombreFallback,
-  esAmigo,
-  agregando,
-  onAgregarAmigo,
+  estado,
+  procesando,
+  onEnviarSolicitud,
   onCerrar,
 }: {
   userId: string;
   nombreFallback: string;
-  esAmigo: boolean;
-  agregando: boolean;
-  onAgregarAmigo: (id: string, nombre: string) => void;
+  estado: EstadoAmistad;
+  procesando: boolean;
+  onEnviarSolicitud: (id: string, nombre: string) => void;
   onCerrar: () => void;
 }) {
   const [perfil, setPerfil] = useState<PerfilPublico | null>(null);
@@ -65,7 +67,7 @@ export default function PerfilModal({
           </div>
         ) : !perfil ? (
           <p className="nota" style={{ marginTop: 14 }}>
-            No pudimos traer su camino — puede que ya no compartan ningún partido.
+            No pudimos traer su camino — puede que ya no sean amigos ni compartan ningún partido.
           </p>
         ) : (
           <div className="perfilModal-camino">
@@ -80,17 +82,21 @@ export default function PerfilModal({
         )}
 
         <div className="row2" style={{ marginTop: 16 }}>
-          {esAmigo ? (
+          {estado === 'amigo' ? (
             <button className="btn wide" disabled>
               Ya es tu amigo
+            </button>
+          ) : estado === 'pendiente' ? (
+            <button className="btn wide" disabled>
+              Solicitud enviada
             </button>
           ) : (
             <button
               className="btn pri wide"
-              onClick={() => onAgregarAmigo(userId, nombre)}
-              disabled={agregando}
+              onClick={() => onEnviarSolicitud(userId, nombre)}
+              disabled={procesando}
             >
-              {agregando ? 'Agregando…' : '+ Agregar amigo'}
+              {procesando ? 'Enviando…' : 'Enviar solicitud de amistad'}
             </button>
           )}
         </div>

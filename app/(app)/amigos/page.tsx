@@ -2,20 +2,25 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Amigo, Sugerencia } from '@/lib/tipos';
+import type { Amigo, RespuestaRPC, Solicitud, Sugerencia } from '@/lib/tipos';
 import { useConfirmar } from '@/components/Confirmar';
 import Avatar from '@/components/Avatar';
+import PerfilModal from '@/components/PerfilModal';
 
 export default function Amigos() {
   const { confirmar, ui: confirmarUI } = useConfirmar();
   const [amigos, setAmigos] = useState<Amigo[] | null>(null);
   const [sugeridos, setSugeridos] = useState<Sugerencia[]>([]);
+  const [recibidas, setRecibidas] = useState<Solicitud[]>([]);
+  const [enviadas, setEnviadas] = useState<Solicitud[]>([]);
   const [email, setEmail] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [msg, setMsg] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null);
 
   const [busqueda, setBusqueda] = useState('');
-  const [sumando, setSumando] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState<string | null>(null);
+  const [respondiendo, setRespondiendo] = useState<string | null>(null);
+  const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
   /* Se guarda junto con la búsqueda que lo produjo. Así "hay resultados"
      y "estoy buscando" salen de comparar, no de limpiar estado a mano
      cada vez que cambia el texto. */
@@ -23,12 +28,16 @@ export default function Amigos() {
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
-    const [a, s] = await Promise.all([
+    const [a, s, r, e] = await Promise.all([
       supabase.rpc('mis_amigos'),
       supabase.rpc('sugerencias_amigos'),
+      supabase.rpc('mis_solicitudes_recibidas'),
+      supabase.rpc('mis_solicitudes_enviadas'),
     ]);
     setAmigos((a.data ?? []) as Amigo[]);
     setSugeridos((s.data ?? []) as Sugerencia[]);
+    setRecibidas((r.data ?? []) as Solicitud[]);
+    setEnviadas((e.data ?? []) as Solicitud[]);
   }, []);
 
   useEffect(() => {
@@ -39,6 +48,7 @@ export default function Amigos() {
   const hayQueBuscar = q.length >= 3;
   const resultados = hallazgo.q === q ? hallazgo.lista : [];
   const buscandoUsername = hayQueBuscar && hallazgo.q !== q;
+  const idsEnviadas = new Set(enviadas.map((s) => s.id_usuario));
 
   // buscar por username con un pequeño debounce, desde 3 caracteres
   useEffect(() => {
@@ -69,34 +79,49 @@ export default function Amigos() {
       setMsg({ tipo: 'err', texto: 'No hay nadie con ese mail en MiMundial todavía.' });
       return;
     }
-    await sumar(encontrado.id, encontrado.nombre);
+    await enviarSolicitud(encontrado.id, encontrado.nombre);
     setBuscando(false);
     setEmail('');
   }
 
-  async function sumar(id: string, nombre: string) {
-    if (sumando) return;
-    setSumando(id);
+  async function enviarSolicitud(id: string, nombre: string) {
+    if (enviando) return;
+    setEnviando(id);
     const supabase = crearCliente();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setSumando(null);
+    const { data, error } = await supabase.rpc('enviar_solicitud', { p_para: id });
+    setEnviando(null);
+    const r = data as (RespuestaRPC & { estado?: 'pendiente' | 'aceptada' }) | null;
+    if (error || !r?.ok) {
+      setMsg({ tipo: 'err', texto: r?.error || error?.message || 'No se pudo enviar.' });
       return;
     }
+    setMsg({
+      tipo: 'ok',
+      texto:
+        r.estado === 'aceptada'
+          ? `${nombre} ya te había mandado solicitud — ahora son amigos.`
+          : `Le mandaste una solicitud a ${nombre}.`,
+    });
+    setHallazgo((h) => ({ ...h, lista: h.lista.filter((x) => x.id !== id) }));
+    cargar();
+  }
 
-    const { error } = await supabase.from('amigos').insert({ user_id: user.id, amigo_id: id });
-    setSumando(null);
-    if (error) {
-      setMsg({
-        tipo: 'err',
-        texto: error.code === '23505' ? `${nombre} ya está en tu lista.` : error.message,
-      });
-      return;
-    }
-    setMsg({ tipo: 'ok', texto: `${nombre} se sumó a tus amigos.` });
-    setHallazgo((h) => ({ ...h, lista: h.lista.filter((r) => r.id !== id) }));
+  async function responder(s: Solicitud, aceptar: boolean) {
+    if (respondiendo) return;
+    setRespondiendo(s.id);
+    const supabase = crearCliente();
+    await supabase.rpc('responder_solicitud', { p_id: s.id, p_aceptar: aceptar });
+    setRespondiendo(null);
+    setMsg(aceptar ? { tipo: 'ok', texto: `Ahora sos amigo de ${s.nombre}.` } : null);
+    cargar();
+  }
+
+  async function cancelar(s: Solicitud) {
+    if (respondiendo) return;
+    setRespondiendo(s.id);
+    const supabase = crearCliente();
+    await supabase.rpc('cancelar_solicitud', { p_id: s.id });
+    setRespondiendo(null);
     cargar();
   }
 
@@ -104,11 +129,7 @@ export default function Amigos() {
     if (!(await confirmar(`¿Sacar a ${a.nombre} de tus amigos?`, { danger: true, boton: 'Sacar' })))
       return;
     const supabase = crearCliente();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    await supabase.from('amigos').delete().eq('user_id', user.id).eq('amigo_id', a.id);
+    await supabase.rpc('sacar_amigo', { p_amigo_id: a.id });
     cargar();
   }
 
@@ -116,6 +137,38 @@ export default function Amigos() {
 
   return (
     <div style={{ paddingTop: 18 }}>
+      {recibidas.length > 0 && (
+        <>
+          <div className="sec">Te mandaron solicitud · {recibidas.length}</div>
+          <div className="card">
+            {recibidas.map((s) => (
+              <div className="saldo" key={s.id}>
+                <Avatar nombre={s.nombre} url={s.avatar_url} />
+                <span className="nom">
+                  <b>{s.nombre}</b>
+                  {s.username && <small>@{s.username}</small>}
+                </span>
+                <button
+                  className="btn sm"
+                  onClick={() => responder(s, false)}
+                  disabled={respondiendo === s.id}
+                  style={{ marginRight: 6 }}
+                >
+                  Rechazar
+                </button>
+                <button
+                  className="btn pri sm"
+                  onClick={() => responder(s, true)}
+                  disabled={respondiendo === s.id}
+                >
+                  {respondiendo === s.id ? '…' : 'Aceptar'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <div className="sec">Buscar por username</div>
       <input
         value={busqueda}
@@ -138,10 +191,10 @@ export default function Amigos() {
                 </span>
                 <button
                   className="btn sm"
-                  onClick={() => sumar(r.id, r.nombre)}
-                  disabled={sumando === r.id}
+                  onClick={() => enviarSolicitud(r.id, r.nombre)}
+                  disabled={enviando === r.id || idsEnviadas.has(r.id)}
                 >
-                  {sumando === r.id ? '…' : 'Sumar'}
+                  {idsEnviadas.has(r.id) ? 'Pendiente' : enviando === r.id ? '…' : 'Enviar solicitud'}
                 </button>
               </div>
             ))
@@ -164,7 +217,7 @@ export default function Amigos() {
             style={{ flex: 'none', padding: '12px 20px' }}
             disabled={buscando}
           >
-            {buscando ? '…' : 'Sumar'}
+            {buscando ? '…' : 'Enviar'}
           </button>
         </div>
       </form>
@@ -173,6 +226,26 @@ export default function Amigos() {
         Tiene que haber entrado alguna vez a MiMundial con ese mail. Para los que no tienen cuenta
         está el link de invitación del partido.
       </div>
+
+      {enviadas.length > 0 && (
+        <>
+          <div className="sec">Esperando respuesta · {enviadas.length}</div>
+          <div className="card">
+            {enviadas.map((s) => (
+              <div className="saldo" key={s.id}>
+                <Avatar nombre={s.nombre} url={s.avatar_url} />
+                <span className="nom">
+                  <b>{s.nombre}</b>
+                  {s.username && <small>@{s.username}</small>}
+                </span>
+                <button className="quitar" onClick={() => cancelar(s)} title="Cancelar">
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="sec">Tus amigos · {amigos.length}</div>
       <div className="card">
@@ -184,12 +257,24 @@ export default function Amigos() {
           </div>
         ) : (
           amigos.map((a) => (
-            <div className="saldo" key={a.id}>
+            <div
+              className="saldo"
+              key={a.id}
+              style={{ cursor: 'pointer' }}
+              onClick={() => setPerfilAbierto({ id: a.id, nombre: a.nombre })}
+            >
               <Avatar nombre={a.nombre} url={a.avatar_url} />
               <span className="nom">
                 <b>{a.nombre}</b>
               </span>
-              <button className="quitar" onClick={() => sacar(a)} title="Sacar">
+              <button
+                className="quitar"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  sacar(a);
+                }}
+                title="Sacar"
+              >
                 ×
               </button>
             </div>
@@ -210,15 +295,26 @@ export default function Amigos() {
                 </span>
                 <button
                   className="btn sm"
-                  onClick={() => sumar(s.id, s.nombre)}
-                  disabled={sumando === s.id}
+                  onClick={() => enviarSolicitud(s.id, s.nombre)}
+                  disabled={enviando === s.id || idsEnviadas.has(s.id)}
                 >
-                  {sumando === s.id ? '…' : 'Sumar'}
+                  {idsEnviadas.has(s.id) ? 'Pendiente' : enviando === s.id ? '…' : 'Enviar solicitud'}
                 </button>
               </div>
             ))}
           </div>
         </>
+      )}
+
+      {perfilAbierto && (
+        <PerfilModal
+          userId={perfilAbierto.id}
+          nombreFallback={perfilAbierto.nombre}
+          estado="amigo"
+          procesando={false}
+          onEnviarSolicitud={() => {}}
+          onCerrar={() => setPerfilAbierto(null)}
+        />
       )}
 
       {confirmarUI}
