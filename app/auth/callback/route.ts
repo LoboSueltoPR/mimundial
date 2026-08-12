@@ -18,8 +18,18 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await crearClienteServidor();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${destino}`);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      // La foto no se sube a mano: siempre es la de Google, así que en
+      // cada login se resincroniza acá — cubre tanto que la hayan
+      // cambiado en Google como cualquier avatar viejo que hubiera
+      // quedado de la época en que sí se podía subir una propia.
+      const avatarGoogle = data.user?.user_metadata?.avatar_url as string | undefined;
+      if (data.user && avatarGoogle) {
+        await supabase.from('perfiles').update({ avatar_url: avatarGoogle }).eq('id', data.user.id);
+      }
+      return NextResponse.redirect(`${origin}${destino}`);
+    }
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
   }
 
