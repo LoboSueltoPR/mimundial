@@ -642,10 +642,19 @@ label{
   padding:18px 16px;text-align:center;
 }
 .fichaPerfil-av{
-  width:58px;height:58px;border-radius:var(--radio);margin:0 auto 10px;
+  width:58px;height:58px;border-radius:var(--radio);margin:0 auto 0;
   display:grid;place-items:center;
   font-size:21px;font-weight:700;color:#fff;
   font-family:var(--fuente-display);
+}
+.fichaPerfil-avBtn{
+  background:none;border:0;padding:0;margin:0 auto 10px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+}
+.fichaPerfil-avBtn:disabled{opacity:.6;cursor:default}
+.fichaPerfil-avEditar{
+  font-family:var(--fuente-dato);font-size:10px;color:var(--acento);
+  text-transform:uppercase;letter-spacing:.5px;font-weight:600;
 }
 .fichaPerfil b{display:block;font-size:18px;font-weight:700}
 .fichaPerfil small{display:block;font-family:var(--fuente-dato);font-size:11.5px;
@@ -689,7 +698,7 @@ label{
 .sheetConfirmar{padding-top:20px}
 .confirmarTexto{font-size:14.5px;line-height:1.5;color:var(--txt);margin-bottom:16px}
 .perfilModal-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
-.perfilModal-head .av{border-radius:50%}
+.perfilModal-head .av{border-radius:50%;font-size:17px}
 .perfilModal-fase{font-size:22px;letter-spacing:-.3px}
 @media(min-width:600px){
   .modal{align-items:center}

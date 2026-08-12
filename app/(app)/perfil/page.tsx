@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import { color, iniciales } from '@/lib/calculos';
 import type { Pie, Posicion } from '@/lib/tipos';
 import { useConfirmar } from '@/components/Confirmar';
+import Avatar from '@/components/Avatar';
+import { archivoAAvatar } from '@/lib/imagen';
 
 const POSICIONES: { valor: Posicion; etiqueta: string }[] = [
   { valor: 'arquero', etiqueta: 'Arquero' },
@@ -32,6 +33,11 @@ export default function Perfil() {
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
   const [msgPerfil, setMsgPerfil] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null);
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [errorFoto, setErrorFoto] = useState<string | null>(null);
+  const inputFoto = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     (async () => {
       const supabase = crearCliente();
@@ -49,7 +55,7 @@ export default function Perfil() {
 
       const { data: perfil } = await supabase
         .from('perfiles')
-        .select('username, posicion, pie')
+        .select('username, posicion, pie, avatar_url')
         .eq('id', user.id)
         .single();
       if (perfil) {
@@ -57,6 +63,7 @@ export default function Perfil() {
         setUsernameGuardado(perfil.username || null);
         setPosicion((perfil.posicion as Posicion) || '');
         setPie((perfil.pie as Pie) || '');
+        setAvatarUrl(perfil.avatar_url || null);
       }
     })();
   }, []);
@@ -91,6 +98,33 @@ export default function Perfil() {
       .eq('id', user.id);
   }
 
+  async function cambiarFoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+
+    setErrorFoto(null);
+    setSubiendoFoto(true);
+    try {
+      const dataUri = await archivoAAvatar(archivo);
+      const supabase = crearCliente();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error('Se cortó la sesión. Volvé a entrar.');
+      const { error } = await supabase
+        .from('perfiles')
+        .update({ avatar_url: dataUri })
+        .eq('id', user.id);
+      if (error) throw error;
+      setAvatarUrl(dataUri);
+    } catch (err) {
+      setErrorFoto(err instanceof Error ? err.message : 'No se pudo guardar la foto.');
+    } finally {
+      setSubiendoFoto(false);
+    }
+  }
+
   async function salir() {
     if (!(await confirmar('¿Cerrar sesión?', { boton: 'Cerrar sesión', danger: true }))) return;
     const supabase = crearCliente();
@@ -102,12 +136,26 @@ export default function Perfil() {
   return (
     <div style={{ paddingTop: 18 }}>
       <div className="fichaPerfil">
-        <span className="fichaPerfil-av" style={{ background: color(nombre || '?') }}>
-          {iniciales(nombre || '?')}
-        </span>
+        <button
+          className="fichaPerfil-avBtn"
+          onClick={() => inputFoto.current?.click()}
+          disabled={subiendoFoto}
+          aria-label="Cambiar foto de perfil"
+        >
+          <Avatar nombre={nombre || '?'} url={avatarUrl} tam={58} className="fichaPerfil-av" />
+          <span className="fichaPerfil-avEditar">{subiendoFoto ? '…' : 'Cambiar'}</span>
+        </button>
+        <input
+          ref={inputFoto}
+          type="file"
+          accept="image/*"
+          onChange={cambiarFoto}
+          style={{ display: 'none' }}
+        />
         <b>{nombre || '—'}</b>
         {usernameGuardado && <small>@{usernameGuardado}</small>}
         <small>{email}</small>
+        {errorFoto && <div className="msg err" style={{ marginTop: 10 }}>{errorFoto}</div>}
       </div>
 
       <div className="sec">Tu username</div>
