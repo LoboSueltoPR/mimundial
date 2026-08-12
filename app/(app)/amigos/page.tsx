@@ -6,6 +6,7 @@ import type { Amigo, RespuestaRPC, Solicitud, Sugerencia } from '@/lib/tipos';
 import { useConfirmar } from '@/components/Confirmar';
 import Avatar from '@/components/Avatar';
 import PerfilModal from '@/components/PerfilModal';
+import { conApodo } from '@/lib/nombre';
 
 export default function Amigos() {
   const { confirmar, ui: confirmarUI } = useConfirmar();
@@ -145,7 +146,7 @@ export default function Amigos() {
               <div className="saldo" key={s.id}>
                 <Avatar nombre={s.nombre} url={s.avatar_url} />
                 <span className="nom">
-                  <b>{s.nombre}</b>
+                  <b>{conApodo(s.nombre, s.apodo)}</b>
                   {s.username && <small>@{s.username}</small>}
                 </span>
                 <button
@@ -186,7 +187,7 @@ export default function Amigos() {
               <div className="saldo" key={r.id}>
                 <Avatar nombre={r.nombre} url={r.avatar_url} />
                 <span className="nom">
-                  <b>{r.nombre}</b>
+                  <b>{conApodo(r.nombre, r.apodo)}</b>
                   <small>@{r.username}</small>
                 </span>
                 <button
@@ -235,7 +236,7 @@ export default function Amigos() {
               <div className="saldo" key={s.id}>
                 <Avatar nombre={s.nombre} url={s.avatar_url} />
                 <span className="nom">
-                  <b>{s.nombre}</b>
+                  <b>{conApodo(s.nombre, s.apodo)}</b>
                   {s.username && <small>@{s.username}</small>}
                 </span>
                 <button className="quitar" onClick={() => cancelar(s)} title="Cancelar">
@@ -265,7 +266,7 @@ export default function Amigos() {
             >
               <Avatar nombre={a.nombre} url={a.avatar_url} />
               <span className="nom">
-                <b>{a.nombre}</b>
+                <b>{conApodo(a.nombre, a.apodo)}</b>
               </span>
               <button
                 className="quitar"
@@ -290,7 +291,7 @@ export default function Amigos() {
               <div className="saldo" key={s.id}>
                 <Avatar nombre={s.nombre} url={s.avatar_url} />
                 <span className="nom">
-                  <b>{s.nombre}</b>
+                  <b>{conApodo(s.nombre, s.apodo)}</b>
                   <small>por {s.via}</small>
                 </span>
                 <button

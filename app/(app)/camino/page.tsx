@@ -20,6 +20,7 @@ import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio, MarcaTilde } from '@/components/Marcas';
 import Avatar from '@/components/Avatar';
 import PerfilModal from '@/components/PerfilModal';
+import { conApodo } from '@/lib/nombre';
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
@@ -251,7 +252,7 @@ export default function Camino() {
                 >
                   <Avatar nombre={am.nombre} url={am.avatar_url} />
                   <span className="info">
-                    <b>{am.nombre}</b>
+                    <b>{conApodo(am.nombre, am.apodo)}</b>
                     <small>
                       {ea.copas > 0 ? `${ea.copas} copa${ea.copas > 1 ? 's' : ''} · ` : ''}
                       {ea.enGrupos

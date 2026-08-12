@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
 import type { EstadoAmistad, PerfilPublico } from '@/lib/tipos';
 import { GRUPOS, LLAVES, calcularCamino } from '@/lib/camino';
+import { conApodo } from '@/lib/nombre';
 import Avatar from './Avatar';
+
+const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
  * El perfil de otro jugador logueado: quiénes son amigos o comparten un
@@ -47,8 +50,15 @@ export default function PerfilModal({
     };
   }, [userId]);
 
-  const nombre = perfil?.nombre || nombreFallback;
+  const nombre = perfil ? conApodo(perfil.nombre, perfil.apodo) : nombreFallback;
   const e = perfil ? calcularCamino(perfil.partidos) : null;
+  const datosJugador = perfil
+    ? [
+        perfil.club ? `hincha de ${perfil.club}` : null,
+        perfil.posicion ? capitalizar(perfil.posicion) : null,
+        perfil.pie ? capitalizar(perfil.pie) : null,
+      ].filter(Boolean)
+    : [];
 
   return (
     <div className="modal" onClick={(ev) => ev.target === ev.currentTarget && onCerrar()}>
@@ -78,6 +88,11 @@ export default function PerfilModal({
                 ? `${e!.puntos} punto${e!.puntos === 1 ? '' : 's'} en grupos`
                 : `${e!.etapa - GRUPOS} de ${LLAVES} llaves`}
             </div>
+            {datosJugador.length > 0 && (
+              <div className="nota" style={{ margin: 0 }}>
+                {datosJugador.join(' · ')}
+              </div>
+            )}
           </div>
         )}
 
