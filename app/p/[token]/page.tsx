@@ -8,6 +8,8 @@ import { color, fechaLarga, iniciales } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
 import { useConfirmar } from '@/components/Confirmar';
 import BotonGoogle from '@/components/BotonGoogle';
+import Shell from '@/components/Shell';
+import PerfilModal from '@/components/PerfilModal';
 
 /** El claim vive solo en este navegador: es lo único que te deja editar lo tuyo. */
 function claimGuardado(token: string): string {
@@ -42,9 +44,14 @@ export default function Invitacion() {
   const [guardando, setGuardando] = useState(false);
 
   const [miId, setMiId] = useState<string | null>(null);
+  const [miNombreCuenta, setMiNombreCuenta] = useState('vos');
   const [miUsername, setMiUsername] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
   const [agregando, setAgregando] = useState<string | null>(null);
+  /** true en cuanto se supo si hay sesión o no — evita el parpadeo de
+   *  mostrar la pantalla pública un instante antes de meter el Shell. */
+  const [sesionLista, setSesionLista] = useState(false);
+  const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
   /** cargar() y el fetch del perfil corren en paralelo y ninguno espera al
    *  otro: esta ref evita que el nombre de perfil pise el de la anotación
    *  ya existente, gane quien gane la carrera. */
@@ -85,7 +92,10 @@ export default function Invitacion() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setSesionLista(true);
+        return;
+      }
       setMiId(user.id);
 
       const [{ data: perfil }, { data: mis }] = await Promise.all([
@@ -100,9 +110,11 @@ export default function Invitacion() {
         user.email?.split('@')[0] ||
         '';
       setMiUsername(perfil?.username ?? null);
+      if (suNombre) setMiNombreCuenta(suNombre);
       // el nombre de la cuenta manda sobre lo que quedó guardado en el
       // navegador, pero nunca sobre el nombre con el que ya está anotado
       if (suNombre && !tengoFilaPropia.current) setNombre(suNombre);
+      setSesionLista(true);
     })();
   }, [cargar, token]);
 
@@ -181,7 +193,7 @@ export default function Invitacion() {
     cargar();
   }
 
-  if (cargando) return <div className="cargando">Cargando…</div>;
+  if (cargando || !sesionLista) return <div className="cargando">Cargando…</div>;
 
   if (!p)
     return (
@@ -196,8 +208,18 @@ export default function Invitacion() {
 
   const completo = p.faltan === 0;
 
+  // Logueado: se ve como el resto de la app, con la misma barra de
+  // navegación — no como una pantalla pública suelta. Sin cuenta sigue
+  // siendo la landing sola, que es lo que necesita el invitado sin fricción.
+  const Envoltorio = miId
+    ? ({ children }: { children: React.ReactNode }) => (
+        <Shell nombre={miNombreCuenta}>{children}</Shell>
+      )
+    : ({ children }: { children: React.ReactNode }) => <div className="wrap">{children}</div>;
+
   return (
-    <div className="wrap invitacion">
+    <Envoltorio>
+      <div className="invitacion">
       <div className="inv-marca">
         <span className="dot">
           <Copita tam={11} />
@@ -347,10 +369,16 @@ export default function Invitacion() {
         ) : (
           p.anotados.map((a, i) => {
             const yaEsAmigo = a.user_id ? amigos.some((am) => am.id === a.user_id) : false;
-            const mostrarBoton =
-              miId && a.user_id && a.user_id !== miId && !yaEsAmigo;
+            const esOtroLogueado = !!(miId && a.user_id && a.user_id !== miId);
             return (
-              <div className="jug" key={i}>
+              <div
+                className="jug"
+                key={i}
+                style={esOtroLogueado ? { cursor: 'pointer' } : undefined}
+                onClick={() =>
+                  esOtroLogueado && setPerfilAbierto({ id: a.user_id!, nombre: a.nombre })
+                }
+              >
                 <span className="av" style={{ background: color(a.nombre) }}>
                   {iniciales(a.nombre)}
                 </span>
@@ -362,10 +390,13 @@ export default function Invitacion() {
                     {a.invitados > 0 ? `+${a.invitados} invitado${a.invitados > 1 ? 's' : ''}` : ''}
                   </small>
                 </span>
-                {mostrarBoton && (
+                {esOtroLogueado && !yaEsAmigo && (
                   <button
                     className="btn sm"
-                    onClick={() => agregarAmigo(a.user_id!, a.nombre)}
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      agregarAmigo(a.user_id!, a.nombre);
+                    }}
                     disabled={agregando === a.user_id}
                   >
                     {agregando === a.user_id ? '…' : '+ Amigo'}
@@ -383,6 +414,18 @@ export default function Invitacion() {
       </div>
 
       {confirmarUI}
-    </div>
+      </div>
+
+      {perfilAbierto && (
+        <PerfilModal
+          userId={perfilAbierto.id}
+          nombreFallback={perfilAbierto.nombre}
+          esAmigo={amigos.some((am) => am.id === perfilAbierto.id)}
+          agregando={agregando === perfilAbierto.id}
+          onAgregarAmigo={(id, nombreOtro) => agregarAmigo(id, nombreOtro)}
+          onCerrar={() => setPerfilAbierto(null)}
+        />
+      )}
+    </Envoltorio>
   );
 }
