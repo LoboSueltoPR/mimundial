@@ -3,6 +3,7 @@ import { Anton, IBM_Plex_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import RegistrarSW from '@/components/RegistrarSW';
 import Arranque from '@/components/Arranque';
+import InstalarApp from '@/components/InstalarApp';
 
 // Anton: condensada y pesada, de cartel de estadio y número de camiseta.
 const anton = Anton({ subsets: ['latin'], weight: '400', variable: '--fuente-anton', display: 'swap' });
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es-AR" className={`${anton.variable} ${inter.variable} ${plex.variable}`}>
       <body>
         <Arranque />
+        <InstalarApp />
         {children}
         <RegistrarSW />
       </body>

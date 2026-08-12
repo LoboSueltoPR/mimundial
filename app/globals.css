@@ -151,6 +151,29 @@ nav.tabs a.on{
 .avatarBtn:active{background:var(--surface-2)}
 .avatarBtn.on{color:var(--acento);border-color:var(--acento);background:var(--acento-suave)}
 
+/* ---------- franja de instalar como app ---------- */
+/* Sin position:fixed a propósito: va antes que todo en el body, así que
+   estando en flujo normal empuja el header (sticky) hacia abajo en vez de
+   taparlo. Se va con el scroll, que para un aviso de una sola vez está bien. */
+.instalarApp{
+  display:flex;align-items:center;gap:10px;
+  padding:calc(9px + env(safe-area-inset-top)) 14px 9px;
+  background:var(--txt);color:var(--bg);
+  position:relative;z-index:30;
+}
+.instalarApp-ico{flex:none;color:var(--oro);line-height:0}
+.instalarApp-txt{flex:1;min-width:0;font-size:12.5px;line-height:1.4}
+.instalarApp-share{display:inline-block}
+.instalarApp-cerrar{
+  flex:none;background:none;border:0;color:inherit;font-size:21px;line-height:1;
+  padding:2px 2px;cursor:pointer;opacity:.65;
+}
+.instalarApp-cerrar:active{opacity:1}
+@media(min-width:600px){
+  .instalarApp{justify-content:center}
+  .instalarApp-txt{flex:none;max-width:480px}
+}
+
 /* ---------- la barra de abajo ---------- */
 .barraAbajo{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
