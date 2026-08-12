@@ -19,12 +19,14 @@ import { fechaLarga } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio, MarcaTilde } from '@/components/Marcas';
 import Avatar from '@/components/Avatar';
+import PerfilModal from '@/components/PerfilModal';
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<AmigoCamino[]>([]);
   const [cerrando, setCerrando] = useState(false);
+  const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -241,7 +243,12 @@ export default function Camino() {
             {amigos.map((am) => {
               const ea = calcularCamino(am.partidos);
               return (
-                <div className="item" key={am.id} style={{ cursor: 'default' }}>
+                <div
+                  className="item"
+                  key={am.id}
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setPerfilAbierto({ id: am.id, nombre: am.nombre })}
+                >
                   <Avatar nombre={am.nombre} url={am.avatar_url} />
                   <span className="info">
                     <b>{am.nombre}</b>
@@ -303,6 +310,17 @@ export default function Camino() {
         <b>{PARA_PASAR} puntos o más pasás</b> a octavos — ahí sí, perdés y volvés a cero con
         mundial nuevo. El empate en llave te deja donde estabas.
       </div>
+
+      {perfilAbierto && (
+        <PerfilModal
+          userId={perfilAbierto.id}
+          nombreFallback={perfilAbierto.nombre}
+          estado="amigo"
+          procesando={false}
+          onEnviarSolicitud={() => {}}
+          onCerrar={() => setPerfilAbierto(null)}
+        />
+      )}
     </div>
   );
 }

@@ -50,6 +50,7 @@ export default function Invitacion() {
   const [miAvatarUrl, setMiAvatarUrl] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
   const [agregando, setAgregando] = useState<string | null>(null);
+  const [solicitudesEnviadas, setSolicitudesEnviadas] = useState<Set<string>>(new Set());
   /** true en cuanto se supo si hay sesión o no — evita el parpadeo de
    *  mostrar la pantalla pública un instante antes de meter el Shell. */
   const [sesionLista, setSesionLista] = useState(false);
@@ -100,11 +101,13 @@ export default function Invitacion() {
       }
       setMiId(user.id);
 
-      const [{ data: perfil }, { data: mis }] = await Promise.all([
+      const [{ data: perfil }, { data: mis }, { data: env }] = await Promise.all([
         supabase.from('perfiles').select('nombre, username, avatar_url').eq('id', user.id).single(),
         supabase.rpc('mis_amigos'),
+        supabase.rpc('mis_solicitudes_enviadas'),
       ]);
       setAmigos((mis ?? []) as Amigo[]);
+      setSolicitudesEnviadas(new Set(((env ?? []) as { id_usuario: string }[]).map((s) => s.id_usuario)));
 
       const suNombre =
         perfil?.nombre ||
@@ -121,16 +124,21 @@ export default function Invitacion() {
     })();
   }, [cargar, token]);
 
-  async function agregarAmigo(id: string, nombreOtro: string) {
+  async function enviarSolicitud(id: string) {
     setAgregando(id);
     const supabase = crearCliente();
-    const { error } = await supabase.from('amigos').insert({ user_id: miId, amigo_id: id });
+    const { data, error } = await supabase.rpc('enviar_solicitud', { p_para: id });
     setAgregando(null);
-    if (error) {
-      setError(error.code === '23505' ? `${nombreOtro} ya está en tus amigos.` : error.message);
+    const r = data as (RespuestaRPC & { estado?: 'pendiente' | 'aceptada' }) | null;
+    if (error || !r?.ok) {
+      setError(r?.error || error?.message || 'No se pudo enviar la solicitud.');
       return;
     }
-    setAmigos((prev) => [...prev, { id, nombre: nombreOtro }]);
+    if (r.estado === 'aceptada') {
+      setAmigos((prev) => [...prev, { id, nombre: p?.anotados.find((a) => a.user_id === id)?.nombre || '' }]);
+    } else {
+      setSolicitudesEnviadas((prev) => new Set(prev).add(id));
+    }
   }
 
   async function anotarse() {
@@ -370,6 +378,7 @@ export default function Invitacion() {
         ) : (
           p.anotados.map((a, i) => {
             const yaEsAmigo = a.user_id ? amigos.some((am) => am.id === a.user_id) : false;
+            const pendiente = a.user_id ? solicitudesEnviadas.has(a.user_id) : false;
             const esOtroLogueado = !!(miId && a.user_id && a.user_id !== miId);
             return (
               <div
@@ -389,18 +398,19 @@ export default function Invitacion() {
                     {a.invitados > 0 ? `+${a.invitados} invitado${a.invitados > 1 ? 's' : ''}` : ''}
                   </small>
                 </span>
-                {esOtroLogueado && !yaEsAmigo && (
+                {esOtroLogueado && !yaEsAmigo && !pendiente && (
                   <button
                     className="btn sm"
                     onClick={(ev) => {
                       ev.stopPropagation();
-                      agregarAmigo(a.user_id!, a.nombre);
+                      enviarSolicitud(a.user_id!);
                     }}
                     disabled={agregando === a.user_id}
                   >
-                    {agregando === a.user_id ? '…' : '+ Amigo'}
+                    {agregando === a.user_id ? '…' : '+ Solicitud'}
                   </button>
                 )}
+                {pendiente && !yaEsAmigo && <span className="chip">Pendiente</span>}
                 {yaEsAmigo && <span className="chip">Amigo</span>}
               </div>
             );
@@ -419,9 +429,15 @@ export default function Invitacion() {
         <PerfilModal
           userId={perfilAbierto.id}
           nombreFallback={perfilAbierto.nombre}
-          esAmigo={amigos.some((am) => am.id === perfilAbierto.id)}
-          agregando={agregando === perfilAbierto.id}
-          onAgregarAmigo={(id, nombreOtro) => agregarAmigo(id, nombreOtro)}
+          estado={
+            amigos.some((am) => am.id === perfilAbierto.id)
+              ? 'amigo'
+              : solicitudesEnviadas.has(perfilAbierto.id)
+                ? 'pendiente'
+                : 'ninguno'
+          }
+          procesando={agregando === perfilAbierto.id}
+          onEnviarSolicitud={(id) => enviarSolicitud(id)}
           onCerrar={() => setPerfilAbierto(null)}
         />
       )}
