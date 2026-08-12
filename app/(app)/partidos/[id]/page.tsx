@@ -22,8 +22,10 @@ import {
 import { useConfirmar } from '@/components/Confirmar';
 import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio } from '@/components/Marcas';
+import Avatar from '@/components/Avatar';
 
 type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
+type AvatarInfo = { avatar_url: string | null; username: string | null };
 
 export default function DetallePartido() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +38,7 @@ export default function DetallePartido() {
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
+  const [avatares, setAvatares] = useState<Record<string, AvatarInfo>>({});
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -60,7 +63,16 @@ export default function DetallePartido() {
     crearCliente()
       .rpc('mis_amigos')
       .then(({ data }) => setAmigos((data ?? []) as Amigo[]));
-  }, [cargar]);
+    crearCliente()
+      .rpc('avatares_de_partido', { p_partido_id: id })
+      .then(({ data }) => {
+        const mapa: Record<string, AvatarInfo> = {};
+        ((data ?? []) as (AvatarInfo & { user_id: string })[]).forEach((a) => {
+          mapa[a.user_id] = { avatar_url: a.avatar_url, username: a.username };
+        });
+        setAvatares(mapa);
+      });
+  }, [cargar, id]);
 
   if (cargando) return <div className="cargando">Cargando…</div>;
   if (error || !p)
@@ -208,7 +220,14 @@ export default function DetallePartido() {
       )}
 
       {vista === 'anotados' && (
-        <Anotados js={js} amigos={amigos} onInv={actualizarJugador} onQuitar={quitar} onSumar={sumar} />
+        <Anotados
+          js={js}
+          amigos={amigos}
+          avatares={avatares}
+          onInv={actualizarJugador}
+          onQuitar={quitar}
+          onSumar={sumar}
+        />
       )}
       {vista === 'equipos' && (
         <EquiposVista
@@ -326,12 +345,14 @@ function Invitar({
 function Anotados({
   js,
   amigos,
+  avatares,
   onInv,
   onQuitar,
   onSumar,
 }: {
   js: Jugador[];
   amigos: Amigo[];
+  avatares: Record<string, AvatarInfo>;
   onInv: (id: string, campos: Partial<Jugador>) => void;
   onQuitar: (j: Jugador) => void;
   onSumar: (nombre: string) => Promise<void>;
@@ -365,9 +386,7 @@ function Anotados({
             return (
               <div className="jug" key={j.id}>
                 <span className="num">{etiqueta}</span>
-                <span className="av" style={{ background: color(j.nombre) }}>
-                  {iniciales(j.nombre)}
-                </span>
+                <Avatar nombre={j.nombre} url={j.user_id ? avatares[j.user_id]?.avatar_url : null} />
                 <span className="nom">
                   <b>{j.nombre}</b>
                   {inv > 0 && (
