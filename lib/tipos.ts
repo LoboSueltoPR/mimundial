@@ -19,6 +19,8 @@ export type Pie = 'derecho' | 'zurdo' | 'ambos';
 export type Perfil = {
   id: string;
   nombre: string;
+  apodo: string | null;
+  club: string | null;
   avatar_url: string | null;
   username: string | null;
   posicion: Posicion | null;
@@ -79,13 +81,20 @@ export type AnotadoPublico = {
   avatar_url: string | null;
 };
 
-export type Amigo = { id: string; nombre: string; username?: string | null; avatar_url?: string | null };
+export type Amigo = {
+  id: string;
+  nombre: string;
+  apodo?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
+};
 export type Sugerencia = Amigo & { via: string };
 
 export type Solicitud = {
   id: string;
   id_usuario: string;
   nombre: string;
+  apodo: string | null;
   avatar_url: string | null;
   username: string | null;
   creado_en: string;
@@ -107,14 +116,20 @@ export type PartidoParaCamino = {
 export type AmigoCamino = {
   id: string;
   nombre: string;
+  apodo: string | null;
   username: string | null;
   avatar_url: string | null;
   partidos: PartidoParaCamino[];
 };
 
 /** Lo que devuelve perfil_publico: como AmigoCamino pero de alguien con
- *  quien compartís un partido, no necesariamente ya agregado. */
-export type PerfilPublico = AmigoCamino;
+ *  quien compartís un partido o ya son amigos, más los datos de jugador
+ *  que en el resto de las listas no hace falta traer. */
+export type PerfilPublico = AmigoCamino & {
+  club: string | null;
+  posicion: Posicion | null;
+  pie: Pie | null;
+};
 
 export type RespuestaRPC = { ok: boolean; error?: string };
 

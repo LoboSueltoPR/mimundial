@@ -7,6 +7,7 @@ import type { Pie, Posicion } from '@/lib/tipos';
 import { useConfirmar } from '@/components/Confirmar';
 import Avatar from '@/components/Avatar';
 import { archivoAAvatar } from '@/lib/imagen';
+import { conApodo } from '@/lib/nombre';
 
 const POSICIONES: { valor: Posicion; etiqueta: string }[] = [
   { valor: 'arquero', etiqueta: 'Arquero' },
@@ -28,6 +29,8 @@ export default function Perfil() {
 
   const [username, setUsername] = useState('');
   const [usernameGuardado, setUsernameGuardado] = useState<string | null>(null);
+  const [apodo, setApodo] = useState('');
+  const [club, setClub] = useState('');
   const [posicion, setPosicion] = useState<Posicion | ''>('');
   const [pie, setPie] = useState<Pie | ''>('');
   const [guardandoPerfil, setGuardandoPerfil] = useState(false);
@@ -55,12 +58,14 @@ export default function Perfil() {
 
       const { data: perfil } = await supabase
         .from('perfiles')
-        .select('username, posicion, pie, avatar_url')
+        .select('username, apodo, club, posicion, pie, avatar_url')
         .eq('id', user.id)
         .single();
       if (perfil) {
         setUsername(perfil.username || '');
         setUsernameGuardado(perfil.username || null);
+        setApodo(perfil.apodo || '');
+        setClub(perfil.club || '');
         setPosicion((perfil.posicion as Posicion) || '');
         setPie((perfil.pie as Pie) || '');
         setAvatarUrl(perfil.avatar_url || null);
@@ -95,6 +100,19 @@ export default function Perfil() {
     await supabase
       .from('perfiles')
       .update({ [campo]: valor || null })
+      .eq('id', user.id);
+  }
+
+  /** Se guarda al salir del campo, no en cada tecla. */
+  async function guardarTexto(campo: 'apodo' | 'club', valor: string) {
+    const supabase = crearCliente();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from('perfiles')
+      .update({ [campo]: valor.trim() || null })
       .eq('id', user.id);
   }
 
@@ -152,8 +170,9 @@ export default function Perfil() {
           onChange={cambiarFoto}
           style={{ display: 'none' }}
         />
-        <b>{nombre || '—'}</b>
+        <b>{nombre ? conApodo(nombre, apodo) : '—'}</b>
         {usernameGuardado && <small>@{usernameGuardado}</small>}
+        {club && <small>Hincha de {club}</small>}
         <small>{email}</small>
         {errorFoto && <div className="msg err" style={{ marginTop: 10 }}>{errorFoto}</div>}
       </div>
@@ -185,6 +204,21 @@ export default function Perfil() {
         </div>
       </div>
 
+      <div className="sec">Tu apodo</div>
+      <div className="card" style={{ padding: 14 }}>
+        <input
+          value={apodo}
+          onChange={(e) => setApodo(e.target.value)}
+          onBlur={() => guardarTexto('apodo', apodo)}
+          placeholder="Cómo te dicen"
+          maxLength={24}
+        />
+        <div className="nota">
+          Se muestra entre tu nombre y tu apellido, así:{' '}
+          <b>{conApodo(nombre || 'Nombre Apellido', apodo || 'Apodo')}</b>.
+        </div>
+      </div>
+
       <div className="sec">Tu juego</div>
       <div className="card" style={{ padding: 14 }}>
         <div className="campo">
@@ -198,7 +232,7 @@ export default function Perfil() {
             ))}
           </select>
         </div>
-        <div className="campo" style={{ marginBottom: 0 }}>
+        <div className="campo">
           <label>Pierna hábil</label>
           <select value={pie} onChange={(e) => guardarJugador('pie', e.target.value)}>
             <option value="">Sin definir</option>
@@ -208,6 +242,16 @@ export default function Perfil() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="campo" style={{ marginBottom: 0 }}>
+          <label>Hincha de</label>
+          <input
+            value={club}
+            onChange={(e) => setClub(e.target.value)}
+            onBlur={() => guardarTexto('club', club)}
+            placeholder="Tu club"
+            maxLength={40}
+          />
         </div>
       </div>
 
