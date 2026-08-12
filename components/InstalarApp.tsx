@@ -16,12 +16,21 @@ type EventoInstalar = Event & {
 };
 
 const CLAVE_OCULTO = 'mimundial.instalar.oculto';
+const CLAVE_INSTALADA = 'mimundial.instalada';
 const DIAS_REAPARECER = 14;
 
+/**
+ * display-mode:standalone solo da true cuando la pestaña actual es la app
+ * instalada — si en iOS instalaste y después volvés a abrir el link desde
+ * Safari (no desde el ícono), esto da false igual y no hay ninguna API que
+ * lo detecte. Por eso además guardamos una bandera propia: al aceptar en
+ * Android, o al tocar "Ya la tengo" en iOS, queda marcado para siempre.
+ */
 function yaInstalada() {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+    localStorage.getItem(CLAVE_INSTALADA) === '1'
   );
 }
 
@@ -70,10 +79,18 @@ export default function InstalarApp() {
     localStorage.setItem(CLAVE_OCULTO, String(Date.now()));
   }
 
+  /** Confirmación a mano en iOS: no hay forma de detectarlo, así que le
+   *  creemos al usuario y no volvemos a mostrarla nunca más. */
+  function yaLaTengo() {
+    setModo(null);
+    localStorage.setItem(CLAVE_INSTALADA, '1');
+  }
+
   async function instalar() {
     if (!evento) return;
     await evento.prompt();
-    await evento.userChoice;
+    const { outcome } = await evento.userChoice;
+    if (outcome === 'accepted') localStorage.setItem(CLAVE_INSTALADA, '1');
     setEvento(null);
     setModo(null);
   }
@@ -100,6 +117,11 @@ export default function InstalarApp() {
       {modo === 'android' && (
         <button className="btn pri sm" onClick={instalar}>
           Agregar
+        </button>
+      )}
+      {modo === 'ios' && (
+        <button className="instalarApp-yaLaTengo" onClick={yaLaTengo}>
+          Ya la tengo
         </button>
       )}
       <button className="instalarApp-cerrar" onClick={ocultar} aria-label="Cerrar">
