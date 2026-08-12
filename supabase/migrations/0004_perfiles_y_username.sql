@@ -267,11 +267,18 @@ $$;
    8. Permisos
    ------------------------------------------------------------ */
 
+-- 2026-08-12: el revoke original solo sacaba a anon, pero Supabase le da
+-- EXECUTE a PUBLIC además del grant directo a anon/authenticated — sin
+-- este segundo revoke, PUBLIC (que incluye a anon igual) se lo dejaba
+-- pasar. Mismo bug que 0006 encontró en otras funciones.
 grant execute on function public.fijar_username(text) to authenticated;
 revoke execute on function public.fijar_username(text) from anon;
+revoke execute on function public.fijar_username(text) from public;
 
 grant execute on function public.buscar_por_username(text) to authenticated;
 revoke execute on function public.buscar_por_username(text) from anon;
+revoke execute on function public.buscar_por_username(text) from public;
 
 grant execute on function public.camino_de_amigos() to authenticated;
 revoke execute on function public.camino_de_amigos() from anon;
+revoke execute on function public.camino_de_amigos() from public;
