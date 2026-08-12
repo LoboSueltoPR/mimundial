@@ -4,12 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Amigo, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
-import { color, fechaLarga, iniciales } from '@/lib/calculos';
+import { fechaLarga } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
 import { useConfirmar } from '@/components/Confirmar';
 import BotonGoogle from '@/components/BotonGoogle';
 import Shell from '@/components/Shell';
 import PerfilModal from '@/components/PerfilModal';
+import Avatar from '@/components/Avatar';
 
 /** El claim vive solo en este navegador: es lo único que te deja editar lo tuyo. */
 function claimGuardado(token: string): string {
@@ -46,6 +47,7 @@ export default function Invitacion() {
   const [miId, setMiId] = useState<string | null>(null);
   const [miNombreCuenta, setMiNombreCuenta] = useState('vos');
   const [miUsername, setMiUsername] = useState<string | null>(null);
+  const [miAvatarUrl, setMiAvatarUrl] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<Amigo[]>([]);
   const [agregando, setAgregando] = useState<string | null>(null);
   /** true en cuanto se supo si hay sesión o no — evita el parpadeo de
@@ -99,7 +101,7 @@ export default function Invitacion() {
       setMiId(user.id);
 
       const [{ data: perfil }, { data: mis }] = await Promise.all([
-        supabase.from('perfiles').select('nombre, username').eq('id', user.id).single(),
+        supabase.from('perfiles').select('nombre, username, avatar_url').eq('id', user.id).single(),
         supabase.rpc('mis_amigos'),
       ]);
       setAmigos((mis ?? []) as Amigo[]);
@@ -110,6 +112,7 @@ export default function Invitacion() {
         user.email?.split('@')[0] ||
         '';
       setMiUsername(perfil?.username ?? null);
+      setMiAvatarUrl(perfil?.avatar_url ?? null);
       if (suNombre) setMiNombreCuenta(suNombre);
       // el nombre de la cuenta manda sobre lo que quedó guardado en el
       // navegador, pero nunca sobre el nombre con el que ya está anotado
@@ -279,9 +282,7 @@ export default function Invitacion() {
 
           {miId && !mio && (
             <div className="comoEntras">
-              <span className="av" style={{ background: color(nombre || '?') }}>
-                {iniciales(nombre || '?')}
-              </span>
+              <Avatar nombre={nombre || '?'} url={miAvatarUrl} />
               <span>
                 Entrás como <b>{nombre}</b>
                 {miUsername ? ` · @${miUsername}` : ''}
@@ -379,9 +380,7 @@ export default function Invitacion() {
                   esOtroLogueado && setPerfilAbierto({ id: a.user_id!, nombre: a.nombre })
                 }
               >
-                <span className="av" style={{ background: color(a.nombre) }}>
-                  {iniciales(a.nombre)}
-                </span>
+                <Avatar nombre={a.nombre} url={a.avatar_url} />
                 <span className="nom">
                   <b>{a.nombre}</b>
                   <small>

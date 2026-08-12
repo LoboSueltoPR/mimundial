@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Amigo, Sugerencia } from '@/lib/tipos';
-import { color, iniciales } from '@/lib/calculos';
 import { useConfirmar } from '@/components/Confirmar';
+import Avatar from '@/components/Avatar';
 
 export default function Amigos() {
   const { confirmar, ui: confirmarUI } = useConfirmar();
@@ -131,9 +131,7 @@ export default function Amigos() {
           ) : (
             resultados.map((r) => (
               <div className="saldo" key={r.id}>
-                <span className="av" style={{ background: color(r.nombre) }}>
-                  {iniciales(r.nombre)}
-                </span>
+                <Avatar nombre={r.nombre} url={r.avatar_url} />
                 <span className="nom">
                   <b>{r.nombre}</b>
                   <small>@{r.username}</small>
@@ -187,9 +185,7 @@ export default function Amigos() {
         ) : (
           amigos.map((a) => (
             <div className="saldo" key={a.id}>
-              <span className="av" style={{ background: color(a.nombre) }}>
-                {iniciales(a.nombre)}
-              </span>
+              <Avatar nombre={a.nombre} url={a.avatar_url} />
               <span className="nom">
                 <b>{a.nombre}</b>
               </span>
@@ -207,9 +203,7 @@ export default function Amigos() {
           <div className="card">
             {sugeridos.map((s) => (
               <div className="saldo" key={s.id}>
-                <span className="av" style={{ background: color(s.nombre) }}>
-                  {iniciales(s.nombre)}
-                </span>
+                <Avatar nombre={s.nombre} url={s.avatar_url} />
                 <span className="nom">
                   <b>{s.nombre}</b>
                   <small>por {s.via}</small>

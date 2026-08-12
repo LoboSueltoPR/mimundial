@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
 import type { PerfilPublico } from '@/lib/tipos';
-import { color, iniciales } from '@/lib/calculos';
 import { GRUPOS, LLAVES, calcularCamino } from '@/lib/camino';
+import Avatar from './Avatar';
 
 /**
  * El perfil de otro jugador logueado, visto desde un partido compartido.
@@ -52,9 +52,7 @@ export default function PerfilModal({
     <div className="modal" onClick={(ev) => ev.target === ev.currentTarget && onCerrar()}>
       <div className="sheet">
         <div className="perfilModal-head">
-          <span className="av" style={{ background: color(nombre), width: 44, height: 44, fontSize: 17 }}>
-            {iniciales(nombre)}
-          </span>
+          <Avatar nombre={nombre} url={perfil?.avatar_url} tam={44} className="perfilModal-av" />
           <div>
             <h2 style={{ marginBottom: 0 }}>{nombre}</h2>
             {perfil?.username && <div className="nota" style={{ margin: 0 }}>@{perfil.username}</div>}

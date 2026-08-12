@@ -15,9 +15,10 @@ import {
   faltanParaPasar,
   frase,
 } from '@/lib/camino';
-import { color, fechaLarga, iniciales } from '@/lib/calculos';
+import { fechaLarga } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio, MarcaTilde } from '@/components/Marcas';
+import Avatar from '@/components/Avatar';
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
@@ -241,9 +242,7 @@ export default function Camino() {
               const ea = calcularCamino(am.partidos);
               return (
                 <div className="item" key={am.id} style={{ cursor: 'default' }}>
-                  <span className="av" style={{ background: color(am.nombre) }}>
-                    {iniciales(am.nombre)}
-                  </span>
+                  <Avatar nombre={am.nombre} url={am.avatar_url} />
                   <span className="info">
                     <b>{am.nombre}</b>
                     <small>

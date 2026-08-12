@@ -166,6 +166,49 @@ export function calcularCuentas(partidos: (Partido & { jugadores: Jugador[] })[]
     .sort((a, b) => b.saldo - a.saldo);
 }
 
+/* ============================================================
+   Socios en la cancha
+   ============================================================ */
+
+export type Socio = { nombre: string; juntos: number; ganados: number; efectividad: number };
+
+/**
+ * Con quién compartiste equipo y qué tan bien te fue. Necesita saber cuál
+ * de los nombres de la lista sos vos — eso lo guarda quien llama (un
+ * apodo elegido a mano, no hay forma de deducirlo: los jugadores son
+ * texto libre, no cuentas). Solo cuenta partidos con equipos sorteados y
+ * resultado cargado; los invitados no entran porque no tienen nombre
+ * propio ("Invitado de X").
+ */
+export function calcularSocios(
+  partidos: (Partido & { jugadores?: Jugador[] })[],
+  apodo: string,
+): Socio[] {
+  const yo = apodo.trim().toLowerCase();
+  if (!yo) return [];
+
+  const acc: Record<string, { nombre: string; juntos: number; ganados: number }> = {};
+
+  partidos.forEach((p) => {
+    if (!p.equipos || !p.resultado) return;
+    const lados = [p.equipos.a, p.equipos.b];
+    const miLado = lados.find((lado) => lado.some((c) => !c.inv && c.label.toLowerCase() === yo));
+    if (!miLado) return;
+
+    miLado.forEach((c) => {
+      if (c.inv || c.label.toLowerCase() === yo) return;
+      const k = c.label.toLowerCase();
+      if (!acc[k]) acc[k] = { nombre: c.label, juntos: 0, ganados: 0 };
+      acc[k].juntos++;
+      if (p.resultado === 'ganamos') acc[k].ganados++;
+    });
+  });
+
+  return Object.values(acc)
+    .map((x) => ({ ...x, efectividad: Math.round((x.ganados / x.juntos) * 100) }))
+    .sort((a, b) => b.juntos - a.juntos);
+}
+
 /** Cuantas veces jugo cada uno — para ver quien engancha siempre. */
 export function presencias(partidos: (Partido & { jugadores: Jugador[] })[]) {
   const acc: Record<string, { nombre: string; veces: number; invitados: number }> = {};
