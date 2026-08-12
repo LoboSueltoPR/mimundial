@@ -164,6 +164,12 @@ nav.tabs a.on{
 .instalarApp-ico{flex:none;color:var(--oro);line-height:0}
 .instalarApp-txt{flex:1;min-width:0;font-size:12.5px;line-height:1.4}
 .instalarApp-share{display:inline-block}
+.instalarApp-yaLaTengo{
+  flex:none;background:none;border:1px solid var(--bg);color:inherit;
+  border-radius:var(--radio);padding:6px 10px;font-size:12px;font-weight:600;
+  cursor:pointer;opacity:.85;white-space:nowrap;
+}
+.instalarApp-yaLaTengo:active{opacity:1}
 .instalarApp-cerrar{
   flex:none;background:none;border:0;color:inherit;font-size:21px;line-height:1;
   padding:2px 2px;cursor:pointer;opacity:.65;
