@@ -17,7 +17,7 @@ export default function Template({ children }: { children: React.ReactNode }) {
       <div className="barrido" aria-hidden="true">
         <span className="barrido-linea" />
         <span className="barrido-copa">
-          <Copita tam={13} />
+          <Copita tam={22} />
         </span>
       </div>
       <div className="transicion">{children}</div>

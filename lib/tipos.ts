@@ -82,13 +82,26 @@ export type AnotadoPublico = {
 export type Amigo = { id: string; nombre: string; username?: string | null; avatar_url?: string | null };
 export type Sugerencia = Amigo & { via: string };
 
+export type PartidoParaCamino = {
+  id: string;
+  fecha: string;
+  creado_en: string;
+  resultado: Resultado;
+  lugar: string | null;
+  cierra_mundial?: boolean;
+};
+
 export type AmigoCamino = {
   id: string;
   nombre: string;
   username: string | null;
   avatar_url: string | null;
-  partidos: { id: string; fecha: string; creado_en: string; resultado: Resultado; lugar: string | null }[];
+  partidos: PartidoParaCamino[];
 };
+
+/** Lo que devuelve perfil_publico: como AmigoCamino pero de alguien con
+ *  quien compartís un partido, no necesariamente ya agregado. */
+export type PerfilPublico = AmigoCamino;
 
 export type RespuestaRPC = { ok: boolean; error?: string };
 
