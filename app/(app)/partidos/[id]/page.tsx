@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Amigo, Equipos, Jugador, Partido, Resultado } from '@/lib/tipos';
+import type { Amigo, Equipos, Jugador, Partido, PartidoConCancha, Resultado } from '@/lib/tipos';
+import { comoLlegar } from '@/lib/mapa';
 import {
   cabezas,
   cabezasLista,
@@ -33,7 +34,7 @@ export default function DetallePartido() {
   const router = useRouter();
   const { confirmar, ui: confirmarUI } = useConfirmar();
 
-  const [p, setP] = useState<Partido | null>(null);
+  const [p, setP] = useState<PartidoConCancha | null>(null);
   const [js, setJs] = useState<Jugador[]>([]);
   const [vista, setVista] = useState<Vista>('anotados');
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +49,9 @@ export default function DetallePartido() {
     const supabase = crearCliente();
     const { data, error } = await supabase
       .from('partidos')
-      .select('*, jugadores!jugadores_partido_id_fkey(*)')
+      // `canchas` embebe por el único FK partidos.cancha_id, sin ambigüedad
+      // (jugadores sí la tiene por el FK de `puso`, de ahí el nombre a dedo).
+      .select('*, jugadores!jugadores_partido_id_fkey(*), canchas(*)')
       .eq('id', id)
       .single();
 
@@ -57,8 +60,8 @@ export default function DetallePartido() {
       setError(error.message);
       return;
     }
-    const { jugadores, ...resto } = data as Partido & { jugadores: Jugador[] };
-    setP(resto as Partido);
+    const { jugadores, ...resto } = data as PartidoConCancha & { jugadores: Jugador[] };
+    setP(resto as PartidoConCancha);
     setJs([...(jugadores ?? [])].sort((a, b) => a.orden - b.orden));
   }, [id]);
 
@@ -208,6 +211,17 @@ export default function DetallePartido() {
           <div>
             <div className="k">Dónde</div>
             <div className="v">{p.lugar || '—'}</div>
+            {p.canchas && (
+              <a
+                className="comoLlegar"
+                href={comoLlegar(p.canchas.lat, p.canchas.lng)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ marginTop: 6 }}
+              >
+                Cómo llegar
+              </a>
+            )}
           </div>
           <div>
             <div className="k">Anotados</div>

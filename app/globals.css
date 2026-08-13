@@ -924,6 +924,97 @@ label{
 }
 
 /* ============================================================
+   El mapa de canchas.
+
+   La foto satelital es lo único de la app que no es papel, así que
+   se la encuadra como una foto pegada en la planilla: borde de
+   regla, esquinas casi rectas, nada de sombras.
+   ============================================================ */
+
+.mapaCanchas{
+  height:210px;width:100%;
+  border:1px solid var(--regla);
+  border-radius:var(--radio);
+  background:var(--surface);
+  overflow:hidden;
+  z-index:0;                      /* que no se coma el modal */
+}
+.mapaCanchas-cargando{
+  display:grid;place-items:center;
+  color:var(--faint);font-size:12.5px;
+}
+
+/* El pin: círculo de birome con cola, como marcado a mano. */
+.pinCanchaWrap{background:none;border:none}
+.pinCancha{
+  display:block;width:16px;height:16px;margin:0 auto;
+  border-radius:50%;
+  background:var(--acento);
+  border:2px solid #fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35);
+  position:relative;
+  cursor:pointer;
+}
+.pinCancha::after{                /* la cola, hasta el punto exacto */
+  content:"";position:absolute;left:50%;top:14px;
+  width:2px;height:8px;margin-left:-1px;
+  background:#fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.35);
+}
+/* El oro es de la copa, no de un pin. La elegida crece y va en tinta
+   llena con halo blanco: se distingue sin gastar el oro. */
+.pinCancha-elegida{
+  width:22px;height:22px;
+  background:var(--acento);
+  border-width:3px;
+  box-shadow:0 0 0 2px var(--acento),0 0 0 3px rgba(0,0,0,.3);
+}
+.pinCancha-elegida::after{top:19px;height:9px}
+
+/* La lista debajo del mapa: las mismas canchas, tocables sin apuntar. */
+.canchaLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.canchaChip{
+  font:inherit;font-size:12.5px;
+  padding:6px 10px;
+  border:1px solid var(--regla);
+  border-radius:var(--radio);
+  background:var(--surface);
+  color:var(--txt);
+  cursor:pointer;
+}
+.canchaChip.elegida{
+  background:var(--acento);border-color:var(--acento);color:var(--acento-ink);
+  font-weight:600;
+}
+
+/* El rótulo del campo con su escape a la derecha. */
+.campo-cab{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.linkbtn{
+  font:inherit;font-size:11.5px;
+  background:none;border:none;padding:0;
+  color:var(--acento);text-decoration:underline;
+  cursor:pointer;
+}
+
+/* La referencia de la cancha: "portón azul, timbre 2". */
+.inv-notas{
+  margin-top:6px;
+  font-size:11.5px;
+  color:var(--faint);
+}
+
+/* "Cómo llegar": abre el Maps del celular, no un mapa nuestro. */
+.comoLlegar{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12.5px;font-weight:600;
+  color:var(--acento);text-decoration:none;
+  border:1px solid var(--acento);
+  border-radius:var(--radio);
+  padding:6px 10px;
+  background:var(--acento-suave);
+}
+
+/* ============================================================
    Tipografía de display — va al FINAL a propósito.
 
    Anton es condensada: el tracking negativo que sirve para la fuente

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Jugador, MiPartidoAnotado, Partido } from '@/lib/tipos';
 import { cabezas, calcularStats, fechaCorta, plata, totalDebe } from '@/lib/calculos';
+import ElegirCancha, { type LugarElegido } from '@/components/ElegirCancha';
 
 type Fila = Partido & { jugadores: Jugador[] };
 
@@ -184,7 +185,7 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
   const router = useRouter();
   const [fecha, setFecha] = useState(HOY());
   const [hora, setHora] = useState('20:00');
-  const [lugar, setLugar] = useState('');
+  const [donde, setDonde] = useState<LugarElegido>({ cancha_id: null, lugar: '' });
   const [cupo, setCupo] = useState(12);
   const [costo, setCosto] = useState(0);
   const [guardando, setGuardando] = useState(false);
@@ -209,7 +210,10 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
         user_id: user.id,
         fecha,
         hora,
-        lugar: lugar.trim() || null,
+        // Con cancha del catálogo, `lugar` guarda su nombre igual: es el
+        // campo que siguen leyendo las RPCs de invitación e historial.
+        lugar: donde.lugar.trim() || null,
+        cancha_id: donde.cancha_id,
         cupo: Math.max(2, Math.min(40, cupo || 12)),
         costo: Math.max(0, costo || 0),
       })
@@ -240,14 +244,7 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
             <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
           </div>
         </div>
-        <div className="campo">
-          <label>Dónde</label>
-          <input
-            placeholder="ITLP, La Piedad, el parque…"
-            value={lugar}
-            onChange={(e) => setLugar(e.target.value)}
-          />
-        </div>
+        <ElegirCancha valor={donde} onCambiar={setDonde} />
         <div className="campos">
           <div className="campo">
             <label>Cuántos van</label>

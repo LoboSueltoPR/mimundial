@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Amigo, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
 import { fechaLarga } from '@/lib/calculos';
+import { comoLlegar } from '@/lib/mapa';
 import { Copita } from '@/components/Copa';
 import { useConfirmar } from '@/components/Confirmar';
 import BotonGoogle from '@/components/BotonGoogle';
@@ -249,6 +250,23 @@ export default function Invitacion() {
             {fechaLarga(p.fecha)}
             {p.hora ? ' · ' + p.hora : ''}
           </div>
+
+          {/* El que abre este link es justo el que no sabe dónde queda.
+              No embebemos mapa acá: un botón que abre el Maps del
+              celular es lo que se usa en la mano, y no carga tiles
+              para alguien sin cuenta. */}
+          {p.cancha_lat != null && p.cancha_lng != null && (
+            <a
+              className="comoLlegar"
+              href={comoLlegar(p.cancha_lat, p.cancha_lng)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ marginTop: 10 }}
+            >
+              Cómo llegar
+            </a>
+          )}
+          {p.cancha_notas && <div className="inv-notas">{p.cancha_notas}</div>}
 
           <div className="marcador-cupo">
             <span className="mc-n">{p.cabezas}</span>
