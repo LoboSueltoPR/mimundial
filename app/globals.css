@@ -342,6 +342,35 @@ label{
 .copaBox.ardiendo{border-color:var(--oro);background:var(--oro-suave)}
 .copaBox.ardiendo .copaBox-eyebrow{border-bottom-color:#e0cb96}
 
+/* ---------- el cartelito de "pasaste de fase" ----------
+   Aparece una sola vez, cuando avanzaste, y se va cuando lo cerrás.
+   Acá el oro está justificado: el cartel habla exactamente de la copa. */
+.hito{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 13px;margin-bottom:12px;
+  border:1.5px solid var(--oro);border-radius:var(--radio);
+  background:var(--oro-suave);
+}
+.hito-copa{color:var(--oro);display:grid;place-items:center;flex:none}
+.hito-txt{min-width:0;flex:1}
+.hito-txt b{
+  display:block;font-size:22px;line-height:1;letter-spacing:.4px;
+  text-transform:uppercase;color:var(--txt);
+}
+.hito-txt small{
+  display:block;margin-top:5px;font-size:12.5px;color:var(--dim);
+}
+.hito-x{
+  flex:none;width:26px;height:26px;border:0;background:none;
+  font-size:20px;line-height:1;color:var(--faint);cursor:pointer;
+}
+.hito-x:hover{color:var(--txt)}
+.hito.esCopa{border-color:var(--oro);background:var(--oro)}
+.hito.esCopa .hito-copa{color:var(--oro-ink)}
+.hito.esCopa .hito-txt b{color:var(--oro-ink)}
+.hito.esCopa .hito-txt small{color:var(--oro-ink);opacity:.8}
+.hito.esCopa .hito-x{color:var(--oro-ink);opacity:.7}
+
 /* ---------- la ruta ---------- */
 .ruta{list-style:none;padding:0}
 .ruta-paso{
@@ -365,6 +394,14 @@ label{
 .ruta-paso.pasada{background:var(--surface)}
 .ruta-paso.pasada .ruta-punto{background:var(--acento);border-color:var(--acento);color:var(--acento-ink)}
 .ruta-paso.pasada .ruta-txt b{color:var(--dim)}
+/* Mismo criterio que los casilleros: el empate y la derrota de grupos no
+   se pintan de acento, que es el color de "esto salió bien". */
+.ruta-paso.pasada .ruta-punto.r-empate{
+  background:var(--surface-2);border-color:var(--faint);color:var(--dim);
+}
+.ruta-paso.pasada .ruta-punto.r-perdimos{
+  background:var(--red-suave);border-color:var(--red);color:var(--red);
+}
 .ruta-paso.actual{background:var(--acento-suave)}
 .ruta-paso.actual .ruta-punto{
   background:var(--surface);border-color:var(--acento);border-width:2px;color:var(--acento);
@@ -1034,7 +1071,7 @@ label{
    ============================================================ */
 .rs-estado, .copaBox-fase, .tot .big, .kpi .n, .inv-lugar,
 .login h1, .brand h1, .marcador-cupo .mc-n, .marcador-cupo .mc-t,
-.item .fec .d, .marcador input, .perfilModal-fase{
+.item .fec .d, .marcador input, .perfilModal-fase, .hito-txt b{
   font-family:var(--fuente-display);
   font-weight:400;
 }

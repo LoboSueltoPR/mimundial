@@ -190,6 +190,8 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
   const [costo, setCosto] = useState(0);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** id del partido si quedó creado a medias: ya no se puede volver a crear. */
+  const [creado, setCreado] = useState<string | null>(null);
 
   async function crear() {
     setGuardando(true);
@@ -220,11 +222,44 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
       .select('id')
       .single();
 
-    setGuardando(false);
     if (error) {
+      setGuardando(false);
       setError(error.message);
       return;
     }
+
+    // El que arma el partido juega: la lista arranca con él anotado, no
+    // vacía. Con `user_id` para que sea la misma persona que la cuenta
+    // (avatar, perfil), igual que cuando alguien se anota por el link.
+    if (data?.id) {
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('nombre')
+        .eq('id', user.id)
+        .single();
+      const miNombre = (
+        perfil?.nombre ||
+        (user.user_metadata?.full_name as string) ||
+        user.email?.split('@')[0] ||
+        ''
+      ).trim();
+      if (miNombre) {
+        const { error: errAnotarme } = await supabase
+          .from('jugadores')
+          .insert({ partido_id: data.id, nombre: miNombre, orden: 0, user_id: user.id });
+        // El partido ya existe: no se puede volver a apretar Crear. Se avisa
+        // y se ofrece entrar igual, en vez de tragarse el error en silencio.
+        if (errAnotarme) {
+          setGuardando(false);
+          setCreado(data.id);
+          setError(`El partido se creó, pero no te pudo anotar: ${errAnotarme.message}`);
+          onListo();
+          return;
+        }
+      }
+    }
+
+    setGuardando(false);
     onListo();
     onCerrar();
     if (data?.id) router.push(`/partidos/${data.id}`);
@@ -268,11 +303,17 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
           </div>
         </div>
         <div className="row2" style={{ marginTop: 6 }}>
-          <button className="btn pri" onClick={crear} disabled={guardando}>
-            {guardando ? 'Creando…' : 'Crear'}
-          </button>
+          {creado ? (
+            <button className="btn pri" onClick={() => router.push(`/partidos/${creado}`)}>
+              Ver el partido
+            </button>
+          ) : (
+            <button className="btn pri" onClick={crear} disabled={guardando}>
+              {guardando ? 'Creando…' : 'Crear'}
+            </button>
+          )}
           <button className="btn" onClick={onCerrar} disabled={guardando}>
-            Cancelar
+            {creado ? 'Cerrar' : 'Cancelar'}
           </button>
         </div>
         {error && <div className="msg err">{error}</div>}
