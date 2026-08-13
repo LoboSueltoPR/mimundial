@@ -10,10 +10,14 @@ import {
   INSTANCIAS,
   LLAVES,
   PARA_PASAR,
+  type Hito,
+  type Visto,
   calcularCamino,
   faltanParaLaCopa,
   faltanParaPasar,
   frase,
+  hito,
+  vistoDe,
 } from '@/lib/camino';
 import { fechaLarga } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
@@ -22,8 +26,31 @@ import Avatar from '@/components/Avatar';
 import PerfilModal from '@/components/PerfilModal';
 import { conApodo } from '@/lib/nombre';
 
+/* Dónde estaba el camino la última vez que lo miraste desde este
+   navegador. Es solo para saber cuándo avisar que avanzaste: si el dato
+   no está o está roto, la app anda igual, simplemente no hay cartel. */
+const VISTO = 'mimundial.camino-visto';
+
+function leerVisto(): Visto | null {
+  try {
+    const crudo = localStorage.getItem(VISTO);
+    return crudo ? (JSON.parse(crudo) as Visto) : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarVisto(v: Visto) {
+  try {
+    localStorage.setItem(VISTO, JSON.stringify(v));
+  } catch {
+    /* modo incógnito o storage lleno: no pasa nada */
+  }
+}
+
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
+  const [cartel, setCartel] = useState<Hito | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<AmigoCamino[]>([]);
   const [cerrando, setCerrando] = useState(false);
@@ -38,7 +65,15 @@ export default function Camino() {
         setPartidos([]);
         return;
       }
-      setPartidos((data ?? []) as Partido[]);
+      const ps = (data ?? []) as Partido[];
+      setPartidos(ps);
+
+      // ¿Avanzaste desde la última vez? El cartel se guarda como visto
+      // recién cuando lo cerrás, así un refresh no se lo lleva puesto.
+      const e = calcularCamino(ps);
+      const nuevo = hito(leerVisto(), e);
+      setCartel(nuevo);
+      if (!nuevo) guardarVisto(vistoDe(e));
     })();
     (async () => {
       const supabase = crearCliente();
@@ -81,8 +116,29 @@ export default function Camino() {
     );
   };
 
+  const cerrarCartel = () => {
+    guardarVisto(vistoDe(e));
+    setCartel(null);
+  };
+
   return (
     <div style={{ paddingTop: 16 }}>
+      {/* ---------- pasaste de fase ---------- */}
+      {cartel && (
+        <div className={`hito ${cartel.copa ? 'esCopa' : ''}`} role="status">
+          <span className="hito-copa">
+            <Copita tam={26} />
+          </span>
+          <span className="hito-txt">
+            <b>{cartel.titulo}</b>
+            <small>{cartel.bajada}</small>
+          </span>
+          <button className="hito-x" onClick={cerrarCartel} aria-label="Cerrar">
+            ×
+          </button>
+        </div>
+      )}
+
       {/* ---------- la cabecera: dónde estás y cuánto falta ---------- */}
       <div className={`copaBox ${enFinal ? 'ardiendo' : ''}`}>
         <div className="copaBox-eyebrow">
@@ -179,25 +235,29 @@ export default function Camino() {
         <ol className="ruta">
           {CAMINO.map((inst, i) => {
             const estado = i < e.etapa ? 'pasada' : i === e.etapa ? 'actual' : 'pendiente';
-            const esGrupo = i < GRUPOS;
+            // Una fecha de grupos perdida también está "pasada": el punto
+            // lleva la marca del resultado, como los casilleros de arriba,
+            // porque un tilde para todo diría que ganaste las tres.
+            const res = estado === 'pasada' ? e.actual[i] : null;
             return (
               <li key={inst.id} className={`ruta-paso ${estado}`}>
-                <span className="ruta-punto">
-                  {estado === 'pasada' ? <MarcaTilde tam={14} /> : i + 1}
+                <span className={`ruta-punto ${res ? 'r-' + res : ''}`}>
+                  {res === 'ganamos' ? (
+                    <MarcaTilde tam={14} />
+                  ) : res === 'empate' ? (
+                    <MarcaEmpate tam={14} />
+                  ) : res === 'perdimos' ? (
+                    <MarcaPerdio tam={14} />
+                  ) : (
+                    i + 1
+                  )}
                 </span>
                 <span className="ruta-txt">
                   <b>{inst.nombre}</b>
-                  <small>
-                    {estado === 'pasada'
-                      ? esGrupo
-                        ? 'jugada'
-                        : 'superada'
-                      : estado === 'actual'
-                        ? 'te toca ahora'
-                        : esGrupo
-                          ? 'se juega igual'
-                          : `a ${i - e.etapa} triunfo${i - e.etapa > 1 ? 's' : ''}`}
-                  </small>
+                  {/* Un solo renglón chico en toda la lista: el de dónde
+                      estás parado. La cuenta para la copa ya la lleva la
+                      cabecera; repetirla paso por paso era ruido. */}
+                  {estado === 'actual' && <small>te toca ahora</small>}
                 </span>
               </li>
             );

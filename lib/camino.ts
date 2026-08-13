@@ -223,6 +223,57 @@ export const faltanParaLaCopa = (e: EstadoCamino) => INSTANCIAS - e.etapa;
 /** Puntos que te faltan para asegurar el pase (0 si ya pasaste). */
 export const faltanParaPasar = (e: EstadoCamino) => Math.max(0, PARA_PASAR - e.puntos);
 
+/* ============================================================
+   El cartelito de "pasaste de fase"
+
+   La barra de arriba dice siempre dónde estás; esto es otra cosa:
+   avisa una sola vez que acabás de avanzar, que es el momento en
+   que la cuenta para la copa significa algo. Se compara contra lo
+   último que el navegador vio, no contra el partido anterior.
+   ============================================================ */
+
+/** Lo que el navegador se acuerda del camino entre visita y visita. */
+export type Visto = { mundial: number; etapa: number; copas: number };
+
+export type Hito = { titulo: string; bajada: string; copa: boolean };
+
+export const vistoDe = (e: EstadoCamino): Visto => ({
+  mundial: e.mundial,
+  etapa: e.etapa,
+  copas: e.copas,
+});
+
+/**
+ * El cartel que corresponde mostrar, o null si no hay novedad.
+ *
+ * `antes` en null es la primera vez que se mira desde este navegador: no
+ * hay con qué comparar, así que no se anuncia nada. Avanzar dentro de
+ * grupos tampoco es pasar de fase — las tres fechas se juegan igual.
+ */
+export function hito(antes: Visto | null, e: EstadoCamino): Hito | null {
+  if (!antes) return null;
+  if (e.copas > antes.copas)
+    return {
+      titulo: 'Campeón del mundo',
+      bajada: 'Levantaste la copa. El sueño, cumplido.',
+      copa: true,
+    };
+  // Mundial distinto sin copa nueva: te quedaste afuera, no hay nada que festejar.
+  if (e.mundial !== antes.mundial) return null;
+  if (e.etapa <= antes.etapa || e.etapa < GRUPOS) return null;
+  const faltan = faltanParaLaCopa(e);
+  return {
+    // El titular es la cuenta para la copa: es lo único que este cartel
+    // dice y que no diga ya la cabecera de abajo.
+    titulo: `A ${faltan} partido${faltan === 1 ? '' : 's'} del sueño`,
+    bajada:
+      e.etapa === GRUPOS
+        ? 'Pasaste la fase de grupos. Ahora empieza la eliminación directa.'
+        : `Ganaste ${CAMINO[e.etapa - 1].nombre.toLowerCase()}.`,
+    copa: false,
+  };
+}
+
 /** Frase para el estado actual. */
 export function frase(e: EstadoCamino): string {
   if (e.enGrupos) {

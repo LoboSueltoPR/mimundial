@@ -111,7 +111,8 @@ const lobo = cuentas.find((c) => c.nombre === 'Lobo')!;
 chequear('Lobo pago una de las dos veces', [lobo.debe, lobo.pago], [10000, 5000]);
 
 /* ---------- el camino del mundial ---------- */
-const { calcularCamino, frase, INSTANCIAS, GRUPOS } = await import('../lib/camino.ts');
+const { calcularCamino, frase, hito, vistoDe, INSTANCIAS, GRUPOS } =
+  await import('../lib/camino.ts');
 
 const pt = (fecha: string, resultado: Partido['resultado']) =>
   ({
@@ -227,6 +228,33 @@ chequear('ordena por fecha antes de contar', desordenado.mundial, 2);
 const conPendientes = calcularCamino([pt(d(1), 'ganamos'), pt(d(2), null), pt(d(3), 'ganamos')]);
 chequear('los partidos sin cargar se ignoran', conPendientes.puntos, 6);
 chequear('el historial solo trae los jugados', conPendientes.historial.length, 2);
+
+/* ---------- el cartelito de "pasaste de fase" ---------- */
+const hGrupos1 = grupo('ganamos');
+const hOctavos = grupo('ganamos', 'ganamos', 'ganamos');
+const hCuartos = grupo('ganamos', 'ganamos', 'ganamos', 'ganamos');
+const hFinal = grupo('ganamos', 'ganamos', 'ganamos', 'ganamos', 'ganamos', 'ganamos');
+
+chequear('sin nada visto antes no hay cartel', hito(null, hOctavos), null);
+chequear('avanzar dentro de grupos no es pasar de fase',
+  hito(vistoDe(calcularCamino([])), hGrupos1), null);
+chequear('mirar dos veces lo mismo no repite el cartel',
+  hito(vistoDe(hOctavos), hOctavos), null);
+chequear('pasar de grupos a octavos: 4 partidos para la copa',
+  hito(vistoDe(hGrupos1), hOctavos)?.titulo, 'A 4 partidos del sueño');
+chequear('y dice que pasaste la fase de grupos',
+  hito(vistoDe(hGrupos1), hOctavos)?.bajada.startsWith('Pasaste la fase de grupos'), true);
+chequear('ganar octavos avisa cuartos',
+  hito(vistoDe(hOctavos), hCuartos)?.titulo, 'A 3 partidos del sueño');
+chequear('y nombra la llave que ganaste',
+  hito(vistoDe(hOctavos), hCuartos)?.bajada, 'Ganaste octavos de final.');
+chequear('en la final falta uno solo, en singular',
+  hito(vistoDe(grupo('ganamos', 'ganamos', 'ganamos', 'ganamos', 'ganamos')), hFinal)?.titulo,
+  'A 1 partido del sueño');
+chequear('levantar la copa tiene su propio cartel',
+  hito(vistoDe(hFinal), grupo(...Array(INSTANCIAS).fill('ganamos')))?.copa, true);
+chequear('quedar eliminado no muestra cartel',
+  hito(vistoDe(hOctavos), grupo('ganamos', 'ganamos', 'ganamos', 'perdimos')), null);
 
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);
