@@ -48,6 +48,18 @@ export function distanciaKm(
  *  Bahía esa cancha es una opción real. */
 export const RADIO_CIUDAD_KM = 40;
 
+/** Dónde arranca el mapa mientras no se sepa dónde estás: el centro de
+ *  Bahía Blanca (Plaza Rivadavia). Es la ciudad de todo el catálogo menos
+ *  la cancha de Punta Alta, y encuadrar el catálogo entero dejaba el mapa
+ *  mirando la región desde 20 km de altura por esa sola cancha. */
+export const BAHIA_BLANCA = { lat: -38.7183, lng: -62.2663 };
+
+/** Hasta acá se considera "dentro de la ciudad" para encuadrar el mapa.
+ *  Más corto que RADIO_CIUDAD_KM a propósito: para la lista, la cancha de
+ *  Punta Alta es una opción real y tiene que aparecer; para el encuadre
+ *  inicial, meterla adentro obliga a mirar la región entera. */
+export const RADIO_ENCUADRE_KM = 15;
+
 /** Dónde te queda el mapa. `punto` es tu posición si la diste. */
 export type Encuadre =
   | { tipo: 'cerca'; lat: number; lng: number }

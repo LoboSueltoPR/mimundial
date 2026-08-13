@@ -22,18 +22,29 @@ export type Instancia = {
   id: string;
   nombre: string;
   corto: string;
+  /** Cómo se la nombra al pasar, dentro de una frase corrida. */
+  breve: string;
   icono: string;
 };
 
 export const CAMINO: Instancia[] = [
-  { id: 'g1', nombre: 'Grupos · 1ª fecha', corto: 'G1', icono: '⚽' },
-  { id: 'g2', nombre: 'Grupos · 2ª fecha', corto: 'G2', icono: '⚽' },
-  { id: 'g3', nombre: 'Grupos · 3ª fecha', corto: 'G3', icono: '⚽' },
-  { id: 'oc', nombre: 'Octavos de final', corto: '8vos', icono: '🔥' },
-  { id: 'cu', nombre: 'Cuartos de final', corto: '4tos', icono: '💪' },
-  { id: 'se', nombre: 'Semifinal', corto: 'Semi', icono: '😰' },
-  { id: 'fi', nombre: 'Final', corto: 'Final', icono: '👑' },
+  { id: 'g1', nombre: 'Grupos · 1ª fecha', corto: 'G1', breve: 'la 1ª fecha', icono: '⚽' },
+  { id: 'g2', nombre: 'Grupos · 2ª fecha', corto: 'G2', breve: 'la 2ª fecha', icono: '⚽' },
+  { id: 'g3', nombre: 'Grupos · 3ª fecha', corto: 'G3', breve: 'la 3ª fecha', icono: '⚽' },
+  { id: 'oc', nombre: 'Octavos de final', corto: '8vos', breve: 'octavos', icono: '🔥' },
+  { id: 'cu', nombre: 'Cuartos de final', corto: '4tos', breve: 'cuartos', icono: '💪' },
+  { id: 'se', nombre: 'Semifinal', corto: 'Semi', breve: 'la semi', icono: '😰' },
+  { id: 'fi', nombre: 'Final', corto: 'Final', breve: 'la final', icono: '👑' },
 ];
+
+/** "octavos, cuartos, la semi y la final" — para plegar en un renglón lo
+ *  que todavía queda lejos, en vez de listarlo paso por paso. */
+export function listaBreve(instancias: Instancia[]): string {
+  const ns = instancias.map((i) => i.breve);
+  if (ns.length === 0) return '';
+  if (ns.length === 1) return ns[0];
+  return `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`;
+}
 
 /** Partidos de la fase de grupos: se juegan los tres, siempre. */
 export const GRUPOS = 3;
