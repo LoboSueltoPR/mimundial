@@ -26,6 +26,7 @@
 import { useEffect, useRef } from 'react';
 import type { Map as LMap, Marker } from 'leaflet';
 import type { Cancha } from '@/lib/tipos';
+import { BAHIA_BLANCA, RADIO_ENCUADRE_KM, distanciaKm } from '@/lib/mapa';
 import 'leaflet/dist/leaflet.css';
 
 const SATELITE =
@@ -62,6 +63,16 @@ export default function MapaCanchas({
   /** true una vez que ya se encuadró con la ubicación: no reencuadrar
    *  después, o le movés el mapa al usuario mientras lo está mirando. */
   const encuadrado = useRef(false);
+  /** true una vez puesta la vista inicial de Bahía: tampoco se repite,
+   *  o cada cambio de la lista te devuelve el mapa al centro. */
+  const arranco = useRef(false);
+  /** Cómo acomodar la vista, guardado para poder repetirlo. El encuadre
+   *  se decide una vez, pero se vuelve a aplicar cuando el contenedor
+   *  cambia de tamaño: el primer cálculo sale contra un div que todavía
+   *  no terminó de abrirse, y el resultado son pines fuera de pantalla. */
+  const acomodar = useRef<(() => void) | null>(null);
+  /** El usuario ya movió el mapa a mano: a partir de ahí no se le toca. */
+  const interactuo = useRef(false);
   /* onElegir se redefine en cada render del padre. Si fuera dependencia
      del efecto, el mapa se destruiría y recrearía a cada tecla del
      formulario. Va por ref y el handler lee siempre el último. */
@@ -82,13 +93,27 @@ export default function MapaCanchas({
       if (!vivo || !div.current || mapa.current) return;
 
       const m = L.map(div.current, { zoomControl: true, attributionControl: true });
-      // Vista provisoria: Leaflet no dibuja nada sin centro y los
-      // efectos de abajo la corrigen apenas hay con qué.
-      m.setView([0, 0], 2);
+      // Leaflet no dibuja nada sin centro. Arranca ya en Bahía en vez de
+      // en el mapamundi: si no, se ve el planeta entero un cuadro antes
+      // de que el efecto de encuadre lo acomode.
+      m.setView([BAHIA_BLANCA.lat, BAHIA_BLANCA.lng], ZOOM_CIUDAD);
       mapa.current = m;
 
       L.tileLayer(SATELITE, { maxZoom: 19, attribution: ATRIBUCION }).addTo(m);
       L.tileLayer(NOMBRES, { maxZoom: 19 }).addTo(m);
+
+      /* Arrastrar o hacer zoom a mano congela el encuadre automático: de
+         ahí en adelante el mapa es del usuario. Se escucha `dragstart` y
+         la rueda, y no `zoomstart`, que lo disparan también los setView
+         nuestros y nos dejaría sin reencuadre desde el primer cuadro. */
+      const aMano = () => {
+        interactuo.current = true;
+      };
+      m.on('dragstart', aMano);
+      div.current.addEventListener('wheel', aMano, { passive: true });
+      m.getContainer()
+        .querySelector('.leaflet-control-zoom')
+        ?.addEventListener('click', aMano);
 
       /* El contenedor arranca con alto 0 mientras el modal se abre y
          Leaflet mide mal: sin esto quedan tiles grises. El observer es
@@ -101,6 +126,10 @@ export default function MapaCanchas({
       const obs = new ResizeObserver(() => {
         if (!vivo || !mapa.current) return;
         mapa.current.invalidateSize();
+        // Y con el tamaño ya bueno, se rehace el encuadre: el primero se
+        // calculó contra un contenedor a medio abrir y dejaba las canchas
+        // fuera de pantalla. Salvo que el usuario ya haya movido el mapa.
+        if (!interactuo.current) acomodar.current?.();
       });
       obs.observe(div.current);
       observador.current = obs;
@@ -170,10 +199,8 @@ export default function MapaCanchas({
       const m = mapa.current;
       if (!vivo || !m || canchas.length === 0) return;
 
-      const puntos: [number, number][] = canchas.map((c) => [c.lat, c.lng]);
-
       if (centro) {
-        // Ya sabemos dónde está: se encuadra su ciudad, no el país.
+        // Ya sabemos dónde está: su ciudad, no la región.
         if (encuadrado.current) return;
         encuadrado.current = true;
 
@@ -189,14 +216,35 @@ export default function MapaCanchas({
             }),
           }).addTo(m);
         }
-        puntos.push([centro.lat, centro.lng]);
-        m.fitBounds(L.latLngBounds(puntos), { padding: [34, 34], maxZoom: ZOOM_CIUDAD });
+        acomodar.current = () => m.setView([centro.lat, centro.lng], ZOOM_CIUDAD);
+        acomodar.current();
         return;
       }
 
-      // Todavía sin ubicación (o la negó): todas las canchas en pantalla.
-      if (encuadrado.current) return;
-      m.fitBounds(L.latLngBounds(puntos), { padding: [34, 34], maxZoom: 15 });
+      /* Todavía sin ubicación (o la negó): arranca en Bahía Blanca, con
+         sus canchas encuadradas. Antes entraban todas, y como una está
+         en Punta Alta el mapa abría mirando la región entera: las de
+         Bahía quedaban amontonadas en cuatro pines del tamaño de un
+         poroto. Se decide una sola vez — si después llega la ubicación,
+         el bloque de arriba recentra, y si no, el mapa se queda donde el
+         usuario lo haya dejado. */
+      if (encuadrado.current || arranco.current) return;
+      arranco.current = true;
+
+      const enLaCiudad = canchas.filter(
+        (c) =>
+          distanciaKm(c.lat, c.lng, BAHIA_BLANCA.lat, BAHIA_BLANCA.lng) <=
+          RADIO_ENCUADRE_KM,
+      );
+      acomodar.current =
+        enLaCiudad.length === 0
+          ? () => m.setView([BAHIA_BLANCA.lat, BAHIA_BLANCA.lng], ZOOM_CIUDAD)
+          : () =>
+              m.fitBounds(
+                L.latLngBounds(enLaCiudad.map((c) => [c.lat, c.lng] as [number, number])),
+                { padding: [34, 34], maxZoom: ZOOM_CIUDAD },
+              );
+      acomodar.current();
     })();
     return () => {
       vivo = false;
@@ -231,7 +279,11 @@ export default function MapaCanchas({
   useEffect(() => {
     if (!elegidaId || !mapa.current) return;
     const c = canchas.find((x) => x.id === elegidaId);
-    if (c) mapa.current.panTo([c.lat, c.lng], { animate: true });
+    if (!c) return;
+    // Elegir una cancha también es mover el mapa a propósito: desde acá
+    // un resize no puede devolverlo al encuadre de la ciudad.
+    interactuo.current = true;
+    mapa.current.panTo([c.lat, c.lng], { animate: true });
   }, [elegidaId, canchas]);
 
   if (canchas.length === 0) return null;

@@ -407,6 +407,11 @@ label{
   background:var(--surface);border-color:var(--acento);border-width:2px;color:var(--acento);
 }
 .ruta-paso.actual .ruta-txt b{color:var(--acento)}
+/* el renglón plegado: está, pero no compite con los pasos de verdad */
+.ruta-paso.lejos .ruta-punto{
+  border-style:dotted;color:var(--faint);letter-spacing:1px;
+}
+.ruta-paso.lejos .ruta-txt b{font-weight:500;color:var(--faint)}
 .ruta-paso.copa .ruta-punto{border-color:var(--oro);background:var(--oro-suave);color:var(--oro)}
 .ruta-paso.copa.pasada .ruta-punto{background:var(--oro);border-color:var(--oro);color:var(--oro-ink)}
 

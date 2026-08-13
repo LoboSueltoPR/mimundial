@@ -17,6 +17,7 @@ import {
   faltanParaPasar,
   frase,
   hito,
+  listaBreve,
   vistoDe,
 } from '@/lib/camino';
 import { fechaLarga } from '@/lib/calculos';
@@ -115,6 +116,12 @@ export default function Camino() {
       (ps ?? []).map((p) => (p.id === id ? { ...p, cierra_mundial: true } : p)),
     );
   };
+
+  /* La ruta muestra lo jugado, lo que te toca y el paso siguiente. El
+     resto se pliega: son los que todavía no dependen de vos. */
+  const HASTA = e.etapa + 1;
+  const visibles = CAMINO.slice(0, HASTA + 1);
+  const lejos = CAMINO.slice(HASTA + 1);
 
   const cerrarCartel = () => {
     guardarVisto(vistoDe(e));
@@ -233,7 +240,7 @@ export default function Camino() {
       <div className="sec">El camino</div>
       <div className="card">
         <ol className="ruta">
-          {CAMINO.map((inst, i) => {
+          {visibles.map((inst, i) => {
             const estado = i < e.etapa ? 'pasada' : i === e.etapa ? 'actual' : 'pendiente';
             // Una fecha de grupos perdida también está "pasada": el punto
             // lleva la marca del resultado, como los casilleros de arriba,
@@ -262,6 +269,18 @@ export default function Camino() {
               </li>
             );
           })}
+
+          {/* Lo que todavía queda lejos, plegado en un renglón. Cuando
+              estás en la 2ª de grupos, la semifinal no es información:
+              es relleno entre vos y la copa. */}
+          {lejos.length > 0 && (
+            <li className="ruta-paso lejos">
+              <span className="ruta-punto">⋯</span>
+              <span className="ruta-txt">
+                <b>y después {listaBreve(lejos)}</b>
+              </span>
+            </li>
+          )}
           <li className="ruta-paso copa pendiente">
             <span className="ruta-punto">
               <Copita tam={13} />
