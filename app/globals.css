@@ -971,6 +971,16 @@ label{
 }
 .pinCancha-elegida::after{top:19px;height:9px}
 
+/* "Estás acá": un punto, no un pin. No es un destino elegible, así que
+   no tiene que competir con las canchas. */
+.pinYo{
+  display:block;width:12px;height:12px;margin:0 auto;
+  border-radius:50%;
+  background:#fff;
+  border:3px solid var(--txt);
+  box-shadow:0 0 0 1px rgba(255,255,255,.9);
+}
+
 /* La lista debajo del mapa: las mismas canchas, tocables sin apuntar. */
 .canchaLista{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .canchaChip{

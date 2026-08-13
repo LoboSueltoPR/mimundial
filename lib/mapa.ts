@@ -20,3 +20,50 @@ export function comoLlegar(lat: number, lng: number): string {
 /** Coordenadas legibles, por si alguien las quiere copiar a mano. */
 export const coordenadas = (lat: number, lng: number) =>
   `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+/* ------------------------------------------------------------
+   Distancia en km (haversine). Alcanza y sobra: acá se usa para
+   ordenar canchas de una misma ciudad, no para navegar.
+   ------------------------------------------------------------ */
+
+const RADIO_TIERRA_KM = 6371;
+const aRad = (g: number) => (g * Math.PI) / 180;
+
+export function distanciaKm(
+  aLat: number,
+  aLng: number,
+  bLat: number,
+  bLng: number,
+): number {
+  const dLat = aRad(bLat - aLat);
+  const dLng = aRad(bLng - aLng);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(aRad(aLat)) * Math.cos(aRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * RADIO_TIERRA_KM * Math.asin(Math.sqrt(s));
+}
+
+/** Hasta acá se considera "tu ciudad". Bahía Blanca entra holgada, y
+ *  Punta Alta (a ~23 km) queda adentro a propósito: para alguien de
+ *  Bahía esa cancha es una opción real. */
+export const RADIO_CIUDAD_KM = 40;
+
+/** Dónde te queda el mapa. `punto` es tu posición si la diste. */
+export type Encuadre =
+  | { tipo: 'cerca'; lat: number; lng: number }
+  | { tipo: 'todas' };
+
+/** Pide la ubicación sin bloquear: el mapa se dibuja igual y se
+ *  recentra si llega. Si el usuario dice que no, no se insiste. */
+export function ubicacion(): Promise<{ lat: number; lng: number } | null> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolver) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolver({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolver(null),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 },
+    );
+  });
+}

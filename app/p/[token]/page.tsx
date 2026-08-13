@@ -220,17 +220,19 @@ export default function Invitacion() {
 
   const completo = p.faltan === 0;
 
-  // Logueado: se ve como el resto de la app, con la misma barra de
-  // navegación — no como una pantalla pública suelta. Sin cuenta sigue
-  // siendo la landing sola, que es lo que necesita el invitado sin fricción.
-  const Envoltorio = miId
-    ? ({ children }: { children: React.ReactNode }) => (
-        <Shell nombre={miNombreCuenta}>{children}</Shell>
-      )
-    : ({ children }: { children: React.ReactNode }) => <div className="wrap">{children}</div>;
+  /* Logueado: se ve como el resto de la app, con la misma barra de
+     navegación — no como una pantalla pública suelta. Sin cuenta sigue
+     siendo la landing sola, que es lo que necesita el invitado sin
+     fricción.
 
-  return (
-    <Envoltorio>
+     El contenido va en una variable y la envoltura se elige abajo con
+     un ternario. NO definir acá un componente `Envoltorio`: sería una
+     función nueva en cada render, React la vería como otro tipo de
+     componente y desmontaría todo el subárbol en cada tecla. Eso
+     destruía el <input> de "Tu nombre" letra por letra y en el celular
+     cerraba el teclado — había que tocar el campo para cada letra. */
+  const contenido = (
+    <>
       <div className="invitacion">
       <div className="inv-marca">
         <span className="dot">
@@ -459,6 +461,12 @@ export default function Invitacion() {
           onCerrar={() => setPerfilAbierto(null)}
         />
       )}
-    </Envoltorio>
+    </>
+  );
+
+  return miId ? (
+    <Shell nombre={miNombreCuenta}>{contenido}</Shell>
+  ) : (
+    <div className="wrap">{contenido}</div>
   );
 }

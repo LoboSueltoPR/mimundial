@@ -14,9 +14,10 @@
    las ~8 RPCs que embeben 'lugar' siguen andando sin tocarse.
    ============================================================ */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { crearCliente } from '@/lib/supabase/client';
+import { RADIO_CIUDAD_KM, distanciaKm, ubicacion } from '@/lib/mapa';
 import type { Cancha } from '@/lib/tipos';
 
 // Leaflet toca `window` en el import: no puede renderizarse en el server.
@@ -36,6 +37,7 @@ export default function ElegirCancha({
 }) {
   const [canchas, setCanchas] = useState<Cancha[] | null>(null);
   const [aMano, setAMano] = useState(false);
+  const [yo, setYo] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -46,7 +48,23 @@ export default function ElegirCancha({
         .order('nombre');
       setCanchas((data ?? []) as Cancha[]);
     })();
+    // En paralelo y sin bloquear: si no la da, el mapa igual se dibuja.
+    ubicacion().then(setYo);
   }, []);
+
+  /* Con canchas de una sola ciudad da lo mismo, pero el día que haya de
+     varias, encuadrar "todas" te deja mirando el país entero. Con la
+     ubicación se recorta a tu ciudad y se ordena por cercanía: lo que
+     tenés al lado, primero. */
+  const cerca = useMemo(() => {
+    if (!canchas || !yo) return canchas;
+    const conDist = canchas
+      .map((c) => ({ c, km: distanciaKm(yo.lat, yo.lng, c.lat, c.lng) }))
+      .sort((a, b) => a.km - b.km);
+    const enLaCiudad = conDist.filter((x) => x.km <= RADIO_CIUDAD_KM);
+    // Si no tenés ninguna cerca, mejor mostrarlas todas que una lista vacía.
+    return (enLaCiudad.length > 0 ? enLaCiudad : conDist).map((x) => x.c);
+  }, [canchas, yo]);
 
   const elegir = (c: Cancha) =>
     onCambiar(
@@ -82,9 +100,14 @@ export default function ElegirCancha({
         <div className="mapaCanchas mapaCanchas-cargando">Cargando el mapa…</div>
       ) : (
         <>
-          <MapaCanchas canchas={canchas} elegidaId={valor.cancha_id} onElegir={elegir} />
+          <MapaCanchas
+            canchas={cerca ?? canchas}
+            centro={yo}
+            elegidaId={valor.cancha_id}
+            onElegir={elegir}
+          />
           <div className="canchaLista" role="listbox" aria-label="Canchas">
-            {canchas.map((c) => (
+            {(cerca ?? canchas).map((c) => (
               <button
                 type="button"
                 key={c.id}
