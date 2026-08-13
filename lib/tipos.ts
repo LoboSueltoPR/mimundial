@@ -27,6 +27,16 @@ export type Perfil = {
   pie: Pie | null;
 };
 
+/** Una cancha del catálogo. Se carga por migración: la app no escribe acá. */
+export type Cancha = {
+  id: string;
+  nombre: string;
+  direccion: string | null;
+  lat: number;
+  lng: number;
+  notas: string | null;
+};
+
 export type Cabeza = {
   label: string;
   inv: boolean;
@@ -54,6 +64,10 @@ export type PartidoPublico = {
   soy_anotado: boolean;
   mi_nombre: string | null;
   mi_invitados: number | null;
+  /** null si el partido no tiene cancha del catálogo (lugar a mano). */
+  cancha_lat: number | null;
+  cancha_lng: number | null;
+  cancha_notas: string | null;
   anotados: AnotadoPublico[];
 };
 
@@ -141,7 +155,10 @@ export type Partido = {
   abierto: boolean;
   fecha: string;
   hora: string | null;
+  /** Nombre del lugar. Si se eligió una cancha del catálogo, es su nombre
+   *  copiado — sigue siendo el campo que leen las RPCs de invitación. */
   lugar: string | null;
+  cancha_id: string | null;
   cupo: number;
   costo: number;
   puso: string | null;
@@ -156,3 +173,7 @@ export type Partido = {
 };
 
 export type PartidoConJugadores = Partido & { jugadores: Jugador[] };
+
+/** Partido con la cancha del catálogo embebida (PostgREST `canchas(*)`).
+ *  null si el lugar se escribió a mano. */
+export type PartidoConCancha = Partido & { canchas: Cancha | null };

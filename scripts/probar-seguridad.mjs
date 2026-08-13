@@ -37,6 +37,15 @@ chequear('no puede leer jugadores', !!selJ.error, selJ.error?.message || `LEYÓ 
 const selA = await sb.from('amigos').select('*');
 chequear('no puede leer amigos', !!selA.error, selA.error?.message || `LEYÓ ${selA.data?.length} filas`);
 
+/* El catálogo de canchas (0013). No es secreto, pero anon no tiene por qué
+   leerlo: se le revoca el grant y la policy pide auth.uid(). Va acá para que
+   el día que alguien recree la tabla el chequeo lo agarre. */
+const selC = await sb.from('canchas').select('*');
+chequear('no puede leer canchas', !!selC.error, selC.error?.message || `LEYÓ ${selC.data?.length} filas`);
+
+const insC = await sb.from('canchas').insert({ nombre: 'Colada', lat: 0, lng: 0 });
+chequear('no puede insertar canchas', !!insC.error, insC.error?.code || 'PASÓ');
+
 const ins = await sb.from('jugadores').insert({ partido_id: randomUUID(), nombre: 'Colado' });
 chequear('no puede insertar jugadores', !!ins.error, ins.error?.code || 'PASÓ');
 
