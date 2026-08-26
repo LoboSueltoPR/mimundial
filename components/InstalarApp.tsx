@@ -4,11 +4,18 @@ import { useEffect, useState } from 'react';
 import { Copita } from './Copa';
 
 /**
- * La franja de "agregar a la pantalla de inicio" en vez de tener que ir a
- * Compartir a mano. En Android/Chrome atrapamos beforeinstallprompt y
+ * El aviso de "agregar a la pantalla de inicio", como una notificación que
+ * sube desde abajo. En Android/Chrome atrapamos beforeinstallprompt y
  * disparamos el diálogo nativo con un toque. iOS no tiene ese evento —
  * Apple no lo expone — así que ahí solo podemos mostrar el atajo de dedo
  * (Compartir → Agregar a inicio); no hay forma de saltarlo del todo.
+ *
+ * Que aparezca abajo no es estética: en iOS el botón Compartir está abajo
+ * en Safari, y este aviso es la instrucción de tocarlo.
+ *
+ * Además es el paso previo a las notificaciones: en iPhone, una web solo
+ * puede pedir permiso de push si está agregada a la pantalla de inicio.
+ * Si esto no se acepta, allá no hay notificaciones posibles.
  */
 type EventoInstalar = Event & {
   prompt: () => Promise<void>;
@@ -98,35 +105,46 @@ export default function InstalarApp() {
   if (!modo) return null;
 
   return (
-    <div className="instalarApp" role="region" aria-label="Agregar MiMundial a la pantalla de inicio">
-      <span className="instalarApp-ico">
-        <Copita tam={17} />
+    <div
+      className="avisoInstalar"
+      role="region"
+      aria-label="Agregar MiMundial a la pantalla de inicio"
+    >
+      <span className="ai-ico">
+        <Copita tam={18} />
       </span>
-      <span className="instalarApp-txt">
+      <span className="ai-txt">
+        <b>Tené MiMundial a mano</b>
         {modo === 'ios' ? (
-          <>
-            <b>Agregá MiMundial a tu pantalla de inicio.</b> Tocá <b>Compartir</b> (
-            <span className="instalarApp-share">⬆</span>) y elegí <b>&quot;Agregar a inicio&quot;</b>.
-          </>
+          <small>
+            Tocá <b>Compartir</b> (<span className="ai-share">⬆</span>) acá abajo y elegí{' '}
+            <b>&quot;Agregar a inicio&quot;</b>. Es lo que además habilita las notificaciones.
+          </small>
         ) : (
-          <>
-            <b>Agregá MiMundial</b> a tu pantalla de inicio para abrirla como una app.
-          </>
+          <small>
+            Agregala a tu pantalla de inicio y se abre como una app, sin la barra del navegador.
+          </small>
         )}
       </span>
-      {modo === 'android' && (
-        <button className="btn pri sm" onClick={instalar}>
-          Agregar
-        </button>
-      )}
-      {modo === 'ios' && (
-        <button className="instalarApp-yaLaTengo" onClick={yaLaTengo}>
-          Ya la tengo
-        </button>
-      )}
-      <button className="instalarApp-cerrar" onClick={ocultar} aria-label="Cerrar">
+      <button className="ai-cerrar" onClick={ocultar} aria-label="Cerrar">
         ×
       </button>
+      <span className="ai-acciones">
+        {modo === 'android' ? (
+          <>
+            <button className="ai-fantasma" onClick={ocultar}>
+              Ahora no
+            </button>
+            <button className="btn pri" onClick={instalar}>
+              Agregar
+            </button>
+          </>
+        ) : (
+          <button className="ai-fantasma" onClick={yaLaTengo}>
+            Ya la tengo
+          </button>
+        )}
+      </span>
     </div>
   );
 }

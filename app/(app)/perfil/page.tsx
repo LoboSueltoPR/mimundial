@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Pie, Posicion } from '@/lib/tipos';
 import { useConfirmar } from '@/components/Confirmar';
+import Notificaciones from '@/components/Notificaciones';
 import Avatar from '@/components/Avatar';
 import { conApodo } from '@/lib/nombre';
 
@@ -216,6 +217,8 @@ export default function Perfil() {
           notificaciones.
         </div>
       </div>
+
+      <Notificaciones />
 
       <div className="sec">Sesión</div>
       <button className="btn danger wide" onClick={salir}>

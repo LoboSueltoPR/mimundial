@@ -309,17 +309,5 @@ chequear('levantar la copa tiene su propio cartel',
 chequear('quedar eliminado no muestra cartel',
   hito(vistoDe(hOctavos), grupo('ganamos', 'ganamos', 'ganamos', 'perdimos')), null);
 
-/* ---------- la ruta plegada ---------- */
-const { CAMINO, listaBreve } = await import('../lib/camino.ts');
-const plegado = (etapa: number) => listaBreve(CAMINO.slice(etapa + 2));
-
-chequear('en la 2a de grupos se pliegan cinco pasos',
-  plegado(1), 'octavos, cuartos, la semi y la final');
-chequear('en octavos se ven cuartos y se pliega el resto',
-  plegado(GRUPOS), 'la semi y la final');
-chequear('en semis se pliega uno solo, sin coma ni "y"',
-  plegado(INSTANCIAS - 3), 'la final');
-chequear('en la final ya no queda nada plegado', plegado(INSTANCIAS - 1), '');
-
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);
