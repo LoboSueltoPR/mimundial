@@ -676,6 +676,28 @@ label{
 }
 .ganador button.on{background:var(--acento-suave);border-color:var(--acento);color:var(--acento)}
 
+/* ---------- como salio, en la invitacion ----------
+   El marcador manda y abajo la frase. Las pecheras al lado de cada
+   numero: sin eso "5 - 3" no dice de quien es cada cifra. */
+.comoSalio{
+  background:var(--surface);border:1.5px solid var(--txt);
+  border-radius:var(--radio);padding:16px 14px;text-align:center;
+}
+.comoSalio.emp{border-color:var(--dim)}
+.cs-marcador{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  font-family:var(--fuente-display);font-size:44px;line-height:1;
+}
+.cs-marcador > span{display:flex;align-items:center;gap:9px;color:var(--faint)}
+.cs-marcador > span.gano{color:var(--txt)}
+.cs-marcador i{font-style:normal;color:var(--line);font-size:26px}
+.cs-marcador .chaleco{width:15px;height:15px}
+.cs-quien{
+  font-family:var(--fuente-dato);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:1.1px;color:var(--faint);margin-top:9px;
+}
+.cs-quien b{color:var(--txt)}
+
 /* ---------- lo tuyo de la plata, en la invitacion ----------
    Un solo renglon con el numero grande a la derecha: es la respuesta a
    "cuanto pongo", que es la unica pregunta que trae el invitado. */

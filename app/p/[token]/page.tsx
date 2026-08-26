@@ -496,6 +496,41 @@ export default function Invitacion() {
         )}
       </div>
 
+      {/* Como salio. Lo carga el anfitrion y hasta ahora no lo veia nadie
+          mas. No se muestra "ganamos": eso es el punto de vista del dueno.
+          Lo que sirve para el que mira es QUE LADO gano. */}
+      {p.jugado && (
+        <>
+          <div className="sec">Como salio</div>
+          <div className={`comoSalio ${p.empate ? 'emp' : ''}`}>
+            {p.goles_claros != null && p.goles_oscuros != null ? (
+              <div className="cs-marcador">
+                <span className={p.equipo_ganador === 'a' ? 'gano' : ''}>
+                  <span className="chaleco claros" />
+                  <b>{p.goles_claros}</b>
+                </span>
+                <i>—</i>
+                <span className={p.equipo_ganador === 'b' ? 'gano' : ''}>
+                  <b>{p.goles_oscuros}</b>
+                  <span className="chaleco oscuros" />
+                </span>
+              </div>
+            ) : null}
+            <div className="cs-quien">
+              {p.empate ? (
+                'Empataron'
+              ) : p.equipo_ganador ? (
+                <>
+                  Ganaron los <b>{p.equipo_ganador === 'a' ? 'claros' : 'oscuros'}</b>
+                </>
+              ) : (
+                'Ya se jugo'
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Los equipos: hasta ahora habia que preguntarlos por WhatsApp
           aunque estuvieran sorteados hace una hora. Solo de mirar —
           moverlos es del anfitrion. */}

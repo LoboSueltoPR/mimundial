@@ -89,6 +89,16 @@ export type PartidoPublico = {
   por_cabeza: number;
   /** Nombre del que adelantó la plata, no su id. null si nadie. */
   puso_nombre: string | null;
+  /* Cómo salió, para cualquiera que tenga el link. `resultado` crudo no
+     viene: dice "ganamos" desde el lugar del dueño y para un tercero no
+     significa nada. Lo que sirve es qué LADO ganó. */
+  jugado: boolean;
+  empate: boolean;
+  equipo_ganador: Lado | null;
+  /** Goles ya mapeados a claros/oscuros. null si no se sabe de qué lado
+   *  jugó el dueño y por lo tanto no se pueden dar vuelta. */
+  goles_claros: number | null;
+  goles_oscuros: number | null;
   anotados: AnotadoPublico[];
 };
 
