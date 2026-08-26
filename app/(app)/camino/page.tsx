@@ -51,6 +51,8 @@ function guardarVisto(v: Visto) {
 
 export default function Camino() {
   const [partidos, setPartidos] = useState<Partido[] | null>(null);
+  /** Cuáles del camino organizaste vos: son los únicos que podés cerrar. */
+  const [mios, setMios] = useState<Set<string>>(new Set());
   const [cartel, setCartel] = useState<Hito | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amigos, setAmigos] = useState<AmigoCamino[]>([]);
@@ -60,13 +62,21 @@ export default function Camino() {
   useEffect(() => {
     (async () => {
       const supabase = crearCliente();
-      const { data, error } = await supabase.from('partidos').select('*');
+      /* Dos fuentes: los partidos que organizaste vos (tabla, con su
+         RLS) y los ajenos que jugaste, que llegan por RPC ya dados
+         vuelta a tu punto de vista. Sin los segundos, ganar en el
+         equipo de otro no te movía el camino. */
+      const [{ data, error }, { data: ajenos }] = await Promise.all([
+        supabase.from('partidos').select('*'),
+        supabase.rpc('mis_resultados_ajenos'),
+      ]);
       if (error) {
         setError(error.message);
         setPartidos([]);
         return;
       }
-      const ps = (data ?? []) as Partido[];
+      setMios(new Set(((data ?? []) as Partido[]).map((x) => x.id)));
+      const ps = [...((data ?? []) as Partido[]), ...((ajenos ?? []) as Partido[])];
       setPartidos(ps);
 
       // ¿Avanzaste desde la última vez? El cartel se guarda como visto
@@ -230,9 +240,18 @@ export default function Camino() {
             Podés jugar {GRUPOS - e.jugadosGrupo === 1 ? 'la última' : 'las que quedan'} igual, o
             dar el mundial por terminado acá y que el próximo partido arranque uno nuevo.
           </p>
-          <button className="btn wide" onClick={cerrarMundial} disabled={cerrando}>
-            {cerrando ? 'Cerrando…' : 'Dar por terminado este mundial'}
-          </button>
+          {/* El cierre se marca sobre el último partido jugado, y eso solo
+              se puede hacer en uno tuyo: el de otro no es tuyo para tocar. */}
+          {mios.has(e.cerrarDesde) ? (
+            <button className="btn wide" onClick={cerrarMundial} disabled={cerrando}>
+              {cerrando ? 'Cerrando…' : 'Dar por terminado este mundial'}
+            </button>
+          ) : (
+            <p>
+              El último que jugaste lo organizó otro, así que no se puede cerrar desde acá. Cargá
+              un partido tuyo y lo cerrás ahí.
+            </p>
+          )}
         </div>
       )}
 

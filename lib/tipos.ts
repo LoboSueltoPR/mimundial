@@ -37,11 +37,22 @@ export type Cancha = {
   notas: string | null;
 };
 
+/**
+ * Una cabeza del sorteo. `jid`/`uid` son opcionales a propósito: los
+ * sorteos que ya están guardados en la base tienen solo `label`, `inv` y
+ * `de`. Nada puede darlos por hecho.
+ */
 export type Cabeza = {
   label: string;
   inv: boolean;
   de?: string;
+  /** fila de `jugadores` a la que pertenece esta cabeza (el invitado usa la de quien lo trae) */
+  jid?: string;
+  /** cuenta del jugador, si la tiene enganchada */
+  uid?: string | null;
 };
+
+export type Lado = 'a' | 'b';
 
 export type Equipos = {
   a: Cabeza[];
@@ -86,13 +97,16 @@ export type MiPartidoAnotado = {
   mi_invitados: number;
 };
 
-/** user_id/username/avatar_url solo vienen si quien mira está logueado. */
+/** id/user_id/username/avatar_url solo vienen si quien mira está logueado. */
 export type AnotadoPublico = {
+  id: string | null;
   nombre: string;
   invitados: number;
   user_id: string | null;
   username: string | null;
   avatar_url: string | null;
+  /** la fila la cargó el anfitrión a mano y no es de nadie: se puede reclamar */
+  reclamable: boolean;
 };
 
 export type Amigo = {
@@ -163,6 +177,9 @@ export type Partido = {
   costo: number;
   puso: string | null;
   resultado: Resultado | null;
+  /** Qué lado ganó, cuando hubo sorteo. Es lo único que sirve para el resto:
+   *  `resultado` está escrito desde el punto de vista del dueño del partido. */
+  equipo_ganador: Lado | null;
   goles_favor: number | null;
   goles_contra: number | null;
   equipos: Equipos | null;

@@ -1,4 +1,4 @@
-import type { Cabeza, Equipos, Jugador, Partido, Resultado } from './tipos';
+import type { Cabeza, Equipos, Jugador, Lado, Partido, Resultado } from './tipos';
 
 /* ============================================================
    Cabezas y plata
@@ -52,9 +52,9 @@ export function totalDebe(p: Pick<Partido, 'costo' | 'puso'>, jugadores: Jugador
 export function cabezasLista(jugadores: Jugador[]): Cabeza[] {
   const out: Cabeza[] = [];
   jugadores.forEach((j) => {
-    out.push({ label: j.nombre, inv: false });
+    out.push({ label: j.nombre, inv: false, jid: j.id, uid: j.user_id ?? null });
     for (let i = 0; i < (j.invitados || 0); i++) {
-      out.push({ label: 'Invitado de ' + j.nombre, inv: true, de: j.nombre });
+      out.push({ label: 'Invitado de ' + j.nombre, inv: true, de: j.nombre, jid: j.id });
     }
   });
   return out;
@@ -69,6 +69,65 @@ export function sortear(jugadores: Jugador[]): Equipos {
   }
   const mitad = Math.ceil(lista.length / 2);
   return { a: lista.slice(0, mitad), b: lista.slice(mitad), n: lista.length };
+}
+
+/* ------------------------------------------------------------
+   Retocar el sorteo a mano
+
+   El sorteo lo reparte el bombo, pero después siempre hay que
+   emparejar: pasar uno de un lado al otro o cambiar dos entre sí.
+   Las dos funciones devuelven un objeto nuevo — el estado nunca se
+   muta — y NO tocan `n`: ese número sigue siendo cuántas cabezas
+   había anotadas cuando se sorteó, que es lo que compara el aviso de
+   "la lista cambió". Mover gente no cambia la lista.
+   ------------------------------------------------------------ */
+
+export const otroLado = (l: Lado): Lado => (l === 'a' ? 'b' : 'a');
+
+/** Pasa la cabeza `i` del lado `lado` al otro equipo (queda al final). */
+export function pasar(eq: Equipos, lado: Lado, i: number): Equipos {
+  const quien = eq[lado][i];
+  if (!quien) return eq;
+  const otro = otroLado(lado);
+  return {
+    ...eq,
+    [lado]: eq[lado].filter((_, k) => k !== i),
+    [otro]: [...eq[otro], quien],
+  };
+}
+
+/** Cambia de camiseta a dos, uno de cada lado. */
+export function intercambiar(eq: Equipos, lado: Lado, i: number, j: number): Equipos {
+  const otro = otroLado(lado);
+  const uno = eq[lado][i];
+  const dos = eq[otro][j];
+  if (!uno || !dos) return eq;
+  return {
+    ...eq,
+    [lado]: eq[lado].map((x, k) => (k === i ? dos : x)),
+    [otro]: eq[otro].map((x, k) => (k === j ? uno : x)),
+  };
+}
+
+/**
+ * En qué equipo quedó una cuenta, o null si no se puede saber: el
+ * sorteo es viejo y no guarda `uid`, o esa persona no jugó.
+ */
+export function ladoDeCuenta(eq: Equipos | null, uid: string | null | undefined): Lado | null {
+  if (!eq || !uid) return null;
+  if (eq.a.some((c) => !c.inv && c.uid === uid)) return 'a';
+  if (eq.b.some((c) => !c.inv && c.uid === uid)) return 'b';
+  return null;
+}
+
+/**
+ * Cómo le fue a quien jugó en `lado`. `ganador` en null es empate: no hay
+ * lado ganador. Que el partido esté sin cargar se sabe por `resultado`,
+ * no por acá.
+ */
+export function resultadoPara(lado: Lado, ganador: Lado | null): Resultado {
+  if (!ganador) return 'empate';
+  return ganador === lado ? 'ganamos' : 'perdimos';
 }
 
 /* ============================================================

@@ -142,6 +142,30 @@ export default function Invitacion() {
     }
   }
 
+  /**
+   * El anfitrión te cargó a mano: esa fila existe pero no está atada a
+   * ninguna cuenta. Reclamarla es lo único que hace que el partido
+   * cuente para tu camino — y evita quedar anotado dos veces.
+   */
+  async function reclamar(jugadorId: string, nombreFila: string) {
+    if (!(await confirmar(`¿"${nombreFila}" sos vos? Esa anotación pasa a tu cuenta.`, { boton: 'Sí, soy yo' })))
+      return;
+    setGuardando(true);
+    const supabase = crearCliente();
+    const { data, error } = await supabase.rpc('reclamar_anotacion', {
+      tok: token,
+      p_jugador_id: jugadorId,
+    });
+    setGuardando(false);
+    const r = data as RespuestaRPC | null;
+    if (error || !r?.ok) {
+      setError(r?.error || error?.message || 'No se pudo.');
+      return;
+    }
+    marcarAnotado(token, true);
+    cargar();
+  }
+
   async function anotarse() {
     setError(null);
     setGuardando(true);
@@ -400,6 +424,12 @@ export default function Invitacion() {
             const yaEsAmigo = a.user_id ? amigos.some((am) => am.id === a.user_id) : false;
             const pendiente = a.user_id ? solicitudesEnviadas.has(a.user_id) : false;
             const esOtroLogueado = !!(miId && a.user_id && a.user_id !== miId);
+            /* Fila sin dueño y yo todavía sin lugar acá: puedo decir que
+               soy yo. `mio` además de `soy_anotado` porque el que se anotó
+               sin cuenta desde este mismo navegador y después entró con
+               Google no tiene user_id en su fila — sin ese chequeo termina
+               anotado dos veces. */
+            const puedoReclamar = !!(miId && a.reclamable && a.id && !p.soy_anotado && !mio);
             return (
               <div
                 className="jug"
@@ -428,6 +458,18 @@ export default function Invitacion() {
                     disabled={agregando === a.user_id}
                   >
                     {agregando === a.user_id ? '…' : '+ Solicitud'}
+                  </button>
+                )}
+                {puedoReclamar && (
+                  <button
+                    className="btn sm"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      reclamar(a.id!, a.nombre);
+                    }}
+                    disabled={guardando}
+                  >
+                    Ese soy yo
                   </button>
                 )}
                 {pendiente && !yaEsAmigo && <span className="chip">Pendiente</span>}
