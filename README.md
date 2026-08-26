@@ -81,12 +81,17 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
 - **Partidos** — fecha, hora, lugar, cuántos van y cuánto sale.
 - **Anotados** — sumás gente y le ponés `+` por cada invitado. El invitado ocupa lugar en el cupo y
   se le carga a la cuenta de quien lo trae.
-- **Equipos** — sorteo aleatorio (Fisher-Yates) en claros y oscuros. Queda guardado y avisa si la
-  lista cambió desde el último sorteo.
+- **Equipos** — sorteo aleatorio (Fisher-Yates) en claros y oscuros. Después se emparejan a mano:
+  tocás un nombre para agarrarlo y lo pasás al otro equipo o lo cambiás por alguien de enfrente.
+  Queda guardado y avisa si la lista cambió desde el último sorteo.
 - **Plata** — se divide por cabeza, no por persona. El que adelanta la plata queda saldado y el
   resto le debe a él.
 - **Resultado** — ganamos / empate / perdimos, con marcador opcional. Si cargás el marcador y no
-  elegiste nada, el resultado se deduce solo.
+  elegiste nada, el resultado se deduce solo. Con equipos sorteados se carga además **qué equipo
+  ganó**, y ese dato sí es objetivo: a cada uno de los que jugaron le llega a su propio camino,
+  ganado o perdido según de qué lado estuvo. Para eso cada anotado tiene que estar enganchado a su
+  cuenta — los que cargaste a mano se marcan en **Anotados → Quién es quién**, y el que abre el
+  link puede reclamar su fila con **"Ese soy yo"**.
 - **Stats** — efectividad, racha, goles y quiénes enganchan siempre.
 - **Cuentas** — saldo acumulado por persona a través de todos los partidos.
 
@@ -102,7 +107,8 @@ lib/
   calculos.ts     plata, equipos y stats (con tests)
   supabase/       clientes de navegador y servidor
 proxy.ts          refresca la sesión y protege las rutas
-supabase/migrations/  el SQL a pegar en Supabase (0001 base, 0002 amigos e invitados)
+supabase/migrations/  el SQL a pegar en Supabase (0001 base, 0002 amigos e invitados,
+                      0014 el resultado por equipo)
 scripts/          generador de íconos y tests
 ```
 
@@ -143,6 +149,8 @@ Ordenadas por si tocan la base de datos o no.
 - Repetir el último partido con un toque (mismo lugar, misma gente).
 - Recordatorio de cobro a los que deben.
 - Sortear equipos evitando que dos siempre caigan juntos.
+- Dar vuelta el resultado de los partidos viejos (los de antes de `equipo_ganador` no cuentan
+  para el camino de los demás, y no hay de dónde deducir de qué lado jugó cada uno).
 - Exportar la lista lista para pegar en WhatsApp.
 - Modo claro.
 

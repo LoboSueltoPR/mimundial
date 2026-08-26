@@ -8,8 +8,12 @@ import {
   calcularCuentas,
   calcularStats,
   debeDe,
+  intercambiar,
+  ladoDeCuenta,
   pagadoEfectivo,
+  pasar,
   porCabeza,
+  resultadoPara,
   saldado,
   sortear,
   totalDebe,
@@ -31,6 +35,8 @@ const jug = (nombre: string, invitados = 0, pagado = 0, id = nombre): Jugador =>
   invitados,
   pagado,
   orden: 0,
+  // todos con cuenta: es lo que hace falta para saber de qué lado jugó cada uno
+  user_id: 'u-' + nombre,
 });
 
 /* ---------- plata ---------- */
@@ -74,6 +80,53 @@ chequear('con impar queda 3 y 2', [impar.a.length, impar.b.length], [3, 2]);
 /* el sorteo tiene que variar entre corridas */
 const firmas = new Set(Array.from({ length: 30 }, () => sortear(js).a.map((x) => x.label).join()));
 chequear('el sorteo no siempre da lo mismo', firmas.size > 1, true);
+
+/* ---------- retocar los equipos a mano ---------- */
+const base = { a: cabezasLista(js).slice(0, 6), b: cabezasLista(js).slice(6), n: 12 };
+
+const pasado = pasar(base, 'a', 0);
+chequear('pasar deja 5 y 7', [pasado.a.length, pasado.b.length], [5, 7]);
+chequear('el que pasa cae al final del otro', pasado.b[pasado.b.length - 1].label, base.a[0].label);
+chequear('pasar no cambia n', pasado.n, 12);
+chequear('pasar no muta el original', [base.a.length, base.b.length], [6, 6]);
+chequear(
+  'pasar no pierde a nadie',
+  [...pasado.a, ...pasado.b].map((x) => x.label).sort(),
+  [...base.a, ...base.b].map((x) => x.label).sort(),
+);
+
+const cambiado = intercambiar(base, 'a', 0, 2);
+chequear('intercambiar no cambia los tamaños', [cambiado.a.length, cambiado.b.length], [6, 6]);
+chequear('el de a se fue a b', cambiado.b[2].label, base.a[0].label);
+chequear('el de b se vino a a', cambiado.a[0].label, base.b[2].label);
+chequear(
+  'intercambiar no pierde a nadie',
+  [...cambiado.a, ...cambiado.b].map((x) => x.label).sort(),
+  [...base.a, ...base.b].map((x) => x.label).sort(),
+);
+
+/* sacar al único de un lado deja el equipo vacío, no rompe */
+const unoSolo = { a: [base.a[0]], b: base.b, n: 12 };
+chequear('vaciar un equipo no rompe', pasar(unoSolo, 'a', 0).a.length, 0);
+/* un índice que no existe no hace nada */
+chequear('pasar un índice inexistente no toca nada', pasar(base, 'a', 99), base);
+
+/* ---------- de qué lado jugó cada uno ---------- */
+chequear('encuentra la cuenta en claros', ladoDeCuenta(base, 'u-Lobo'), 'a');
+chequear('encuentra la cuenta en oscuros', ladoDeCuenta(base, 'u-Ruso'), 'b');
+chequear('sin cuenta no hay lado', ladoDeCuenta(base, null), null);
+chequear('una cuenta que no jugó no tiene lado', ladoDeCuenta(base, 'u-Nadie'), null);
+/* un sorteo viejo, sin uid guardado, no le asigna lado a nadie */
+const viejo = {
+  a: base.a.map(({ label, inv }) => ({ label, inv })),
+  b: base.b.map(({ label, inv }) => ({ label, inv })),
+  n: 12,
+};
+chequear('un sorteo viejo no tiene lados', ladoDeCuenta(viejo, 'u-Lobo'), null);
+
+chequear('el de claros gana si ganan los claros', resultadoPara('a', 'a'), 'ganamos');
+chequear('el de claros pierde si ganan los oscuros', resultadoPara('a', 'b'), 'perdimos');
+chequear('sin ganador es empate para los dos', [resultadoPara('a', null), resultadoPara('b', null)], ['empate', 'empate']);
 
 /* ---------- stats ---------- */
 const partido = (fecha: string, resultado: Partido['resultado'], gf?: number, gc?: number) =>

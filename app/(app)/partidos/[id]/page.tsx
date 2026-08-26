@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Amigo, Equipos, Jugador, Partido, PartidoConCancha, Resultado } from '@/lib/tipos';
+import type {
+  Amigo,
+  Equipos,
+  Jugador,
+  Lado,
+  Partido,
+  PartidoConCancha,
+  Resultado,
+} from '@/lib/tipos';
 import { comoLlegar } from '@/lib/mapa';
 import {
   cabezas,
@@ -12,10 +20,14 @@ import {
   debeDe,
   fechaLarga,
   iniciales,
+  intercambiar,
+  ladoDeCuenta,
   pagadoDe,
   pagadoEfectivo,
+  pasar,
   plata,
   porCabeza,
+  resultadoPara,
   sortear,
   totalDebe,
   totalPagado,
@@ -28,6 +40,8 @@ import PerfilModal from '@/components/PerfilModal';
 
 type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
 type AvatarInfo = { avatar_url: string | null; username: string | null };
+/** Quién está agarrado en la vista de equipos, para moverlo o cambiarlo. */
+type Seleccion = { lado: Lado; i: number };
 
 export default function DetallePartido() {
   const { id } = useParams<{ id: string }>();
@@ -135,18 +149,27 @@ export default function DetallePartido() {
     }
   }
 
-  async function sumar(nombre: string) {
+  /**
+   * `userId` llega cuando el que se suma es un amigo con cuenta: sin
+   * eso la fila queda suelta y esa persona después no puede pedirte
+   * amistad desde el partido ni recibir el resultado en su camino.
+   */
+  async function sumar(nombre: string, userId?: string | null) {
     const limpio = nombre.trim();
     if (!limpio) return;
     if (js.some((j) => j.nombre.toLowerCase() === limpio.toLowerCase())) {
       setError(`${limpio} ya está anotado.`);
       return;
     }
+    if (userId && js.some((j) => j.user_id === userId)) {
+      setError(`${limpio} ya está anotado con su cuenta.`);
+      return;
+    }
     setError(null);
     const supabase = crearCliente();
     const { data, error } = await supabase
       .from('jugadores')
-      .insert({ partido_id: id, nombre: limpio, orden: js.length })
+      .insert({ partido_id: id, nombre: limpio, orden: js.length, user_id: userId ?? null })
       .select('*')
       .single();
     if (error) {
@@ -154,6 +177,22 @@ export default function DetallePartido() {
       return;
     }
     setJs((prev) => [...prev, data as Jugador]);
+  }
+
+  /** Enganchar una fila cargada a mano con la cuenta de quien realmente es. */
+  async function enganchar(jid: string, userId: string | null) {
+    setError(null);
+    const supabase = crearCliente();
+    const { data, error } = await supabase.rpc('enganchar_anotado', {
+      p_jugador_id: jid,
+      p_user_id: userId,
+    });
+    const r = data as { ok: boolean; error?: string } | null;
+    if (error || !r?.ok) {
+      setError(r?.error || error?.message || 'No se pudo enganchar la cuenta.');
+      return;
+    }
+    setJs((prev) => prev.map((j) => (j.id === jid ? { ...j, user_id: userId } : j)));
   }
 
   async function quitar(j: Jugador) {
@@ -267,6 +306,7 @@ export default function DetallePartido() {
           onInv={actualizarJugador}
           onQuitar={quitar}
           onSumar={sumar}
+          onEnganchar={enganchar}
           onAbrirPerfil={(uid, nombreJ) => setPerfilAbierto({ id: uid, nombre: nombreJ })}
         />
       )}
@@ -275,7 +315,8 @@ export default function DetallePartido() {
           js={js}
           equipos={p.equipos}
           onSortear={() => actualizarPartido({ equipos: sortear(js) })}
-          onBorrar={() => actualizarPartido({ equipos: null })}
+          onBorrar={() => actualizarPartido({ equipos: null, equipo_ganador: null })}
+          onCambiar={(eq) => actualizarPartido({ equipos: eq })}
         />
       )}
       {vista === 'plata' && (
@@ -409,6 +450,7 @@ function Anotados({
   onInv,
   onQuitar,
   onSumar,
+  onEnganchar,
   onAbrirPerfil,
 }: {
   js: Jugador[];
@@ -418,19 +460,24 @@ function Anotados({
   solicitudesEnviadas: Set<string>;
   onInv: (id: string, campos: Partial<Jugador>) => void;
   onQuitar: (j: Jugador) => void;
-  onSumar: (nombre: string) => Promise<void>;
+  onSumar: (nombre: string, userId?: string | null) => Promise<void>;
+  onEnganchar: (jid: string, userId: string | null) => Promise<void>;
   onAbrirPerfil: (uid: string, nombre: string) => void;
 }) {
   const [nombre, setNombre] = useState('');
   const [enviando, setEnviando] = useState(false);
   const anotados = new Set(js.map((j) => j.nombre.toLowerCase()));
-  const disponibles = amigos.filter((a) => !anotados.has(a.nombre.toLowerCase()));
+  const conCuenta = new Set(js.map((j) => j.user_id).filter(Boolean) as string[]);
+  const disponibles = amigos.filter(
+    (a) => !anotados.has(a.nombre.toLowerCase()) && !conCuenta.has(a.id),
+  );
+  const sueltos = js.filter((j) => !j.user_id);
   let n = 0;
 
-  async function agregar(unNombre: string) {
+  async function agregar(unNombre: string, userId?: string | null) {
     if (!unNombre.trim() || enviando) return;
     setEnviando(true);
-    await onSumar(unNombre);
+    await onSumar(unNombre, userId);
     setEnviando(false);
     setNombre('');
   }
@@ -501,7 +548,7 @@ function Anotados({
               <button
                 key={a.id}
                 className="chipAmigo"
-                onClick={() => agregar(a.nombre)}
+                onClick={() => agregar(a.nombre, a.id)}
                 disabled={enviando}
               >
                 <span className="mini" style={{ background: color(a.nombre) }}>
@@ -539,6 +586,40 @@ function Anotados({
         Sumás a alguien y después le ponés <b>+</b> por cada invitado que lleva. Cada invitado ocupa
         un lugar y se le suma a la cuenta del que lo trae.
       </div>
+
+      {sueltos.length > 0 && (
+        <>
+          <div className="sec">Quién es quién</div>
+          <div className="card">
+            {sueltos.map((j) => (
+              <div className="quienEs" key={j.id}>
+                <b>{j.nombre}</b>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) onEnganchar(j.id, e.target.value);
+                  }}
+                >
+                  <option value="">— sin cuenta —</option>
+                  <option value={miId}>Soy yo</option>
+                  {amigos
+                    .filter((a) => !conCuenta.has(a.id))
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.nombre}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ))}
+          </div>
+          <div className="nota">
+            Estos los cargaste a mano, así que la app no sabe de qué cuenta son. Marcalos y el
+            resultado del partido les llega a <b>ellos</b> también: cada uno lo ve en su camino.
+            Marcate a vos primero — sin eso no se sabe de qué lado del sorteo jugaste.
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -554,27 +635,45 @@ function ColumnaEquipo({
   arr,
   nombre,
   tono,
+  lado,
+  sel,
+  onTocar,
 }: {
   arr: Equipos['a'];
   nombre: string;
   tono: 'claros' | 'oscuros';
+  lado: Lado;
+  sel: Seleccion | null;
+  onTocar: (lado: Lado, i: number) => void;
 }) {
+  /* El otro equipo está en juego cuando hay alguien agarrado del lado
+     contrario: ahí cada fila es "cambialo por este". */
+  const enJuego = !!sel && sel.lado !== lado;
+
   return (
-    <div className="eq">
+    <div className={`eq${enJuego ? ' enJuego' : ''}`}>
       <div className="eq-head">
         <span className={`chaleco ${tono}`} />
         <b>{nombre}</b>
         <span>{arr.length}</span>
       </div>
       <ul>
-        {arr.map((x, i) => (
-          <li key={i} className={x.inv ? 'invitado' : ''}>
-            <span className="mini" style={{ background: x.inv ? '#5a6472' : color(x.label) }}>
-              {x.inv ? '+' : iniciales(x.label)}
-            </span>
-            <span>{x.inv ? 'Inv. de ' + x.de : x.label}</span>
-          </li>
-        ))}
+        {arr.map((x, i) => {
+          const agarrado = !!sel && sel.lado === lado && sel.i === i;
+          return (
+            <li
+              key={`${x.label}#${i}`}
+              className={`${x.inv ? 'invitado' : ''}${agarrado ? ' agarrado' : ''}`}
+              onClick={() => onTocar(lado, i)}
+            >
+              <span className="mini" style={{ background: x.inv ? '#5a6472' : color(x.label) }}>
+                {x.inv ? '+' : iniciales(x.label)}
+              </span>
+              <span>{x.inv ? 'Inv. de ' + x.de : x.label}</span>
+            </li>
+          );
+        })}
+        {arr.length === 0 && <li className="invitado vacioEq">— nadie —</li>}
       </ul>
     </div>
   );
@@ -585,13 +684,16 @@ function EquiposVista({
   equipos,
   onSortear,
   onBorrar,
+  onCambiar,
 }: {
   js: Jugador[];
   equipos: Equipos | null;
   onSortear: () => void;
   onBorrar: () => void;
+  onCambiar: (eq: Equipos) => void;
 }) {
   const lista = cabezasLista(js);
+  const [sel, setSel] = useState<Seleccion | null>(null);
 
   if (lista.length < 2)
     return (
@@ -624,6 +726,32 @@ function EquiposVista({
     );
 
   const cambio = equipos.n !== lista.length;
+  const eq = equipos;
+
+  /* Tocar es agarrar. Con alguien agarrado, tocar del otro lado los
+     cambia de camiseta; tocar del mismo lado agarra a ese otro. La
+     selección se suelta después de cada cambio: los índices que guarda
+     ya no significan lo mismo. */
+  function tocar(lado: Lado, i: number) {
+    if (!sel) {
+      setSel({ lado, i });
+      return;
+    }
+    if (sel.lado === lado) {
+      setSel(sel.i === i ? null : { lado, i });
+      return;
+    }
+    onCambiar(intercambiar(eq, sel.lado, sel.i, i));
+    setSel(null);
+  }
+
+  function pasarSel() {
+    if (!sel) return;
+    onCambiar(pasar(eq, sel.lado, sel.i));
+    setSel(null);
+  }
+
+  const agarrado = sel ? eq[sel.lado][sel.i] : null;
 
   return (
     <>
@@ -635,19 +763,66 @@ function EquiposVista({
         </div>
       )}
       <div className="equipos">
-        <ColumnaEquipo arr={equipos.a} nombre="Claros" tono="claros" />
-        <ColumnaEquipo arr={equipos.b} nombre="Oscuros" tono="oscuros" />
+        <ColumnaEquipo
+          arr={eq.a}
+          nombre="Claros"
+          tono="claros"
+          lado="a"
+          sel={sel}
+          onTocar={tocar}
+        />
+        <ColumnaEquipo
+          arr={eq.b}
+          nombre="Oscuros"
+          tono="oscuros"
+          lado="b"
+          sel={sel}
+          onTocar={tocar}
+        />
       </div>
+
+      {agarrado ? (
+        <div className="agarre">
+          <span className="ag-quien">
+            <b>{agarrado.inv ? 'Inv. de ' + agarrado.de : agarrado.label}</b>
+            <small>Tocá a uno del otro equipo para cambiarlos</small>
+          </span>
+          <button className="btn sm" onClick={pasarSel}>
+            Pasar a {sel!.lado === 'a' ? 'oscuros' : 'claros'}
+          </button>
+          <button className="btn sm" onClick={() => setSel(null)}>
+            Soltar
+          </button>
+        </div>
+      ) : (
+        <div className="nota" style={{ marginTop: 10 }}>
+          Tocá un nombre para agarrarlo y emparejar los equipos a mano.
+        </div>
+      )}
+
       <div className="row2" style={{ marginTop: 14 }}>
-        <button className="btn pri" onClick={onSortear}>
+        <button
+          className="btn pri"
+          onClick={() => {
+            setSel(null);
+            onSortear();
+          }}
+        >
           Sortear de nuevo
         </button>
-        <button className="btn" onClick={onBorrar}>
+        <button
+          className="btn"
+          onClick={() => {
+            setSel(null);
+            onBorrar();
+          }}
+        >
           Borrar
         </button>
       </div>
       <div className="nota">
-        El sorteo queda guardado. Si sumás o sacás gente, te aviso para que vuelvas a sortear.
+        El sorteo queda guardado, con los cambios a mano y todo. Si sumás o sacás gente, te aviso
+        para que vuelvas a sortear.
       </div>
     </>
   );
@@ -829,7 +1004,39 @@ function ResultadoVista({
     // si cargó marcador y todavía no eligió resultado, lo deduce
     if (favor !== null && contra !== null && !p.resultado) {
       campos.resultado = favor > contra ? 'ganamos' : favor < contra ? 'perdimos' : 'empate';
+      if (miLado) campos.equipo_ganador = ganadorSegun(campos.resultado);
     }
+    onGuardar(campos);
+  }
+
+  /* De qué lado del sorteo jugaste vos. Acá `p.user_id` sos vos sí o sí:
+     esta pantalla lee `partidos` con su RLS, que solo devuelve los tuyos.
+     El lado sale del `uid` que guarda cada cabeza; los sorteos viejos no
+     lo tienen y los anotados que nunca se engancharon a una cuenta
+     tampoco. Si no se sabe, el resultado sigue siendo tuyo y de nadie
+     más. */
+  const miLado = ladoDeCuenta(p.equipos, p.user_id);
+  const hayEquipos = !!p.equipos;
+
+  /** El lado que ganó, deducido de cómo te fue a vos. */
+  function ganadorSegun(r: Resultado | null): Lado | null {
+    if (!miLado || !r || r === 'empate') return null;
+    return r === 'ganamos' ? miLado : miLado === 'a' ? 'b' : 'a';
+  }
+
+  function elegirResultado(r: Resultado | null) {
+    const campos: Partial<Partido> = { resultado: r };
+    // Sin saber de qué lado jugaste no hay nada que deducir: se deja
+    // como está para no borrar un ganador ya cargado a mano.
+    if (miLado || !r) campos.equipo_ganador = ganadorSegun(r);
+    onGuardar(campos);
+  }
+
+  function elegirGanador(g: Lado | null) {
+    const campos: Partial<Partido> = { equipo_ganador: g };
+    // Sin saber de qué lado jugaste, `resultado` no se toca: inventarle
+    // uno acá dejaría la fila diciendo dos cosas distintas.
+    if (miLado) campos.resultado = resultadoPara(miLado, g);
     onGuardar(campos);
   }
 
@@ -841,7 +1048,7 @@ function ResultadoVista({
           <button
             key={o.v}
             className={`${p.resultado === o.v ? 'on ' + o.cls : ''}`}
-            onClick={() => onGuardar({ resultado: p.resultado === o.v ? null : o.v })}
+            onClick={() => elegirResultado(p.resultado === o.v ? null : o.v)}
           >
             <span className="ico">
               <o.Ico />
@@ -850,6 +1057,48 @@ function ResultadoVista({
           </button>
         ))}
       </div>
+
+      {hayEquipos && (
+        <>
+          <div className="sec">¿Qué equipo ganó?</div>
+          <div className="ganador">
+            {([
+              { g: 'a' as Lado, txt: 'Claros', tono: 'claros' },
+              { g: null, txt: 'Empate', tono: null },
+              { g: 'b' as Lado, txt: 'Oscuros', tono: 'oscuros' },
+            ] as const).map((o) => {
+              const activo =
+                o.g === null
+                  ? p.resultado === 'empate' && !p.equipo_ganador
+                  : p.equipo_ganador === o.g;
+              return (
+                <button
+                  key={o.txt}
+                  className={activo ? 'on' : ''}
+                  onClick={() => elegirGanador(activo ? null : o.g)}
+                >
+                  {o.tono && <span className={`chaleco ${o.tono}`} />}
+                  {o.txt}
+                </button>
+              );
+            })}
+          </div>
+          <div className="nota">
+            {miLado ? (
+              <>
+                Esto es lo que le llega al resto: cada uno que jugó y tiene cuenta lo ve en{' '}
+                <b>su</b> camino, ganado o perdido según de qué lado estuvo. Vos jugaste con los{' '}
+                <b>{miLado === 'a' ? 'claros' : 'oscuros'}</b>.
+              </>
+            ) : (
+              <>
+                No sé de qué lado jugaste vos, así que esto todavía no le llega a nadie. Andá a{' '}
+                <b>Anotados → Quién es quién</b> y marcate.
+              </>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="sec">Marcador (opcional)</div>
       <div className="card">

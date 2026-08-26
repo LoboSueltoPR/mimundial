@@ -27,13 +27,22 @@ export default function Stats() {
 
     (async () => {
       const supabase = crearCliente();
-      const { data, error } = await supabase.from('partidos').select('*, jugadores!jugadores_partido_id_fkey(*)');
+      const [{ data, error }, { data: ajenos }] = await Promise.all([
+        supabase.from('partidos').select('*, jugadores!jugadores_partido_id_fkey(*)'),
+        supabase.rpc('mis_resultados_ajenos'),
+      ]);
       if (error) {
         setError(error.message);
         setFilas([]);
         return;
       }
-      setFilas((data ?? []) as Fila[]);
+      /* Los partidos de otros suman a ganados/perdidos/goles y nada más:
+         no traen la lista de anotados ni la plata (no son tuyas), así
+         que no mueven ni "gastado" ni los socios de cancha. */
+      const deOtros = ((ajenos ?? []) as Partial<Fila>[]).map(
+        (x) => ({ ...x, costo: 0, equipos: null, jugadores: [] }) as Fila,
+      );
+      setFilas([...((data ?? []) as Fila[]), ...deOtros]);
     })();
   }, []);
 
