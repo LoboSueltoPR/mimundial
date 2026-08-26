@@ -6,7 +6,11 @@ import { NextResponse, type NextRequest } from 'next/server';
 // inventados, sin tocar la base. Es público a propósito, para poder
 // revisar el diseño desde el celular sin iniciar sesión. No hay ningún
 // link hacia él desde la app.
-const PUBLICAS = ['/login', '/auth', '/p/', '/estilo'];
+// '/api' no lleva sesión NUNCA: quien la llama es la base de datos por
+// pg_net (ver 0016), que no tiene cookies. Sin esto el POST del trigger
+// se comería un redirect a /login y la notificación no saldría jamás.
+// La ruta se autoriza sola con un secreto compartido en la cabecera.
+const PUBLICAS = ['/login', '/auth', '/p/', '/estilo', '/api/'];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

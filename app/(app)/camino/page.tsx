@@ -17,7 +17,6 @@ import {
   faltanParaPasar,
   frase,
   hito,
-  listaBreve,
   vistoDe,
 } from '@/lib/camino';
 import { fechaLarga } from '@/lib/calculos';
@@ -127,11 +126,11 @@ export default function Camino() {
     );
   };
 
-  /* La ruta muestra lo jugado, lo que te toca y el paso siguiente. El
-     resto se pliega: son los que todavía no dependen de vos. */
-  const HASTA = e.etapa + 1;
-  const visibles = CAMINO.slice(0, HASTA + 1);
-  const lejos = CAMINO.slice(HASTA + 1);
+  /* Los siete pasos, siempre los siete. Antes se plegaba lo que quedaba
+     lejos con la idea de no mostrar relleno entre vos y la copa, pero el
+     camino completo ES la pantalla: ver que faltan cuatro llaves después
+     de grupos es la información, no el ruido. Se muestra entero. */
+  const visibles = CAMINO;
 
   const cerrarCartel = () => {
     guardarVisto(vistoDe(e));
@@ -289,17 +288,6 @@ export default function Camino() {
             );
           })}
 
-          {/* Lo que todavía queda lejos, plegado en un renglón. Cuando
-              estás en la 2ª de grupos, la semifinal no es información:
-              es relleno entre vos y la copa. */}
-          {lejos.length > 0 && (
-            <li className="ruta-paso lejos">
-              <span className="ruta-punto">⋯</span>
-              <span className="ruta-txt">
-                <b>y después {listaBreve(lejos)}</b>
-              </span>
-            </li>
-          )}
           <li className="ruta-paso copa pendiente">
             <span className="ruta-punto">
               <Copita tam={13} />

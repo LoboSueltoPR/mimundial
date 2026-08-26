@@ -37,15 +37,6 @@ export const CAMINO: Instancia[] = [
   { id: 'fi', nombre: 'Final', corto: 'Final', breve: 'la final', icono: '👑' },
 ];
 
-/** "octavos, cuartos, la semi y la final" — para plegar en un renglón lo
- *  que todavía queda lejos, en vez de listarlo paso por paso. */
-export function listaBreve(instancias: Instancia[]): string {
-  const ns = instancias.map((i) => i.breve);
-  if (ns.length === 0) return '';
-  if (ns.length === 1) return ns[0];
-  return `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`;
-}
-
 /** Partidos de la fase de grupos: se juegan los tres, siempre. */
 export const GRUPOS = 3;
 

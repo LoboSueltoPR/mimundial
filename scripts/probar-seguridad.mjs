@@ -91,6 +91,27 @@ chequear(
   rpcBajarme.error?.message?.slice(0, 60) || `PASÓ (${JSON.stringify(rpcBajarme.data)})`,
 );
 
+/* 0016: la tabla de suscripciones push es el material con el que se le
+   manda una notificacion a cualquiera. No se llega por PostgREST ni
+   logueado (RLS prendida y cero politicas), y el despachador no lo
+   ejecuta nadie a mano. Estos van en la seccion de anonimo porque no
+   dependen de tener un token de partido. */
+const susLeer = await sb.from('suscripciones_push').select('*').limit(1);
+chequear('no puede leer suscripciones_push', !!susLeer.error, susLeer.error?.message);
+const susEscribir = await sb.from('suscripciones_push').insert({
+  endpoint: 'https://x/' + randomUUID(), p256dh: 'x', auth: 'x',
+});
+chequear('no puede insertar suscripciones_push', !!susEscribir.error, susEscribir.error?.message);
+const despachar = await sb.rpc('mandar_push', {
+  p_destinos: [], p_claims: [], p_titulo: 'x', p_cuerpo: 'x', p_url: '/',
+});
+chequear('no puede llamar mandar_push', !!despachar.error, despachar.error?.message);
+const susSinNadie = await sb.rpc('suscribirme_push', {
+  p_endpoint: 'https://x/' + randomUUID(), p_p256dh: 'x', p_auth: 'x', p_claim: null,
+});
+chequear('sin cuenta y sin claim no se puede suscribir',
+  susSinNadie.data?.ok === false, susSinNadie.data?.error);
+
 if (!TOKEN) {
   console.log('\n(Pasá un token real como argumento para probar el flujo del invitado.)');
   console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
