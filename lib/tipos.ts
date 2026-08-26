@@ -79,7 +79,29 @@ export type PartidoPublico = {
   cancha_lat: number | null;
   cancha_lng: number | null;
   cancha_notas: string | null;
+  /** El sorteo SIN los ids: las cabezas vienen solo con label/inv/de.
+   *  null si todavía no se sorteó. Ver `equipos_publicos` en 0015. */
+  equipos: Equipos | null;
+  /** Plata del grupo, no de nadie en particular: lo que salió y cuánto
+   *  toca por cabeza. Lo que pagó o debe cada uno NO se expone acá —
+   *  lo tuyo sale de `mi_parte`. */
+  costo: number;
+  por_cabeza: number;
+  /** Nombre del que adelantó la plata, no su id. null si nadie. */
+  puso_nombre: string | null;
   anotados: AnotadoPublico[];
+};
+
+/** Lo que me toca a mí en un partido al que entré por el link. */
+export type MiParte = {
+  anotado: boolean;
+  nombre?: string;
+  invitados?: number;
+  debe?: number;
+  pagado?: number;
+  saldo?: number;
+  /** true si el que adelantó la plata soy yo */
+  adelante?: boolean;
 };
 
 /** Un partido ajeno en el que el logueado está anotado como jugador. */

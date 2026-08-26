@@ -104,11 +104,34 @@ chequear('ve el partido por token', !ver.error && !!ver.data, ver.error?.message
 
 if (ver.data) {
   const campos = Object.keys(ver.data);
-  chequear('no expone el costo', !campos.includes('costo'), campos.join(','));
-  chequear('no expone quién puso la plata', !campos.includes('puso'));
+  const crudo = JSON.stringify(ver.data);
+
+  /* El contrato cambió en 0015 y se reescribió a mano, no se borró: la
+     plata del GRUPO ahora se muestra (cuánto salió, cuánto por cabeza,
+     quién adelantó) porque es lo que el invitado vino a preguntar. Lo
+     que sigue cerrado es lo de cada uno en particular. */
+  chequear('expone el costo (0015)', campos.includes('costo'), campos.join(','));
+  chequear('expone cuánto es por cabeza (0015)', campos.includes('por_cabeza'));
+  chequear('da el NOMBRE del que adelantó, no su id',
+    campos.includes('puso_nombre') && !campos.includes('puso'));
+
   chequear('no expone el user_id del anfitrión', !campos.includes('user_id'));
-  chequear('no expone ningún claim', !JSON.stringify(ver.data).includes('claim'));
-  chequear('no expone lo que pagó cada uno', !JSON.stringify(ver.data).includes('pagado'));
+  chequear('no expone ningún claim', !crudo.includes('claim'));
+  chequear('no expone lo que pagó cada uno', !crudo.includes('pagado'));
+
+  /* Lo más fácil de filtrar sin darse cuenta: `equipos` es un jsonb
+     crudo y desde 0014 cada cabeza lleva uid/jid adentro. Devolverlo tal
+     cual le entrega a anon los user_id de todos los que jugaron. */
+  chequear('los equipos no llevan uid de nadie', !crudo.includes('"uid"'), crudo.slice(0, 200));
+  chequear('los equipos no llevan jid de nadie', !crudo.includes('"jid"'));
+  if (ver.data.equipos) {
+    const cabezas = [...(ver.data.equipos.a || []), ...(ver.data.equipos.b || [])];
+    chequear(
+      'cada cabeza trae solo label/inv/de',
+      cabezas.every((c) => Object.keys(c).every((k) => ['label', 'inv', 'de'].includes(k))),
+      JSON.stringify(cabezas[0] || {}),
+    );
+  }
 
   // 0005 devuelve user_id/username/avatar de cada anotado SOLO si hay sesión.
   const anotados = ver.data.anotados || [];
@@ -124,6 +147,23 @@ if (ver.data) {
   chequear('sin sesión, no dice que estoy anotado', ver.data.soy_anotado === false);
   chequear('sin sesión, no manda mi_nombre', ver.data.mi_nombre === null);
 }
+
+/* mi_parte (0015): lo mío y solo lo mío. Un claim que no está en ese
+   partido no puede devolver los números de nadie. */
+const parteAjena = await sb.rpc('mi_parte', { tok: TOKEN, p_claim: randomUUID() });
+chequear(
+  'un claim ajeno no devuelve la parte de nadie',
+  !parteAjena.error && parteAjena.data?.anotado === false && parteAjena.data?.debe === undefined,
+  JSON.stringify(parteAjena.data ?? parteAjena.error?.message),
+);
+const parteSinClaim = await sb.rpc('mi_parte', { tok: TOKEN, p_claim: null });
+chequear(
+  'sin claim y sin sesión tampoco',
+  parteSinClaim.data?.anotado === false,
+  JSON.stringify(parteSinClaim.data),
+);
+const parteTokenFalso = await sb.rpc('mi_parte', { tok: 'noexiste', p_claim: randomUUID() });
+chequear('token inventado en mi_parte no rompe', parteTokenFalso.data?.anotado === false);
 
 const miClaim = randomUUID();
 const nombrePrueba = 'Test ' + miClaim.slice(0, 6);
@@ -142,6 +182,20 @@ const edit = await sb.rpc('actualizar_anotado', {
   p_claim: miClaim, p_nombre: nombrePrueba, p_invitados: 2,
 });
 chequear('puede editar lo suyo', edit.data?.ok === true, edit.data?.error);
+
+/* Ya anotado con 2 invitados: mi_parte tiene que reconocerme por el
+   claim y cobrarme 3 partes, no una. */
+const parteMia = await sb.rpc('mi_parte', { tok: TOKEN, p_claim: miClaim });
+chequear(
+  'con mi claim sí devuelve lo mío',
+  parteMia.data?.anotado === true && parteMia.data?.nombre === nombrePrueba,
+  JSON.stringify(parteMia.data),
+);
+chequear(
+  'me cobra por mis 3 cabezas, no por una',
+  parteMia.data?.invitados === 2 && typeof parteMia.data?.debe === 'number',
+  JSON.stringify(parteMia.data),
+);
 
 const corto = await sb.rpc('actualizar_anotado', { p_claim: miClaim, p_nombre: 'x', p_invitados: 0 });
 chequear('rechaza un nombre inválido', corto.data?.ok === false, corto.data?.error);

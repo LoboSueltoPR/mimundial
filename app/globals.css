@@ -616,6 +616,10 @@ label{
    vestuario, y arrastrar entre dos columnas de 160px con el pulgar
    no sale nunca a la primera. */
 .eq li{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* En la invitacion los equipos son de mirar: sin cursor ni respuesta al
+   toque, para no prometer una interaccion que no existe. */
+.eq li.fijo{cursor:default}
+.eq li.fijo:active{background:transparent}
 .eq li:active{background:var(--surface-2)}
 .eq li.vacioEq{cursor:default;justify-content:center;color:var(--faint)}
 .eq li.agarrado{
@@ -647,6 +651,29 @@ label{
   display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .ganador button.on{background:var(--acento-suave);border-color:var(--acento);color:var(--acento)}
+
+/* ---------- lo tuyo de la plata, en la invitacion ----------
+   Un solo renglon con el numero grande a la derecha: es la respuesta a
+   "cuanto pongo", que es la unica pregunta que trae el invitado. */
+.miParte{
+  display:flex;align-items:center;gap:12px;margin-top:10px;
+  background:var(--surface);border:1.5px solid var(--line);
+  border-radius:var(--radio);padding:13px 14px;
+}
+.miParte.debe{border-color:var(--red);background:var(--red-suave)}
+.miParte.ok{border-color:var(--green);background:var(--green-suave)}
+.mp-txt{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.mp-txt b{font-size:13px;text-transform:uppercase;letter-spacing:.6px;
+  font-family:var(--fuente-dato)}
+.mp-txt small{font-size:12px;color:var(--dim);line-height:1.35}
+.mp-monto{
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;
+  font-family:var(--fuente-display);font-size:26px;line-height:1;
+}
+.miParte.debe .mp-monto{color:var(--red)}
+.miParte.ok .mp-monto{color:var(--green)}
+.mp-monto small{font-family:var(--fuente-dato);font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.8px;opacity:.8}
 
 /* ---------- quién es quién ---------- */
 .quienEs{

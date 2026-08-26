@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Amigo, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
-import { fechaLarga } from '@/lib/calculos';
+import type { Amigo, MiParte, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
+import { fechaLarga, plata } from '@/lib/calculos';
 import { comoLlegar } from '@/lib/mapa';
 import { Copita } from '@/components/Copa';
 import { useConfirmar } from '@/components/Confirmar';
@@ -12,6 +12,8 @@ import BotonGoogle from '@/components/BotonGoogle';
 import Shell from '@/components/Shell';
 import PerfilModal from '@/components/PerfilModal';
 import Avatar from '@/components/Avatar';
+import EquiposMirar from '@/components/Equipos';
+import BotonPlaca from '@/components/BotonPlaca';
 
 /** El claim vive solo en este navegador: es lo único que te deja editar lo tuyo. */
 function claimGuardado(token: string): string {
@@ -23,6 +25,10 @@ function claimGuardado(token: string): string {
   }
   return c;
 }
+/** Lee el claim SIN crear uno: para preguntar "¿cuánto me toca?" no hace
+ *  falta reservarle identidad a alguien que quizá solo está mirando. */
+const claimLeido = (token: string) => localStorage.getItem('mimundial.claim.' + token);
+
 const yaAnotado = (token: string) => localStorage.getItem('mimundial.anotado.' + token) === '1';
 const marcarAnotado = (token: string, v: boolean) =>
   v
@@ -56,6 +62,9 @@ export default function Invitacion() {
    *  mostrar la pantalla pública un instante antes de meter el Shell. */
   const [sesionLista, setSesionLista] = useState(false);
   const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
+  /** Lo que me toca a mi de la plata. Viene aparte de ver_partido_por_token
+   *  porque es lo unico que depende de quien pregunta (ver 0015). */
+  const [miParte, setMiParte] = useState<MiParte | null>(null);
   /** cargar() y el fetch del perfil corren en paralelo y ninguno espera al
    *  otro: esta ref evita que el nombre de perfil pise el de la anotación
    *  ya existente, gane quien gane la carrera. */
@@ -63,12 +72,19 @@ export default function Invitacion() {
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
-    const { data, error } = await supabase.rpc('ver_partido_por_token', { tok: token });
+    /* Dos llamadas: el partido (igual para todos) y lo mio (depende de
+       quien pregunta). El claim se LEE, no se crea: al que solo mira no
+       hace falta reservarle identidad. */
+    const [{ data, error }, { data: parte }] = await Promise.all([
+      supabase.rpc('ver_partido_por_token', { tok: token }),
+      supabase.rpc('mi_parte', { tok: token, p_claim: claimLeido(token) }),
+    ]);
     setCargando(false);
     if (error) {
       setError(error.message);
       return;
     }
+    setMiParte((parte as MiParte | null) ?? null);
     const partido = data as PartidoPublico | null;
     setP(partido);
     // El logueado que ya tiene fila acá se reconoce por la cuenta, sin
@@ -479,6 +495,83 @@ export default function Invitacion() {
           })
         )}
       </div>
+
+      {/* Los equipos: hasta ahora habia que preguntarlos por WhatsApp
+          aunque estuvieran sorteados hace una hora. Solo de mirar —
+          moverlos es del anfitrion. */}
+      {p.equipos && (
+        <>
+          <div className="sec">Los equipos</div>
+          <EquiposMirar equipos={p.equipos} />
+          <div className="nota">Los armo el anfitrion. Si cambian, se actualiza aca solo.</div>
+        </>
+      )}
+
+      {/* La plata: lo del grupo (cuanto salio, cuanto por cabeza, a quien
+          se le paga) y lo tuyo. Lo que debe CADA UNO no se muestra: no
+          es dato para colgar de un link que circula por el grupo. */}
+      {p.costo > 0 && (
+        <>
+          <div className="sec">La plata</div>
+          <div className="tot">
+            <div className="big">{plata(p.por_cabeza)}</div>
+            <div className="lbl">por cabeza</div>
+            <div className="split">
+              <div>
+                <div className="n">{plata(p.costo)}</div>
+                <div className="c">la cancha</div>
+              </div>
+              <div>
+                <div className="n">{p.cabezas}</div>
+                <div className="c">cabezas</div>
+              </div>
+              {p.puso_nombre && (
+                <div>
+                  <div className="n">{p.puso_nombre.split(' ')[0]}</div>
+                  <div className="c">adelanto</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {miParte?.anotado && (
+            <div className={`miParte ${miParte.saldo! <= 0 ? 'ok' : 'debe'}`}>
+              <span className="mp-txt">
+                <b>Lo tuyo</b>
+                <small>
+                  {miParte.adelante
+                    ? `Adelantaste ${plata(p.costo)} — tu parte esta cubierta`
+                    : miParte.invitados
+                      ? `Vos + ${miParte.invitados} invitado${miParte.invitados > 1 ? 's' : ''} = ${
+                          1 + miParte.invitados
+                        } partes`
+                      : 'Una parte'}
+                </small>
+              </span>
+              <span className="mp-monto">
+                {miParte.saldo! <= 0 ? plata(miParte.debe!) : plata(miParte.saldo!)}
+                <small>{miParte.saldo! <= 0 ? 'saldado' : 'debes'}</small>
+              </span>
+            </div>
+          )}
+
+          <div className="nota">
+            {p.puso_nombre ? (
+              <>
+                La cancha la adelanto <b>{p.puso_nombre}</b>: a el le pagas lo tuyo.
+              </>
+            ) : (
+              <>Todavia nadie adelanto la plata.</>
+            )}{' '}
+            El total se divide por <b>cabeza</b>: el que lleva invitados paga por cada uno.
+          </div>
+        </>
+      )}
+
+      {/* Pasarle el partido a alguien mas. La placa es una imagen: es la
+          unica forma de que esto llegue a una historia de Instagram. */}
+      <div className="sec">Pasalo</div>
+      <BotonPlaca p={p} />
 
       <div className="inv-pie">
         Armado con <b>MiMundial</b>
