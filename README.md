@@ -76,7 +76,14 @@ Para publicar: importá el repo en [vercel.com/new](https://vercel.com/new) y en
 - **Camino** — tu mundial personal. Cada triunfo te hace avanzar una instancia: fase de grupos (3),
   octavos, cuartos, semifinal, final. Siete al hilo y levantás la copa, que queda en la vitrina y
   arrancás un mundial nuevo. El empate te deja donde estabas; **la derrota te manda a cero**.
-- **Invitar sin cuenta** — cada partido tiene un link. El que lo abre pone su nombre y se anota, sin registrarse. Solo puede manejar su lugar y sus invitados.
+- **Invitar sin cuenta** — cada partido tiene un link. El que lo abre pone su nombre y se anota, sin
+  registrarse. Solo puede manejar su lugar y sus invitados. Desde el link también ve **los equipos**
+  ya sorteados y **la plata**: cuánto salió, cuánto es por cabeza, a quién hay que pagarle y cuánto
+  le toca a él. Lo que debe cada uno de los demás **no** se muestra: no es dato para colgar de un
+  link que circula por el grupo.
+- **La placa** — la convocatoria como imagen de 1080×1920, lista para una historia. Se genera en el
+  navegador con canvas. Ojo: Instagram no recibe posteos desde una web, así que lo único que se
+  puede hacer es pasarle el archivo al menú de compartir del celular; en compu se baja.
 - **Amigos** — los sumás por mail y después los anotás de un toque. Los amigos de tus amigos aparecen sugeridos.
 - **Partidos** — fecha, hora, lugar, cuántos van y cuánto sale.
 - **Anotados** — sumás gente y le ponés `+` por cada invitado. El invitado ocupa lugar en el cupo y

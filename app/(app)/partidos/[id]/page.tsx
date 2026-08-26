@@ -37,11 +37,10 @@ import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio } from '@/components/Marcas';
 import Avatar from '@/components/Avatar';
 import PerfilModal from '@/components/PerfilModal';
+import { ColumnaEquipo, type Seleccion } from '@/components/Equipos';
 
 type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
 type AvatarInfo = { avatar_url: string | null; username: string | null };
-/** Quién está agarrado en la vista de equipos, para moverlo o cambiarlo. */
-type Seleccion = { lado: Lado; i: number };
 
 export default function DetallePartido() {
   const { id } = useParams<{ id: string }>();
@@ -625,59 +624,6 @@ function Anotados({
 }
 
 /* ================= EQUIPOS ================= */
-
-/**
- * Va a nivel de módulo, no dentro del render de EquiposVista: un
- * componente definido en el render es uno nuevo en cada pasada, así que
- * React desmonta y remonta la lista entera cada vez que algo cambia.
- */
-function ColumnaEquipo({
-  arr,
-  nombre,
-  tono,
-  lado,
-  sel,
-  onTocar,
-}: {
-  arr: Equipos['a'];
-  nombre: string;
-  tono: 'claros' | 'oscuros';
-  lado: Lado;
-  sel: Seleccion | null;
-  onTocar: (lado: Lado, i: number) => void;
-}) {
-  /* El otro equipo está en juego cuando hay alguien agarrado del lado
-     contrario: ahí cada fila es "cambialo por este". */
-  const enJuego = !!sel && sel.lado !== lado;
-
-  return (
-    <div className={`eq${enJuego ? ' enJuego' : ''}`}>
-      <div className="eq-head">
-        <span className={`chaleco ${tono}`} />
-        <b>{nombre}</b>
-        <span>{arr.length}</span>
-      </div>
-      <ul>
-        {arr.map((x, i) => {
-          const agarrado = !!sel && sel.lado === lado && sel.i === i;
-          return (
-            <li
-              key={`${x.label}#${i}`}
-              className={`${x.inv ? 'invitado' : ''}${agarrado ? ' agarrado' : ''}`}
-              onClick={() => onTocar(lado, i)}
-            >
-              <span className="mini" style={{ background: x.inv ? '#5a6472' : color(x.label) }}>
-                {x.inv ? '+' : iniciales(x.label)}
-              </span>
-              <span>{x.inv ? 'Inv. de ' + x.de : x.label}</span>
-            </li>
-          );
-        })}
-        {arr.length === 0 && <li className="invitado vacioEq">— nadie —</li>}
-      </ul>
-    </div>
-  );
-}
 
 function EquiposVista({
   js,
