@@ -298,6 +298,148 @@ export async function generarPlaca(d: DatosPlaca): Promise<Blob> {
   );
 }
 
+/* ============================================================
+   La placa de equipos
+
+   La otra mitad: cuando ya está completo y sorteado, lo que hay
+   que mandar al grupo no es "faltan 3" sino quién juega con quién.
+   Misma hoja, misma copa, mismo pie — cambia el cuerpo.
+   ============================================================ */
+
+export type DatosPlacaEquipos = {
+  lugar: string | null;
+  fecha: string;
+  hora: string | null;
+  claros: string[];
+  oscuros: string[];
+  link: string;
+};
+
+export async function generarPlacaEquipos(d: DatosPlacaEquipos): Promise<Blob> {
+  const display = familia('--fuente-anton', '"Arial Narrow", sans-serif');
+  const mono = familia('--fuente-mono', 'ui-monospace, monospace');
+
+  await asegurarFuentes([
+    `400 200px ${primeraFamilia(display)}`,
+    `500 40px ${primeraFamilia(mono)}`,
+  ]);
+
+  const c = document.createElement('canvas');
+  c.width = A;
+  c.height = ALTO;
+  const ctx = c.getContext('2d');
+  if (!ctx) throw new Error('No se pudo dibujar la placa.');
+  ctx.textBaseline = 'alphabetic';
+
+  /* ---- la mesa y la hoja ---- */
+  ctx.fillStyle = MESA;
+  ctx.fillRect(0, 0, A, ALTO);
+  const M = 56;
+  ctx.fillStyle = PAPEL;
+  ctx.fillRect(M, M, A - M * 2, ALTO - M * 2);
+  ctx.strokeStyle = TINTA;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(M + 2, M + 2, A - M * 2 - 4, ALTO - M * 2 - 4);
+
+  const centro = A / 2;
+  ctx.textAlign = 'center';
+
+  /* ---- la marca ---- */
+  copa(ctx, centro, 130, 92, ORO);
+  ctx.fillStyle = TENUE;
+  ctx.font = `500 28px ${mono}`;
+  rotulo(ctx, 'MiMundial', centro, 292, 7);
+
+  /* ---- dónde y cuándo ---- */
+  const lugar = (d.lugar || 'Picadito').toUpperCase();
+  ctx.fillStyle = TINTA;
+  const cuerpoLugar = cuerpoQueEntra(ctx, lugar, display, '400', 86, A - 220, 48);
+  ctx.font = `400 ${cuerpoLugar}px ${display}`;
+  ctx.fillText(lugar, centro, 380);
+
+  ctx.fillStyle = TENUE;
+  ctx.font = `500 34px ${mono}`;
+  ctx.fillText(fechaPlaca(d.fecha) + (d.hora ? ` · ${d.hora}` : ''), centro, 432);
+
+  /* ---- las dos columnas ----
+     Se dibujan a la par, no una debajo de la otra: el que mira quiere
+     comparar los equipos, y en columnas eso se hace de un vistazo. */
+  const ancho = (A - M * 2 - 60) / 2;
+  const xIzq = M + 20;
+  const xDer = M + 20 + ancho + 20;
+  const yCab = 520;
+
+  /* El bloque de nombres se estira y se centra en el espacio que queda
+     entre las cabeceras y el pie. Con paso fijo, un 6 contra 6 —que es
+     el caso normal— dejaba 400px muertos abajo, y un 11 contra 11 no
+     entraba. Se calcula: el interlineado crece hasta 132 si sobra lugar
+     y se achica hasta 70 si falta. */
+  const filas = Math.max(d.claros.length, d.oscuros.length, 1);
+  const desde = yCab + 70;
+  const hasta = 1640;
+  const espacio = hasta - desde;
+  const paso = Math.max(70, Math.min(132, Math.floor(espacio / filas)));
+  const cuerpoNombre = paso < 84 ? 40 : paso < 100 ? 46 : 52;
+  // el primer renglón, ya centrado; el +paso*0.62 apoya la línea de base
+  const yPrimero = desde + (espacio - filas * paso) / 2 + paso * 0.62;
+
+  // `ctx` se pasa explicito: adentro de una funcion anidada TypeScript
+  // pierde el narrowing del null-check de arriba.
+  function columna(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    titulo: string,
+    oscuro: boolean,
+    nombres: string[],
+  ) {
+    // cabecera con la pechera
+    ctx.fillStyle = oscuro ? '#2b3648' : PAPEL;
+    ctx.strokeStyle = oscuro ? '#2b3648' : TENUE;
+    ctx.lineWidth = 3;
+    ctx.fillRect(x, yCab - 44, ancho, 66);
+    ctx.strokeRect(x, yCab - 44, ancho, 66);
+    ctx.fillStyle = oscuro ? PAPEL : TINTA;
+    ctx.font = `500 30px ${mono}`;
+    ctx.textAlign = 'center';
+    rotulo(ctx, titulo, x + ancho / 2, yCab, 6);
+
+    // los nombres, con su renglón
+    nombres.forEach((n, i) => {
+      const y = yPrimero + i * paso;
+      ctx.strokeStyle = REGLA;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y + 22);
+      ctx.lineTo(x + ancho, y + 22);
+      ctx.stroke();
+
+      ctx.fillStyle = TINTA;
+      const t = cuerpoQueEntra(ctx, n, display, '400', cuerpoNombre, ancho - 24, 26);
+      ctx.font = `400 ${t}px ${display}`;
+      ctx.fillText(n, x + ancho / 2, y);
+    });
+  }
+
+  columna(ctx, xIzq, 'Claros', false, d.claros);
+  columna(ctx, xDer, 'Oscuros', true, d.oscuros);
+
+  /* ---- el pie ---- */
+  ctx.textAlign = 'center';
+  ctx.fillStyle = TENUE;
+  ctx.font = `500 28px ${mono}`;
+  rotulo(ctx, 'El partido, en', centro, 1700, 6);
+
+  const link = d.link.replace(/^https?:\/\//, '');
+  ctx.fillStyle = BIROME;
+  const cuerpoLink = cuerpoQueEntra(ctx, link, mono, '600', 38, A - 200, 22);
+  ctx.font = `600 ${cuerpoLink}px ${mono}`;
+  ctx.fillText(link, centro, 1764);
+
+  return new Promise<Blob>((resolver, rechazar) =>
+    c.toBlob((b) => (b ? resolver(b) : rechazar(new Error('No se pudo generar la imagen.'))), 'image/png'),
+  );
+}
+
 /**
  * Manda la placa por donde se pueda.
  *
