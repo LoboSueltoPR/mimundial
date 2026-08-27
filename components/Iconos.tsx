@@ -53,6 +53,16 @@ export const IconoPlata = (p: Props) => (
   </svg>
 );
 
+/** Tabla: el podio, quien va ganando el mundial. */
+export const IconoTabla = (p: Props) => (
+  <svg {...base} {...p}>
+    <path d="M9.5 20V9.5h5V20" />
+    <path d="M3 20v-6.5h6.5" />
+    <path d="M14.5 20v-4.5H21V20" />
+    <path d="M2 20h20" />
+  </svg>
+);
+
 /** Amigos: los que enganchan. */
 export const IconoAmigos = (p: Props) => (
   <svg {...base} {...p}>
