@@ -8,8 +8,8 @@ import {
   IconoCamino,
   IconoPartidos,
   IconoPerfil,
-  IconoPlata,
   IconoStats,
+  IconoTabla,
 } from './Iconos';
 
 /**
@@ -22,7 +22,7 @@ const SECCIONES = [
   { href: '/camino', label: 'Camino', Icono: IconoCamino },
   { href: '/partidos', label: 'Partidos', Icono: IconoPartidos },
   { href: '/stats', label: 'Stats', Icono: IconoStats },
-  { href: '/cuentas', label: 'Plata', Icono: IconoPlata },
+  { href: '/tabla', label: 'Tabla', Icono: IconoTabla },
   { href: '/amigos', label: 'Amigos', Icono: IconoAmigos },
 ];
 

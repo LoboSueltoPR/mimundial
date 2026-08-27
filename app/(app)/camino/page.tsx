@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { crearCliente } from '@/lib/supabase/client';
-import type { AmigoCamino, Partido } from '@/lib/tipos';
+import type { Partido } from '@/lib/tipos';
 import {
   CAMINO,
   GRUPOS,
@@ -22,9 +22,6 @@ import {
 import { fechaLarga } from '@/lib/calculos';
 import { Copita } from '@/components/Copa';
 import { MarcaEmpate, MarcaPerdio, MarcaTilde } from '@/components/Marcas';
-import Avatar from '@/components/Avatar';
-import PerfilModal from '@/components/PerfilModal';
-import { conApodo } from '@/lib/nombre';
 
 /* Dónde estaba el camino la última vez que lo miraste desde este
    navegador. Es solo para saber cuándo avisar que avanzaste: si el dato
@@ -54,9 +51,7 @@ export default function Camino() {
   const [mios, setMios] = useState<Set<string>>(new Set());
   const [cartel, setCartel] = useState<Hito | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [amigos, setAmigos] = useState<AmigoCamino[]>([]);
   const [cerrando, setCerrando] = useState(false);
-  const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -84,11 +79,6 @@ export default function Camino() {
       const nuevo = hito(leerVisto(), e);
       setCartel(nuevo);
       if (!nuevo) guardarVisto(vistoDe(e));
-    })();
-    (async () => {
-      const supabase = crearCliente();
-      const { data } = await supabase.rpc('camino_de_amigos');
-      setAmigos((data ?? []) as AmigoCamino[]);
     })();
   }, []);
 
@@ -322,38 +312,6 @@ export default function Camino() {
         </>
       )}
 
-      {/* ---------- en qué anda el resto ---------- */}
-      {amigos.length > 0 && (
-        <>
-          <div className="sec">Tus amigos</div>
-          <div className="card">
-            {amigos.map((am) => {
-              const ea = calcularCamino(am.partidos);
-              return (
-                <div
-                  className="item"
-                  key={am.id}
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setPerfilAbierto({ id: am.id, nombre: am.nombre })}
-                >
-                  <Avatar nombre={am.nombre} url={am.avatar_url} />
-                  <span className="info">
-                    <b>{conApodo(am.nombre, am.apodo)}</b>
-                    <small>
-                      {ea.copas > 0 ? `${ea.copas} copa${ea.copas > 1 ? 's' : ''} · ` : ''}
-                      {ea.enGrupos
-                        ? `${ea.puntos} pt${ea.puntos === 1 ? '' : 's'} en grupos`
-                        : `${ea.etapa - GRUPOS} de ${LLAVES} llaves`}
-                    </small>
-                  </span>
-                  <span className="estado-pill emp">{ea.proxima.corto}</span>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
       {/* ---------- historial ---------- */}
       <div className="sec">Cómo llegaste hasta acá</div>
       {e.historial.length === 0 ? (
@@ -397,17 +355,6 @@ export default function Camino() {
         <b>{PARA_PASAR} puntos o más pasás</b> a octavos — ahí sí, perdés y volvés a cero con
         mundial nuevo. El empate en llave te deja donde estabas.
       </div>
-
-      {perfilAbierto && (
-        <PerfilModal
-          userId={perfilAbierto.id}
-          nombreFallback={perfilAbierto.nombre}
-          estado="amigo"
-          procesando={false}
-          onEnviarSolicitud={() => {}}
-          onCerrar={() => setPerfilAbierto(null)}
-        />
-      )}
     </div>
   );
 }
