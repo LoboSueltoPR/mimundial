@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { crearCliente } from '@/lib/supabase/client';
 import type { EstadoAmistad, PerfilPublico } from '@/lib/tipos';
 import { GRUPOS, LLAVES, calcularCamino } from '@/lib/camino';
+import { calcularStats, fechaCorta } from '@/lib/calculos';
+import { MarcaEmpate, MarcaPerdio, MarcaTilde } from './Marcas';
 import { conApodo } from '@/lib/nombre';
 import Avatar from './Avatar';
 
@@ -52,6 +54,11 @@ export default function PerfilModal({
 
   const nombre = perfil ? conApodo(perfil.nombre, perfil.apodo) : nombreFallback;
   const e = perfil ? calcularCamino(perfil.partidos) : null;
+  /* `calcularStats` pide Partido[] pero solo lee resultado y goles, y
+     `gastado` sale 0 sin jugadores. Alcanza con lo que trae el perfil. */
+  const st = perfil
+    ? calcularStats(perfil.partidos as unknown as Parameters<typeof calcularStats>[0])
+    : null;
   const datosJugador = perfil
     ? [
         perfil.club ? `hincha de ${perfil.club}` : null,
@@ -94,6 +101,48 @@ export default function PerfilModal({
               </div>
             )}
           </div>
+        )}
+
+        {/* El historial. Es lo primero que uno quiere saber de otro
+            jugador y hasta ahora habia que entrar partido por partido.
+            No se listan los demas anotados a proposito: esto es la ficha
+            de una persona, no la del partido. */}
+        {perfil && perfil.partidos.length > 0 && (
+          <>
+            <div className="sec" style={{ marginTop: 16 }}>
+              Jugo {perfil.partidos.length}
+              <span className="perfilModal-record">
+                {st!.ganados}G · {st!.empatados}E · {st!.perdidos}P
+                {st!.jugados > 0 ? ` · ${st!.efectividad}%` : ''}
+              </span>
+            </div>
+            <div className="card perfilModal-historial">
+              {[...perfil.partidos].reverse().map((pt) => {
+                const f = fechaCorta(pt.fecha);
+                return (
+                  <div className="item" key={pt.id}>
+                    <span className="fec">
+                      <span className="d">{f.d}</span>
+                      <span className="m">{f.m}</span>
+                    </span>
+                    <span className="info">
+                      <b>{pt.lugar || 'Partido'}</b>
+                      <small>{pt.anfitrion === false ? 'jugo de invitado' : 'lo organizo'}</small>
+                    </span>
+                    <span className={`marcaRes ${pt.resultado}`}>
+                      {pt.resultado === 'ganamos' ? (
+                        <MarcaTilde tam={14} />
+                      ) : pt.resultado === 'empate' ? (
+                        <MarcaEmpate tam={14} />
+                      ) : (
+                        <MarcaPerdio tam={14} />
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
         <div className="row2" style={{ marginTop: 16 }}>
