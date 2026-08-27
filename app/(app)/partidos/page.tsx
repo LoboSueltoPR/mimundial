@@ -22,6 +22,11 @@ export default function Partidos() {
   // a ella — "Tus partidos" tiene que seguir andando igual.
   const [anotados, setAnotados] = useState<MiPartidoAnotado[] | null>(null);
 
+  // Los ajenos ya jugados, con el resultado dado vuelta a tu punto de vista.
+  // Van SOLO al G/E/P de arriba: la lista de abajo es la de los que
+  // organizaste vos, y la plata de un partido de otro no es tuya.
+  const [ajenos, setAjenos] = useState<Partido[]>([]);
+
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
     const { data, error } = await supabase
@@ -44,10 +49,17 @@ export default function Partidos() {
     setAnotados(error ? [] : ((data ?? []) as MiPartidoAnotado[]));
   }, []);
 
+  const cargarAjenos = useCallback(async () => {
+    const supabase = crearCliente();
+    const { data, error } = await supabase.rpc('mis_resultados_ajenos');
+    setAjenos(error ? [] : ((data ?? []) as Partido[]));
+  }, []);
+
   useEffect(() => {
     cargar();
     cargarAnotados();
-  }, [cargar, cargarAnotados]);
+    cargarAjenos();
+  }, [cargar, cargarAnotados, cargarAjenos]);
 
   if (error) {
     return (
@@ -67,11 +79,17 @@ export default function Partidos() {
 
   if (!filas) return <div className="cargando">Cargando…</div>;
 
-  const stats = calcularStats(filas);
+  /* Ganar en el equipo de otro cuenta igual que ganar en el tuyo: es el mismo
+     criterio que el camino y la pantalla de Stats. Sin costo ni jugadores, que
+     son datos del dueño del partido. */
+  const stats = calcularStats([
+    ...filas,
+    ...ajenos.map((a) => ({ ...a, costo: 0, equipos: null, jugadores: [] })),
+  ]);
 
   return (
     <div style={{ paddingTop: 18 }}>
-      {filas.length > 0 && (
+      {filas.length + ajenos.length > 0 && (
         <div className="grid">
           <div className="kpi">
             <div className="n g">{stats.ganados}</div>
