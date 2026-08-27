@@ -29,17 +29,24 @@ export default function Partidos() {
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
-    const { data, error } = await supabase
-      .from('partidos')
-      .select('*, jugadores!jugadores_partido_id_fkey(*)')
-      .order('fecha', { ascending: false })
-      .order('creado_en', { ascending: false });
+    // Las dos juntas: si los ajenos llegaran después, el contador pintaría
+    // primero el número sin ellos y se corregiría solo — justo el número
+    // equivocado que este arreglo viene a sacar.
+    const [{ data, error }, { data: deOtros }] = await Promise.all([
+      supabase
+        .from('partidos')
+        .select('*, jugadores!jugadores_partido_id_fkey(*)')
+        .order('fecha', { ascending: false })
+        .order('creado_en', { ascending: false }),
+      supabase.rpc('mis_resultados_ajenos'),
+    ]);
 
     if (error) {
       setError(error.message);
       setFilas([]);
       return;
     }
+    setAjenos((deOtros ?? []) as Partido[]);
     setFilas((data ?? []) as Fila[]);
   }, []);
 
@@ -49,17 +56,10 @@ export default function Partidos() {
     setAnotados(error ? [] : ((data ?? []) as MiPartidoAnotado[]));
   }, []);
 
-  const cargarAjenos = useCallback(async () => {
-    const supabase = crearCliente();
-    const { data, error } = await supabase.rpc('mis_resultados_ajenos');
-    setAjenos(error ? [] : ((data ?? []) as Partido[]));
-  }, []);
-
   useEffect(() => {
     cargar();
     cargarAnotados();
-    cargarAjenos();
-  }, [cargar, cargarAnotados, cargarAjenos]);
+  }, [cargar, cargarAnotados]);
 
   if (error) {
     return (
