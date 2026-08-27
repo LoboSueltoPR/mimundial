@@ -91,6 +91,18 @@ chequear(
   rpcBajarme.error?.message?.slice(0, 60) || `PASÓ (${JSON.stringify(rpcBajarme.data)})`,
 );
 
+/* Las funciones que exponen el perfil y el camino de OTRA persona.
+   `create or replace` resetea el ACL a los defaults de Supabase, y este
+   proyecto ya se comio ese agujero una vez (ver 0012 y el 12/8): cada
+   migracion que las toca tiene que volver a revocar. Se chequea aca para
+   que la proxima vez salte solo. */
+const perfilAnon = await sb.rpc('perfil_publico', { p_user_id: randomUUID() });
+chequear('no puede llamar perfil_publico', !!perfilAnon.error, perfilAnon.error?.message);
+const caminoAnon = await sb.rpc('camino_de_amigos');
+chequear('no puede llamar camino_de_amigos', !!caminoAnon.error, caminoAnon.error?.message);
+const jugadosAnon = await sb.rpc('partidos_jugados_por', { p_user_id: randomUUID() });
+chequear('no puede llamar partidos_jugados_por', !!jugadosAnon.error, jugadosAnon.error?.message);
+
 /* 0016: la tabla de suscripciones push es el material con el que se le
    manda una notificacion a cualquiera. No se llega por PostgREST ni
    logueado (RLS prendida y cero politicas), y el despachador no lo

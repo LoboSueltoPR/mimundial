@@ -168,9 +168,12 @@ export type PartidoParaCamino = {
   id: string;
   fecha: string;
   creado_en: string;
+  /** Desde el punto de vista de ESA persona, no del dueño del partido. */
   resultado: Resultado;
   lugar: string | null;
   cierra_mundial?: boolean;
+  /** true si lo organizó, false si jugó en el de otro. Ver 0019. */
+  anfitrion?: boolean;
 };
 
 export type AmigoCamino = {

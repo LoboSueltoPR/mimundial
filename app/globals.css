@@ -676,6 +676,28 @@ label{
 }
 .ganador button.on{background:var(--acento-suave);border-color:var(--acento);color:var(--acento)}
 
+/* ---------- el historial en el perfil del otro ----------
+   Reusa .item (la fila con la columna de fecha) para que se lea igual
+   que las listas de Partidos. La marca del resultado va donde en esas
+   listas va el estado: misma posicion, misma funcion. */
+.perfilModal-record{
+  font-family:var(--fuente-dato);font-size:10px;font-weight:600;
+  letter-spacing:.6px;color:var(--dim);text-transform:none;
+}
+/* La lista scrollea adentro, y la hoja NO: asi el boton de solicitud de
+   amistad —que es la accion principal del modal— queda siempre a la
+   vista, aunque el otro tenga 30 partidos. `overscroll-behavior:contain`
+   evita lo molesto del scroll anidado: llegar al final de la lista y que
+   el gesto siga arrastrando la hoja de atras. */
+.perfilModal-historial{max-height:46vh;overflow-y:auto;overscroll-behavior:contain}
+.marcaRes{
+  flex:none;width:26px;height:26px;border-radius:var(--radio);
+  display:grid;place-items:center;border:1px solid var(--line);
+}
+.marcaRes.ganamos{background:var(--green-suave);border-color:var(--green);color:var(--green)}
+.marcaRes.empate{background:var(--surface-2);border-color:var(--dim);color:var(--dim)}
+.marcaRes.perdimos{background:var(--red-suave);border-color:var(--red);color:var(--red)}
+
 /* ---------- como salio, en la invitacion ----------
    El marcador manda y abajo la frase. Las pecheras al lado de cada
    numero: sin eso "5 - 3" no dice de quien es cada cifra. */
