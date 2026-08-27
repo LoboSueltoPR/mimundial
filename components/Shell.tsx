@@ -8,12 +8,11 @@ import {
   IconoCamino,
   IconoPartidos,
   IconoPerfil,
-  IconoStats,
   IconoTabla,
 } from './Iconos';
 
 /**
- * En el celular esto se maneja como una app: barra abajo con las cinco
+ * En el celular esto se maneja como una app: barra abajo con las cuatro
  * secciones, y el perfil arriba a la derecha (donde vive "cerrar sesión").
  * De 640px para arriba la barra pasa a pestañas arriba, que en un monitor
  * ancho se lee mejor que una barra flotante abajo.
@@ -21,7 +20,6 @@ import {
 const SECCIONES = [
   { href: '/camino', label: 'Camino', Icono: IconoCamino },
   { href: '/partidos', label: 'Partidos', Icono: IconoPartidos },
-  { href: '/stats', label: 'Stats', Icono: IconoStats },
   { href: '/tabla', label: 'Tabla', Icono: IconoTabla },
   { href: '/amigos', label: 'Amigos', Icono: IconoAmigos },
 ];
