@@ -325,6 +325,7 @@ export default function DetallePartido() {
           onPago={(jid, monto) => actualizarJugador(jid, { pagado: monto })}
           onPuso={(jid) => actualizarPartido({ puso: jid })}
           onCosto={(costo) => actualizarPartido({ costo })}
+          onAlias={(alias_pago) => actualizarPartido({ alias_pago })}
         />
       )}
       {vista === 'resultado' && <ResultadoVista p={p} onGuardar={actualizarPartido} />}
@@ -782,12 +783,14 @@ function PlataVista({
   onPago,
   onPuso,
   onCosto,
+  onAlias,
 }: {
   p: Partido;
   js: Jugador[];
   onPago: (jid: string, monto: number) => void;
   onPuso: (jid: string | null) => void;
   onCosto: (costo: number) => void;
+  onAlias: (alias: string | null) => void;
 }) {
   const { confirmar, ui: confirmarUI } = useConfirmar();
 
@@ -869,16 +872,23 @@ function PlataVista({
           const listo = saldo <= 0;
           const inv = j.invitados || 0;
 
+          /* Dijo que transfirió y todavía no lo confirmaste. No es lo
+             mismo que haber pagado — por eso es un aviso y no un tilde
+             puesto solo. Tocar el círculo es confirmarlo. */
+          const aviso = !!j.aviso_pago_en && !listo;
+
           const detalle = esPagador
             ? `adelantó ${plata(p.costo)} · su parte está cubierta`
             : listo
               ? `pagó ${plata(d)}`
-              : pg > 0
-                ? `puso ${plata(pg)} de ${plata(d)}`
-                : `debe ${plata(d)}`;
+              : aviso
+                ? `dice que te transfirió ${plata(d - pg)} · confirmá con el círculo`
+                : pg > 0
+                  ? `puso ${plata(pg)} de ${plata(d)}`
+                  : `debe ${plata(d)}`;
 
           return (
-            <div className="pago" key={j.id}>
+            <div className={`pago${aviso ? ' avisado' : ''}`} key={j.id}>
               <button
                 className={`tick ${listo ? 'ok' : ''}`}
                 disabled={esPagador}
@@ -890,6 +900,7 @@ function PlataVista({
                 <b>
                   {j.nombre}
                   {esPagador && <span className="chip puso">puso</span>}
+                  {aviso && <span className="chip avisa">avisó</span>}
                   {inv > 0 && <span className="chip">+{inv}</span>}
                 </b>
                 <small>{detalle}</small>
@@ -900,6 +911,36 @@ function PlataVista({
             </div>
           );
         })}
+      </div>
+
+      <div className="sec">
+        Tu alias para que te transfieran
+        <button
+          className="act"
+          onClick={() => {
+            const v = prompt('Alias o CVU donde te transfieren:', p.alias_pago ?? '');
+            if (v === null) return;
+            onAlias(v.trim() || null);
+          }}
+        >
+          {p.alias_pago ? 'cambiar' : 'poner'}
+        </button>
+      </div>
+      <div className="card">
+        <div style={{ padding: '12px 13px' }}>
+          {p.alias_pago ? (
+            <code className="aliasCode">{p.alias_pago}</code>
+          ) : (
+            <span className="vacio" style={{ padding: 0 }}>
+              Sin alias: los anotados no tienen a dónde transferirte.
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="nota">
+        Lo ven los anotados junto a lo que le toca a cada uno. Cuando alguien te transfiere y toca
+        <b> “ya te transferí”</b>, te llega un aviso y la fila queda marcada — vos confirmás con el
+        círculo cuando lo veas en tu cuenta.
       </div>
 
       <div className="sec">Quién puso la plata</div>

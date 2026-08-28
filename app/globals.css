@@ -720,6 +720,33 @@ label{
 }
 .cs-quien b{color:var(--txt)}
 
+/* ---------- el alias del que cobra ----------
+   El alias va en mono y seleccionable: es una cadena que se copia a mano
+   cuando el boton de copiar falla (Safari sin permiso de portapapeles). */
+.aliasCode{
+  font-family:var(--fuente-dato);font-size:15px;font-weight:600;
+  color:var(--txt);word-break:break-all;user-select:all;
+}
+.aliasPago{
+  display:flex;align-items:center;gap:11px;margin-top:10px;
+  background:var(--surface);border:1.5px solid var(--txt);
+  border-radius:var(--radio);padding:12px 13px;
+}
+.ap-txt{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.ap-txt b{
+  font-family:var(--fuente-dato);font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:1px;color:var(--faint);
+}
+.ap-txt code{
+  font-family:var(--fuente-dato);font-size:15px;font-weight:600;
+  color:var(--txt);word-break:break-all;user-select:all;
+}
+.aliasPago .btn{flex:none}
+
+/* el que dijo que transfirio y todavia no se confirmo */
+.pago.avisado{background:var(--amber-suave)}
+.chip.avisa{background:var(--amber-suave);border-color:var(--amber);color:#6b4805}
+
 /* ---------- lo tuyo de la plata, en la invitacion ----------
    Un solo renglon con el numero grande a la derecha: es la respuesta a
    "cuanto pongo", que es la unica pregunta que trae el invitado. */

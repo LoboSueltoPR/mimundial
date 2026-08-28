@@ -65,6 +65,7 @@ export default function Invitacion() {
   /** Lo que me toca a mi de la plata. Viene aparte de ver_partido_por_token
    *  porque es lo unico que depende de quien pregunta (ver 0015). */
   const [miParte, setMiParte] = useState<MiParte | null>(null);
+  const [aliasCopiado, setAliasCopiado] = useState(false);
   /** cargar() y el fetch del perfil corren en paralelo y ninguno espera al
    *  otro: esta ref evita que el nombre de perfil pise el de la anotación
    *  ya existente, gane quien gane la carrera. */
@@ -180,6 +181,38 @@ export default function Invitacion() {
     }
     marcarAnotado(token, true);
     cargar();
+  }
+
+  /**
+   * "Ya te transferí". No marca la deuda como saldada: eso lo confirma
+   * el organizador. Si cualquiera con el link pudiera darse por pagado,
+   * el que cobra perderia el unico dato que le importa.
+   */
+  async function avisarQuePague() {
+    setError(null);
+    setGuardando(true);
+    const supabase = crearCliente();
+    const { data, error } = await supabase.rpc('avisar_que_pague', {
+      tok: token,
+      p_claim: claimLeido(token),
+    });
+    setGuardando(false);
+    const r = data as RespuestaRPC | null;
+    if (error || !r?.ok) {
+      setError(r?.error || error?.message || 'No se pudo avisar.');
+      return;
+    }
+    cargar();
+  }
+
+  async function copiarAlias(alias: string) {
+    try {
+      await navigator.clipboard.writeText(alias);
+      setAliasCopiado(true);
+      setTimeout(() => setAliasCopiado(false), 2000);
+    } catch {
+      // Safari sin permiso: al menos queda seleccionable en pantalla
+    }
   }
 
   async function anotarse() {
@@ -590,6 +623,40 @@ export default function Invitacion() {
             </div>
           )}
 
+          {/* El alias y el aviso. Lo que reemplaza esto es el "pasame el
+              alias" + la captura al grupo. El boton NO salda la deuda:
+              avisa. Confirmar es del que cobra. */}
+          {miParte?.anotado && !miParte.adelante && miParte.saldo! > 0 && (
+            <>
+              {p.alias_pago && (
+                <div className="aliasPago">
+                  <span className="ap-txt">
+                    <b>Transferile a {p.anfitrion?.split(' ')[0] || 'el organizador'}</b>
+                    <code>{p.alias_pago}</code>
+                  </span>
+                  <button className="btn sm" onClick={() => copiarAlias(p.alias_pago!)}>
+                    {aliasCopiado ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+              )}
+              {miParte.aviso_pago_en ? (
+                <div className="msg info" style={{ marginTop: 10 }}>
+                  Avisaste que transferiste. Falta que{' '}
+                  {p.anfitrion?.split(' ')[0] || 'el organizador'} lo confirme.
+                </div>
+              ) : (
+                <button
+                  className="btn pri wide"
+                  style={{ marginTop: 10 }}
+                  onClick={avisarQuePague}
+                  disabled={guardando}
+                >
+                  {guardando ? 'Avisando…' : `Ya te transferí ${plata(miParte.saldo!)}`}
+                </button>
+              )}
+            </>
+          )}
+
           <div className="nota">
             {p.puso_nombre ? (
               <>
@@ -599,6 +666,7 @@ export default function Invitacion() {
               <>Todavia nadie adelanto la plata.</>
             )}{' '}
             El total se divide por <b>cabeza</b>: el que lleva invitados paga por cada uno.
+            {p.alias_pago && ' El boton avisa al organizador; el marca cuando le llego.'}
           </div>
         </>
       )}

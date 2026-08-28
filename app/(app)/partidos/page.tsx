@@ -206,10 +206,28 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
   const [donde, setDonde] = useState<LugarElegido>({ cancha_id: null, lugar: '' });
   const [cupo, setCupo] = useState(12);
   const [costo, setCosto] = useState(0);
+  const [alias, setAlias] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** id del partido si quedó creado a medias: ya no se puede volver a crear. */
   const [creado, setCreado] = useState<string | null>(null);
+
+  /* El alias arranca con el del ultimo partido que armaste: casi siempre
+     es el mismo y reescribirlo todas las semanas seria el mismo trabajo
+     manual que la app vino a sacar. Va en el partido igual, por si algun
+     dia cobra otro. */
+  useEffect(() => {
+    crearCliente()
+      .from('partidos')
+      .select('alias_pago')
+      .not('alias_pago', 'is', null)
+      .order('creado_en', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        const ultimo = data?.[0]?.alias_pago;
+        if (ultimo) setAlias(ultimo);
+      });
+  }, []);
 
   async function crear() {
     setGuardando(true);
@@ -236,6 +254,7 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
         cancha_id: donde.cancha_id,
         cupo: Math.max(2, Math.min(40, cupo || 12)),
         costo: Math.max(0, costo || 0),
+        alias_pago: alias.trim() || null,
       })
       .select('id')
       .single();
@@ -319,6 +338,22 @@ function FormPartido({ onCerrar, onListo }: { onCerrar: () => void; onListo: () 
               onChange={(e) => setCosto(Number(e.target.value))}
             />
           </div>
+        </div>
+        <div className="campo">
+          <label>Tu alias para que te transfieran</label>
+          <input
+            value={alias}
+            onChange={(e) => setAlias(e.target.value)}
+            placeholder="alias.o.cvu"
+            maxLength={60}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <small className="nota" style={{ marginTop: 6, display: 'block' }}>
+            Lo van a ver los anotados junto a lo que le toca a cada uno, con un botón para
+            copiarlo. Opcional.
+          </small>
         </div>
         <div className="row2" style={{ marginTop: 6 }}>
           {creado ? (
