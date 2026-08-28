@@ -11,6 +11,9 @@ export type Jugador = {
   se_anoto_solo?: boolean;
   /** si el anotado es un usuario registrado, su id */
   user_id?: string | null;
+  /** cuándo dijo que transfirió. No es lo mismo que haber pagado: eso
+   *  lo confirma el organizador en `pagado`. Ver 0020. */
+  aviso_pago_en?: string | null;
 };
 
 export type Posicion = 'arquero' | 'defensor' | 'mediocampista' | 'delantero';
@@ -89,6 +92,8 @@ export type PartidoPublico = {
   por_cabeza: number;
   /** Nombre del que adelantó la plata, no su id. null si nadie. */
   puso_nombre: string | null;
+  /** Alias/CVU donde hay que transferirle al organizador. null si no cargó. */
+  alias_pago: string | null;
   /* Cómo salió, para cualquiera que tenga el link. `resultado` crudo no
      viene: dice "ganamos" desde el lugar del dueño y para un tercero no
      significa nada. Lo que sirve es qué LADO ganó. */
@@ -112,6 +117,8 @@ export type MiParte = {
   saldo?: number;
   /** true si el que adelantó la plata soy yo */
   adelante?: boolean;
+  /** cuándo toqué "ya te transferí". null si todavía no avisé. */
+  aviso_pago_en?: string | null;
 };
 
 /** Un partido ajeno en el que el logueado está anotado como jugador. */
@@ -211,6 +218,9 @@ export type Partido = {
   cupo: number;
   costo: number;
   puso: string | null;
+  /** Alias/CVU del que cobra. Va en el partido y no en el perfil porque
+   *  puede cambiar de una semana a la otra. */
+  alias_pago: string | null;
   resultado: Resultado | null;
   /** Qué lado ganó, cuando hubo sorteo. Es lo único que sirve para el resto:
    *  `resultado` está escrito desde el punto de vista del dueño del partido. */
