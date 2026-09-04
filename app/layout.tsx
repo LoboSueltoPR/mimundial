@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Anton, IBM_Plex_Mono, Inter } from 'next/font/google';
 import './globals.css';
-import RegistrarSW from '@/components/RegistrarSW';
+import PwaKit from '@/components/PwaKit';
 import Arranque from '@/components/Arranque';
 import InstalarApp from '@/components/InstalarApp';
 
@@ -44,7 +44,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Arranque />
         <InstalarApp />
         {children}
-        <RegistrarSW />
+        {/* Registra el SW y avisa cuando hay una versión nueva.
+            instalar/notificaciones van en false porque MiMundial ya tiene
+            sus propias franjas (InstalarApp y Notificaciones). */}
+        <PwaKit nombre="MiMundial" sw="/sw.js" instalar={false} />
       </body>
     </html>
   );
