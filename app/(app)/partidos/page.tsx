@@ -14,18 +14,44 @@ import type {
 import {
   cabezas,
   calcularStats,
+  compararPartidos,
+  esProximo,
+  estadoPartido,
   fechaCorta,
+  hoyISO,
   nombreDeLado,
   plata,
   totalDebe,
 } from '@/lib/calculos';
+import type { PillPartido } from '@/lib/calculos';
 import ElegirCancha, { type LugarElegido } from '@/components/ElegirCancha';
 import ArmarEquipo from '@/components/ArmarEquipo';
 import { useConfirmar } from '@/components/Confirmar';
 
 type Fila = Partido & { jugadores: Jugador[] };
 
-const HOY = () => new Date().toISOString().slice(0, 10);
+/**
+ * Una fila de la lista, ya sin importar quién armó el partido.
+ *
+ * Antes eran dos listas separadas —"Tus partidos" y "Anotado en"— y esa
+ * separación, que es un detalle de quién es el dueño de la fila en la
+ * base, terminaba mandando en lo que veías: el partido del viernes
+ * quedaba abajo de uno de hace un mes nada más que porque lo armó otro.
+ * Lo que uno busca al abrir la pantalla es el próximo, sea de quien sea.
+ */
+type Item = {
+  key: string;
+  fecha: string;
+  hora: string | null;
+  lugar: string | null;
+  detalle: string;
+  pill: PillPartido;
+  /** Los tuyos abren la pantalla de organizador; los ajenos, el link
+   *  público, que es todo lo que podés hacer ahí. */
+  href: string;
+};
+
+const HOY = () => hoyISO();
 
 export default function Partidos() {
   const router = useRouter();
@@ -170,6 +196,73 @@ export default function Partidos() {
     ...ajenos.map((a) => ({ ...a, costo: 0, equipos: null, jugadores: [] })),
   ]);
 
+  /* Una sola lista, partida por lo único que le cambia la vida al que
+     mira: si el partido ya pasó o todavía no. */
+  const hoy = HOY();
+
+  const mios: Item[] = filas.map((p) => {
+    const cab = cabezas(p.jugadores);
+    /* Un desafío sin rival no está esperando gente: está esperando al
+       otro equipo. Pero solo mientras siga siendo un partido por jugar —
+       uno de hace tres semanas que nunca consiguió rival no "busca
+       rival", pinchó, y eso lo resuelve estadoPartido con la fecha. */
+    const esperandoRival = Boolean(p.es_desafio && !p.rival_acepto_en && !p.resultado);
+    const goles =
+      p.goles_favor !== null && p.goles_contra !== null
+        ? ` · ${p.goles_favor}-${p.goles_contra}`
+        : '';
+    return {
+      key: 'p' + p.id,
+      fecha: p.fecha,
+      hora: p.hora,
+      lugar: p.lugar,
+      href: `/partidos/${p.id}`,
+      detalle: `${cab}/${p.cupo} · ${plata(p.costo)}${p.hora ? ' · ' + p.hora : ''}${goles}`,
+      pill: estadoPartido(
+        {
+          fecha: p.fecha,
+          cupo: p.cupo,
+          cabezas: cab,
+          resultado: p.resultado,
+          jugado: p.resultado !== null,
+          debe: totalDebe(p, p.jugadores),
+          esperandoRival,
+          rivalInvitado: Boolean(p.rival_id),
+        },
+        hoy,
+      ),
+    };
+  });
+
+  const deOtros: Item[] = (anotados ?? []).map((a) => ({
+    key: 'a' + a.id,
+    fecha: a.fecha,
+    hora: a.hora,
+    lugar: a.lugar,
+    href: `/p/${a.token}`,
+    detalle:
+      (a.anfitrion ? 'de ' + a.anfitrion + ' · ' : '') +
+      `${a.cabezas}/${a.cupo}` +
+      (a.hora ? ' · ' + a.hora : '') +
+      (a.mi_invitados > 0 ? ` · llevás +${a.mi_invitados}` : ''),
+    // `mi_resultado` viene dado vuelta desde la base (0025): `resultado`
+    // está escrito desde el lugar del dueño y para vos diría al revés.
+    pill: estadoPartido(
+      {
+        fecha: a.fecha,
+        cupo: a.cupo,
+        cabezas: a.cabezas,
+        resultado: a.mi_resultado,
+        jugado: a.jugado,
+      },
+      hoy,
+    ),
+  }));
+
+  const todos = [...mios, ...deOtros].sort((a, b) => compararPartidos(a, b, hoy));
+  const proximos = todos.filter((i) => esProximo(i.fecha, hoy));
+  const jugados = todos.filter((i) => !esProximo(i.fecha, hoy));
+
   return (
     <div style={{ paddingTop: 18 }}>
       {filas.length + ajenos.length > 0 && (
@@ -245,100 +338,35 @@ export default function Partidos() {
           </div>
         </>
       )}
+      <Lista
+        titulo="Próximos"
+        items={proximos}
+        onIr={(href) => router.push(href)}
+        accion={
+          <button className="act" onClick={() => setForm(true)}>
+            + nuevo
+          </button>
+        }
+        vacio={
+          filas.length === 0 && (anotados ?? []).length === 0 ? (
+            <>
+              Todavía no cargaste ningún partido.
+              <br />
+              Tocá <b>+ nuevo</b> y arrancá.
+            </>
+          ) : (
+            <>
+              No tenés ninguno a la vista.
+              <br />
+              Tocá <b>+ nuevo</b> y armá el próximo.
+            </>
+          )
+        }
+      />
 
-      {anotados !== null && anotados.length > 0 && (
-        <>
-          <div className="sec">Anotado en</div>
-          <div className="card">
-            {anotados.map((a) => {
-              const f = fechaCorta(a.fecha);
-              const completo = a.faltan === 0;
-              return (
-                <div
-                  key={a.id}
-                  className="item"
-                  onClick={() => router.push(`/p/${a.token}`)}
-                >
-                  <span className="fec">
-                    <span className="d">{f.d}</span>
-                    <span className="m">{f.m}</span>
-                  </span>
-                  <span className="info">
-                    <b>{a.lugar || 'Partido'}</b>
-                    <small>
-                      {a.anfitrion ? 'de ' + a.anfitrion + ' · ' : ''}
-                      {a.cabezas}/{a.cupo}
-                      {a.hora ? ' · ' + a.hora : ''}
-                      {a.mi_invitados > 0 ? ` · llevás +${a.mi_invitados}` : ''}
-                    </small>
-                  </span>
-                  <span className={`estado-pill ${completo ? 'ok' : 'sin'}`}>
-                    {completo ? 'Se juega' : 'Falta gente'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </>
+      {jugados.length > 0 && (
+        <Lista titulo="Jugados" items={jugados} onIr={(href) => router.push(href)} />
       )}
-
-      <div className="sec">
-        Tus partidos
-        <button className="act" onClick={() => setForm(true)}>
-          + nuevo
-        </button>
-      </div>
-
-      <div className="card">
-        {filas.length === 0 ? (
-          <div className="vacio">
-            Todavía no cargaste ningún partido.
-            <br />
-            Tocá <b>+ nuevo</b> y arrancá.
-          </div>
-        ) : (
-          filas.map((p) => {
-            const f = fechaCorta(p.fecha);
-            const debe = totalDebe(p, p.jugadores);
-            /* En un desafío sin rival, lo que falta no es la plata: es
-               el rival. Ese estado manda sobre el de la plata mientras
-               el partido no se haya jugado. */
-            const esperandoRival = p.es_desafio && !p.rival_acepto_en && !p.resultado;
-            const pill =
-              p.resultado === 'ganamos'
-                ? { cls: 'ok', txt: 'Ganamos' }
-                : p.resultado === 'perdimos'
-                  ? { cls: 'perd', txt: 'Perdimos' }
-                  : p.resultado === 'empate'
-                    ? { cls: 'emp', txt: 'Empate' }
-                    : esperandoRival
-                      ? { cls: 'sin', txt: p.rival_id ? 'Sin respuesta' : 'Busca rival' }
-                      : debe > 0
-                        ? { cls: 'debe', txt: 'falta ' + plata(debe) }
-                        : { cls: 'sin', txt: 'sin cargar' };
-
-            return (
-              <div key={p.id} className="item" onClick={() => router.push(`/partidos/${p.id}`)}>
-                <span className="fec">
-                  <span className="d">{f.d}</span>
-                  <span className="m">{f.m}</span>
-                </span>
-                <span className="info">
-                  <b>{p.lugar || 'Partido'}</b>
-                  <small>
-                    {cabezas(p.jugadores)}/{p.cupo} · {plata(p.costo)}
-                    {p.hora ? ' · ' + p.hora : ''}
-                    {p.goles_favor !== null && p.goles_contra !== null
-                      ? ` · ${p.goles_favor}-${p.goles_contra}`
-                      : ''}
-                  </small>
-                </span>
-                <span className={`estado-pill ${pill.cls}`}>{pill.txt}</span>
-              </div>
-            );
-          })
-        )}
-      </div>
 
       {form && (
         <FormPartido
@@ -361,6 +389,58 @@ export default function Partidos() {
 
       {confirmarUI}
     </div>
+  );
+}
+
+/**
+ * Un bloque de la lista. Las filas de un partido tuyo y las de uno ajeno
+ * se ven igual a propósito: quién lo armó ya lo dice el subtítulo ("de
+ * Rodrigo"), y no es motivo para mandarlas a otra parte de la pantalla.
+ */
+function Lista({
+  titulo,
+  items,
+  onIr,
+  accion,
+  vacio,
+}: {
+  titulo: string;
+  items: Item[];
+  onIr: (href: string) => void;
+  accion?: React.ReactNode;
+  vacio?: React.ReactNode;
+}) {
+  if (items.length === 0 && !vacio) return null;
+
+  return (
+    <>
+      <div className="sec">
+        {titulo}
+        {accion}
+      </div>
+      <div className="card">
+        {items.length === 0 ? (
+          <div className="vacio">{vacio}</div>
+        ) : (
+          items.map((i) => {
+            const f = fechaCorta(i.fecha);
+            return (
+              <div key={i.key} className="item" onClick={() => onIr(i.href)}>
+                <span className="fec">
+                  <span className="d">{f.d}</span>
+                  <span className="m">{f.m}</span>
+                </span>
+                <span className="info">
+                  <b>{i.lugar || 'Partido'}</b>
+                  <small>{i.detalle}</small>
+                </span>
+                <span className={`estado-pill ${i.pill.cls}`}>{i.pill.txt}</span>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </>
   );
 }
 

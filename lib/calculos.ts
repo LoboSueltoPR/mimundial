@@ -380,3 +380,108 @@ export function fechaLarga(iso: string | null | undefined) {
   const f = fechaCorta(iso);
   return f.d + ' ' + f.m;
 }
+
+/* ============================================================
+   Próximo o jugado, y qué decir de cada uno
+   ============================================================ */
+
+/** El día de hoy en ISO local (no UTC: a la noche `toISOString` ya es mañana). */
+export function hoyISO(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** El partido de hoy todavía es próximo: se juega esta noche. */
+export const esProximo = (fecha: string, hoy: string): boolean => (fecha || '') >= hoy;
+
+export type PillPartido = { cls: string; txt: string };
+
+/**
+ * Qué dice la etiqueta de un partido en la lista.
+ *
+ * El error que esto viene a arreglar: la etiqueta miraba SOLO cuánta
+ * gente hay anotada ahora mismo, sin fijarse en la fecha. Un partido de
+ * hace tres semanas que se jugó entero seguía diciendo "Falta gente",
+ * como si todavía se pudiera sumar alguien.
+ *
+ * El orden de prioridad importa:
+ *
+ *  1. **El resultado manda sobre todo.** Si el partido se jugó y quedó
+ *     cargado, eso es lo que pasó — aunque la lista haya terminado en
+ *     13 de 14 porque alguien se bajó después. Cuánta gente quedó
+ *     anotada al final no dice si se jugó.
+ *  2. **Si todavía no llegó**, lo único que importa es si está completo.
+ *  3. **Si ya pasó y no hay resultado**, se distingue el que nunca
+ *     juntó gente —"pinchó"— del que se llenó y quedó sin cerrar.
+ *
+ * El único caso que puede quedar mal etiquetado es un partido tuyo que
+ * se jugó incompleto y del que nunca cargaste el resultado: va a decir
+ * que pinchó. Se arregla cargando el resultado, que es lo que faltaba
+ * de todos modos.
+ */
+export function estadoPartido(
+  p: {
+    fecha: string;
+    cupo: number;
+    cabezas: number;
+    resultado?: Resultado | null;
+    /** El dueño lo cerró. En un partido ajeno se sabe que se jugó incluso
+     *  cuando no se puede saber cómo salió para vos: sin sorteo guardado
+     *  no hay de dónde deducir de qué lado jugaste. */
+    jugado?: boolean;
+    /** Solo para los partidos propios: plata sin cobrar. */
+    debe?: number;
+    /** Un desafío al que todavía no le apareció rival. Lo que le falta a
+     *  ese partido no es gente ni plata: es el otro equipo. */
+    esperandoRival?: boolean;
+    /** Ya hay un rival invitado, pero no contestó. */
+    rivalInvitado?: boolean;
+  },
+  hoy: string,
+): PillPartido {
+  if (p.resultado === 'ganamos') return { cls: 'ok', txt: 'Ganamos' };
+  if (p.resultado === 'perdimos') return { cls: 'perd', txt: 'Perdimos' };
+  if (p.resultado === 'empate') return { cls: 'emp', txt: 'Empate' };
+
+  // Se jugó, pero no se puede decir cómo salió para vos.
+  if (p.jugado) return { cls: 'emp', txt: 'Se jugó' };
+
+  const completo = p.cabezas >= p.cupo;
+
+  if (esProximo(p.fecha, hoy)) {
+    if (p.esperandoRival) {
+      return { cls: 'sin', txt: p.rivalInvitado ? 'Sin respuesta' : 'Busca rival' };
+    }
+    return completo ? { cls: 'ok', txt: 'Se juega' } : { cls: 'sin', txt: 'Falta gente' };
+  }
+
+  if (!completo) return { cls: 'sin', txt: 'Pinchó' };
+  if ((p.debe ?? 0) > 0) return { cls: 'debe', txt: 'falta ' + plata(p.debe ?? 0) };
+  return { cls: 'sin', txt: 'sin cargar' };
+}
+
+/**
+ * El orden de la lista, sin importar quién armó el partido.
+ *
+ * Antes eran dos listas separadas —los tuyos y aquellos en los que te
+ * anotaron— cada una ordenada por su lado, así que el partido del
+ * viernes podía quedar abajo de uno de hace un mes solamente porque lo
+ * armó otro.
+ *
+ * Los que faltan jugar van del más cercano al más lejano: arriba de
+ * todo queda el próximo, que es el único sobre el que todavía se puede
+ * hacer algo. Los jugados van del más reciente al más viejo.
+ */
+export function compararPartidos(
+  a: { fecha: string; hora?: string | null },
+  b: { fecha: string; hora?: string | null },
+  hoy: string,
+): number {
+  const pa = esProximo(a.fecha, hoy);
+  const pb = esProximo(b.fecha, hoy);
+  if (pa !== pb) return pa ? -1 : 1;
+
+  const dir = pa ? 1 : -1;
+  const porFecha = (a.fecha || '').localeCompare(b.fecha || '');
+  if (porFecha !== 0) return porFecha * dir;
+  return ((a.hora || '').localeCompare(b.hora || '')) * dir;
+}

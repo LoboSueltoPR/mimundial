@@ -157,6 +157,11 @@ export type MiPartidoAnotado = {
   cabezas: number;
   faltan: number;
   mi_invitados: number;
+  /** El dueño cargó el resultado: el partido se jugó. Ver 0025. */
+  jugado: boolean;
+  /** Cómo salió PARA VOS, ya dado vuelta. null cuando no se puede saber
+   *  de qué lado jugaste — sin sorteo guardado no hay de dónde deducirlo. */
+  mi_resultado: Resultado | null;
 };
 
 /** id/user_id/username/avatar_url solo vienen si quien mira está logueado. */

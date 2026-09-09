@@ -5,6 +5,9 @@
 import {
   cabezas,
   cabezasDeLado,
+  compararPartidos,
+  esProximo,
+  estadoPartido,
   cabezasLista,
   calcularCuentas,
   calcularStats,
@@ -371,6 +374,68 @@ chequear('solo la primera palabra', nombreDeLado('', 'Juan Ignacio Perez'), 'Los
 chequear('sin capitan tampoco rompe', nombreDeLado(null, null), 'Sin nombre');
 chequear('un nombre con espacios no cuenta como nombre',
   nombreDeLado('   ', 'Rodri'), 'Los de Rodri');
+
+/* ---------- el estado de un partido en la lista ---------- */
+
+const HOY_TEST = '2026-09-09';
+const pill = (p: Parameters<typeof estadoPartido>[0]) => estadoPartido(p, HOY_TEST).txt;
+
+chequear('el de hoy todavia es proximo', esProximo(HOY_TEST, HOY_TEST), true);
+chequear('el de ayer ya no', esProximo('2026-09-08', HOY_TEST), false);
+
+chequear('un partido que viene y esta completo se juega',
+  pill({ fecha: '2026-09-12', cupo: 12, cabezas: 12 }), 'Se juega');
+chequear('un partido que viene e incompleto pide gente',
+  pill({ fecha: '2026-09-12', cupo: 12, cabezas: 3 }), 'Falta gente');
+
+// El bug: el del 30 de agosto, con 3 de 12, seguia diciendo "Falta gente".
+chequear('un partido viejo que nunca junto gente pincho',
+  pill({ fecha: '2026-08-30', cupo: 12, cabezas: 3 }), 'Pinchó');
+
+// Y el otro lado del mismo bug: La Cantera, 13 de 14, jugado y cargado.
+chequear('el resultado manda sobre cuantos quedaron anotados',
+  pill({ fecha: '2026-08-27', cupo: 14, cabezas: 13, resultado: 'ganamos' }), 'Ganamos');
+chequear('perder tambien se muestra aunque haya quedado incompleto',
+  pill({ fecha: '2026-08-27', cupo: 14, cabezas: 13, resultado: 'perdimos' }), 'Perdimos');
+
+chequear('el que se lleno y quedo sin cerrar dice sin cargar',
+  pill({ fecha: '2026-08-25', cupo: 12, cabezas: 12 }), 'sin cargar');
+chequear('y si ademas falta cobrar, lo dice',
+  pill({ fecha: '2026-08-25', cupo: 12, cabezas: 12, debe: 3000 }), 'falta $3.000');
+
+// Un desafio sin rival no espera gente: espera al otro equipo.
+chequear('un desafio abierto que viene busca rival',
+  pill({ fecha: '2026-09-12', cupo: 10, cabezas: 3, esperandoRival: true }), 'Busca rival');
+chequear('si el rival ya esta invitado, lo que falta es que conteste',
+  pill({ fecha: '2026-09-12', cupo: 10, cabezas: 3, esperandoRival: true, rivalInvitado: true }),
+  'Sin respuesta');
+// Pero un desafio de hace tres semanas que nunca consiguio rival no sigue
+// buscando: pincho. Antes se quedaba en "Busca rival" para siempre.
+chequear('un desafio viejo sin rival pincho igual',
+  pill({ fecha: '2026-08-20', cupo: 10, cabezas: 3, esperandoRival: true }), 'Pinchó');
+chequear('y si se jugo, manda el resultado',
+  pill({ fecha: '2026-08-20', cupo: 10, cabezas: 10, esperandoRival: true, resultado: 'ganamos' }),
+  'Ganamos');
+
+/* ---------- el orden, sin importar quien lo armo ---------- */
+
+const cuando = (fecha: string, hora: string | null = null) => ({ fecha, hora });
+const orden = (ps: { fecha: string; hora: string | null }[]) =>
+  [...ps].sort((a, b) => compararPartidos(a, b, HOY_TEST)).map((p) => p.fecha);
+
+chequear('lo que falta jugar va arriba de lo jugado',
+  orden([cuando('2026-08-30'), cuando('2026-09-12')]),
+  ['2026-09-12', '2026-08-30']);
+chequear('entre los que vienen, primero el mas cercano',
+  orden([cuando('2026-10-01'), cuando('2026-09-12'), cuando('2026-09-09')]),
+  ['2026-09-09', '2026-09-12', '2026-10-01']);
+chequear('entre los jugados, primero el mas reciente',
+  orden([cuando('2026-08-25'), cuando('2026-08-30'), cuando('2026-08-27')]),
+  ['2026-08-30', '2026-08-27', '2026-08-25']);
+chequear('mismo dia: desempata la hora, y arriba el mas temprano',
+  [cuando('2026-09-12', '22:00'), cuando('2026-09-12', '20:00')]
+    .sort((a, b) => compararPartidos(a, b, HOY_TEST)).map((p) => p.hora),
+  ['20:00', '22:00']);
 
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

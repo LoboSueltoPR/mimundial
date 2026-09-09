@@ -64,6 +64,18 @@
   --fuente-dato:var(--fuente-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   --radio:3px;                               /* el papel casi no se redondea */
+
+  /* El alto de la barra de abajo, sin el safe-area del iPhone.
+     Es UN número y no tres: la barra se dibuja con este alto, el body
+     reserva exactamente esto al final de la página, y la franja de
+     instalar se apoya justo encima. Antes cada uno tenía su propio 70
+     escrito a mano, con un comentario pidiendo que no se desincronizaran
+     — y el alto real de la barra son 57px, así que ya estaban corridos.
+     Con la variable no hay forma de que uno cambie sin los otros.
+
+     60 y no 57: le sobran 3px de aire al contenido (icono de 22 + el
+     rótulo de 9.5) para que una tipografía que carga tarde no lo apriete. */
+  --barra-alto:60px;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -174,9 +186,8 @@ nav.tabs a.on{
   animation:subirAviso .32s cubic-bezier(.2,.8,.3,1) both;
 }
 @media (max-width:639px){
-  /* 70px es el alto de .barraAbajo — es el mismo número que el body
-     reserva como padding-bottom más abajo. Si uno cambia, cambian los dos. */
-  .avisoInstalar{bottom:calc(70px + 14px + env(safe-area-inset-bottom))}
+  /* Apoyada sobre la barra, con 14px de aire. */
+  .avisoInstalar{bottom:calc(var(--barra-alto) + 14px + env(safe-area-inset-bottom))}
 }
 @keyframes subirAviso{
   from{opacity:0;transform:translateY(14px)}
@@ -208,6 +219,10 @@ nav.tabs a.on{
 .barraAbajo{
   position:fixed;left:0;right:0;bottom:0;z-index:40;
   display:flex;
+  /* Alto declarado, no el que salga: es el número que el resto de la
+     hoja usa para reservar lugar. Si lo decidiera el contenido, nadie
+     más podría saber cuánto mide. */
+  height:calc(var(--barra-alto) + env(safe-area-inset-bottom));
   background:var(--surface);
   border-top:1.5px solid var(--txt);
   padding:5px 4px calc(5px + env(safe-area-inset-bottom));
@@ -233,7 +248,9 @@ nav.tabs a.on{
 
 @media (max-width:639px){
   nav.tabs.escritorio{display:none}
-  body{padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+  /* Exactamente lo que tapa la barra: ni un pixel de aire muerto al
+     final de la página, ni la última fila escondida abajo de ella. */
+  body{padding-bottom:calc(var(--barra-alto) + env(safe-area-inset-bottom))}
 }
 @media (min-width:640px){
   .barraAbajo{display:none}
