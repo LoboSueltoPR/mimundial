@@ -131,6 +131,65 @@ export function resultadoPara(lado: Lado, ganador: Lado | null): Resultado {
 }
 
 /* ============================================================
+   Desafíos — equipo contra equipo (0021)
+
+   Un desafío no tiene sorteo: cada capitán declara su lado. `cupo`
+   sigue siendo el total de cabezas del partido, igual que en un
+   picadito, así que "cuántos por lado" es la mitad. Se reusa la
+   columna en vez de agregar una: 10 es 5 contra 5.
+   ============================================================ */
+
+/** Cuántos van por lado. `cupo` es el total, como en cualquier partido. */
+export function porLado(cupo: number): number {
+  return Math.max(1, Math.floor((cupo || 0) / 2));
+}
+
+/** Las cabezas de un lado: cada jugador cuenta 1 más los que trae. */
+export function cabezasDeLado(jugadores: Jugador[], lado: Lado): number {
+  return cabezas(jugadores.filter((j) => j.lado === lado));
+}
+
+/** Cuántos le faltan a un lado para estar completo. Nunca negativo. */
+export function faltanEnLado(cupo: number, cabezasDelLado: number): number {
+  return Math.max(0, porLado(cupo) - cabezasDelLado);
+}
+
+/**
+ * En qué momento está un desafío.
+ *
+ * · buscando  — publicado, sin rival: cualquier amigo lo puede tomar
+ * · esperando — se desafió a alguien puntual y todavía no contestó
+ * · aceptado  — hay rival y los dos están armando
+ * · jugado    — ya tiene resultado cargado
+ *
+ * `jugado` se chequea primero a propósito: un desafío que se jugó ya no
+ * está esperando nada, aunque los otros campos digan lo contrario.
+ */
+export type EstadoDesafio = 'buscando' | 'esperando' | 'aceptado' | 'jugado';
+
+export function estadoDesafio(
+  p: Pick<Partido, 'resultado' | 'rival_id' | 'rival_acepto_en'>,
+): EstadoDesafio {
+  if (p.resultado) return 'jugado';
+  if (p.rival_acepto_en) return 'aceptado';
+  if (p.rival_id) return 'esperando';
+  return 'buscando';
+}
+
+/**
+ * Cómo se llama un lado en pantalla. Si el capitán no le puso nombre al
+ * equipo, se lo nombra por él — "Los de Alejo" — que es como se nombran
+ * de verdad los equipos de picadito. Solo la primera palabra: el
+ * apellido no entra en una columna de 160px.
+ */
+export function nombreDeLado(nombreEquipo: string | null, capitan: string | null): string {
+  const propio = (nombreEquipo || '').trim();
+  if (propio) return propio;
+  const pila = (capitan || '').trim().split(/\s+/)[0];
+  return pila ? `Los de ${pila}` : 'Sin nombre';
+}
+
+/* ============================================================
    Estadisticas
    ============================================================ */
 

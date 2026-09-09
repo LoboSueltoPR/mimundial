@@ -1235,6 +1235,179 @@ label{
 }
 
 /* ============================================================
+   EL CRUCE — la ficha de un desafío (0021)
+
+   Un picadito es una lista de doce que después se parte al medio. Un
+   desafío es otra cosa: dos columnas enfrentadas con la canaleta del
+   marcador en el medio, como el acta que firma el árbitro.
+
+   Lo que decide la forma es el lado que todavía no existe. No es una
+   tarjeta gris que dice "pendiente": es el renglón en blanco del
+   formulario, con su regla punteada. Un formulario a medio llenar
+   pide que lo completes; un contenedor vacío no pide nada.
+   ============================================================ */
+.cruce{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:stretch;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radio);
+  overflow:hidden;
+}
+.cruce-lado{
+  min-width:0;
+  padding:11px 10px;
+  display:flex;flex-direction:column;gap:5px;justify-content:center;
+  /* el texto va al borde de afuera: las dos columnas se leen como dos
+     fichas enfrentadas, no como una fila centrada */
+  text-align:left;
+}
+.cruce>.cruce-lado:last-child{text-align:right}
+.cruce>.cruce-lado:last-child .cruce-quien{flex-direction:row-reverse}
+
+.cruce-quien{display:flex;align-items:flex-start;gap:7px;min-width:0}
+.cruce-quien .chaleco{margin-top:2px}
+/* Dos renglones antes que puntos suspensivos. A 320px cada lado tiene
+   unos 95px útiles: con recorte, "Los del Lobo" ya queda en "LOS DEL
+   L…" y el equipo pierde el nombre, que es lo único que lo identifica.
+   `anywhere` para que un nombre de una sola palabra larga parta en vez
+   de empujar la columna. */
+.cruce-quien b{
+  font-size:12.5px;font-weight:700;line-height:1.2;
+  text-transform:uppercase;letter-spacing:.4px;
+  min-width:0;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+  overflow:hidden;
+}
+/* La doble regla del contador: el lado que ganó se subraya como se
+   subraya un total en una planilla, no con un color de premio. El oro
+   es de la copa y de nada más. */
+.cruce-lado.gano .cruce-quien b{
+  border-bottom:3px double var(--txt);
+  padding-bottom:1px;
+}
+.cruce-cuenta{
+  font-family:var(--fuente-dato);
+  font-size:10px;font-weight:600;letter-spacing:.6px;
+  color:var(--faint);
+  font-variant-numeric:tabular-nums;
+}
+.cruce-cuenta.completo{color:var(--green)}
+
+/* la canaleta: el doblez de la hoja */
+.cruce-canal{
+  flex:none;
+  min-width:46px;
+  display:grid;place-items:center;
+  padding:0 8px;
+  background:var(--surface-2);
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+}
+.cruce-vs{
+  font-family:var(--fuente-dato);
+  font-size:9px;text-transform:uppercase;letter-spacing:1.2px;
+  color:var(--faint);font-weight:600;
+}
+.cruce-marcador{
+  font-size:23px;line-height:1;letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+  display:inline-flex;align-items:center;gap:3px;
+  white-space:nowrap;
+}
+.cruce-marcador i{font-style:normal;color:var(--faint);font-size:15px}
+
+/* ---------- el renglón en blanco ---------- */
+.cruce-blanco{
+  align-items:center;justify-content:center;text-align:center;gap:6px;
+  background:var(--surface-2);
+}
+.cruce>.cruce-blanco:last-child{text-align:center}
+.cruce-blanco-regla{
+  display:block;width:100%;max-width:74px;height:0;
+  border-top:1.5px dashed var(--line);
+}
+.cruce-blanco small{
+  font-family:var(--fuente-dato);
+  font-size:9px;color:var(--faint);letter-spacing:.5px;
+  line-height:1.3;
+}
+/* la variante clickeable: el blanco se toca para invitar */
+.cruce-blanco.tocable{
+  font:inherit;border:0;width:100%;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.cruce-blanco.tocable:hover .cruce-blanco-regla,
+.cruce-blanco.tocable:focus-visible .cruce-blanco-regla{border-top-color:var(--acento)}
+.cruce-blanco.tocable:hover small,
+.cruce-blanco.tocable:focus-visible small{color:var(--acento)}
+.cruce-blanco.tocable:active{background:var(--acento-suave)}
+.cruce-blanco.tocable:disabled{opacity:.5;cursor:default}
+
+/* ============================================================
+   Elegir el tipo de partido — dos casillas del formulario
+   ============================================================ */
+.tipoPartido{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+.tipoOpcion{
+  display:block;cursor:pointer;
+  border:1.5px solid var(--line);border-radius:var(--radio);
+  background:var(--surface);
+  padding:10px;
+  min-width:0;
+}
+.tipoOpcion input{position:absolute;opacity:0;width:0;height:0}
+.tipoOpcion b{
+  display:block;font-size:13.5px;font-weight:700;
+  margin-bottom:2px;
+}
+.tipoOpcion small{
+  display:block;
+  font-size:11px;line-height:1.35;color:var(--faint);
+  overflow-wrap:anywhere;
+}
+.tipoOpcion.on{
+  border-color:var(--acento);
+  background:var(--acento-suave);
+}
+.tipoOpcion.on b{color:var(--acento)}
+.tipoOpcion:active{transform:translateY(1px)}
+.tipoOpcion:has(input:focus-visible){
+  outline:2px solid var(--acento);outline-offset:2px;
+}
+
+/* ============================================================
+   Armar mi lado — la lista numerada, otra vez
+   ============================================================ */
+.ladoCab{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;
+  border-bottom:1.5px solid var(--txt);
+  background:var(--surface-2);
+}
+.ladoCab b{
+  flex:1;min-width:0;font-size:12.5px;
+  text-transform:uppercase;letter-spacing:.4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ladoCab .n{
+  font-family:var(--fuente-dato);font-size:10px;font-weight:600;
+  color:var(--faint);font-variant-numeric:tabular-nums;flex:none;
+}
+
+/* el sello de "ya está" en vez de un cartel de éxito */
+.ladoListo{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:11px;margin-top:9px;
+  border:1.5px solid var(--green);border-radius:var(--radio);
+  background:var(--green-suave);
+  color:var(--green);
+  font-family:var(--fuente-dato);
+  font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.2px;
+}
+
+/* ============================================================
    Tipografía de display — va al FINAL a propósito.
 
    Anton es condensada: el tracking negativo que sirve para la fuente
@@ -1244,7 +1417,8 @@ label{
    ============================================================ */
 .rs-estado, .copaBox-fase, .tot .big, .kpi .n, .inv-lugar,
 .login h1, .brand h1, .marcador-cupo .mc-n, .marcador-cupo .mc-t,
-.item .fec .d, .marcador input, .perfilModal-fase, .hito-txt b{
+.item .fec .d, .marcador input, .perfilModal-fase, .hito-txt b,
+.cruce-marcador{
   font-family:var(--fuente-display);
   font-weight:400;
 }

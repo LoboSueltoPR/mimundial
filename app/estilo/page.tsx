@@ -18,6 +18,7 @@ import Copa, { Copita } from '@/components/Copa';
 import { MarcaTexto } from '@/components/Marca';
 import { MarcaEmpate, MarcaPerdio, MarcaRacha, MarcaTilde } from '@/components/Marcas';
 import BotonGoogle from '@/components/BotonGoogle';
+import Cruce from '@/components/Cruce';
 import { CAMINO } from '@/lib/camino';
 import { color, iniciales, plata } from '@/lib/calculos';
 
@@ -45,6 +46,7 @@ function Bloque({ titulo, children }: { titulo: string; children: React.ReactNod
 
 export default function Taller() {
   const [modal, setModal] = useState(false);
+  const [tipoMuestra, setTipoMuestra] = useState<'picadito' | 'desafio'>('desafio');
 
   return (
     <>
@@ -300,6 +302,87 @@ export default function Taller() {
               <i style={{ width: '100%' }} />
             </div>
           </div>
+        </Bloque>
+
+        {/* El cruce en sus cuatro estados, uno debajo del otro. La
+            pantalla real solo muestra uno por vez, así que sin esto no
+            hay forma de mirarlos juntos y ver si se leen como el mismo
+            objeto en distintos momentos o como cuatro cosas sueltas. */}
+        <Bloque titulo="Desafío · el cruce, sus cuatro momentos">
+          <div className="sec">Busca rival — el renglón en blanco</div>
+          <Cruce
+            nombreA="Los del Lobo"
+            nombreB={null}
+            cabezasA={3}
+            cabezasB={0}
+            porLado={5}
+            estado="buscando"
+            onInvitar={() => {}}
+          />
+
+          <div className="sec">Desafiado, sin respuesta</div>
+          <Cruce
+            nombreA="Los del Lobo"
+            nombreB={null}
+            cabezasA={5}
+            cabezasB={0}
+            porLado={5}
+            estado="esperando"
+          />
+
+          <div className="sec">Con rival, los dos armando</div>
+          <Cruce
+            nombreA="Los del Lobo"
+            nombreB="La Banda del Sur"
+            cabezasA={5}
+            cabezasB={3}
+            porLado={5}
+            estado="aceptado"
+          />
+
+          <div className="sec">Jugado — el marcador va en la canaleta</div>
+          <Cruce
+            nombreA="Los del Lobo"
+            nombreB="La Banda del Sur"
+            cabezasA={5}
+            cabezasB={5}
+            porLado={5}
+            estado="jugado"
+            golesA={4}
+            golesB={2}
+            ganador="a"
+          />
+          <div className="nota">
+            El que ganó lleva <b>doble regla</b> abajo del nombre, como el total de una planilla. El
+            oro no se usa acá: es de la copa.
+          </div>
+
+          <div className="sec">Elegir el tipo de partido</div>
+          <div className="tipoPartido" role="radiogroup" aria-label="Tipo de partido (muestra)">
+            <label className={`tipoOpcion${tipoMuestra === 'picadito' ? ' on' : ''}`}>
+              <input
+                type="radio"
+                name="tipoMuestra"
+                checked={tipoMuestra === 'picadito'}
+                onChange={() => setTipoMuestra('picadito')}
+              />
+              <b>Picadito</b>
+              <small>Se anota gente y el bombo arma los equipos</small>
+            </label>
+            <label className={`tipoOpcion${tipoMuestra === 'desafio' ? ' on' : ''}`}>
+              <input
+                type="radio"
+                name="tipoMuestra"
+                checked={tipoMuestra === 'desafio'}
+                onChange={() => setTipoMuestra('desafio')}
+              />
+              <b>Desafío</b>
+              <small>Tu equipo contra otro equipo</small>
+            </label>
+          </div>
+
+          <div className="sec">El sello de lado completo</div>
+          <div className="ladoListo">Equipo completo</div>
         </Bloque>
 
         <Bloque titulo="Partido · pestañas y anotados">

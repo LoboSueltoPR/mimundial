@@ -4,22 +4,27 @@
  */
 import {
   cabezas,
+  cabezasDeLado,
   cabezasLista,
   calcularCuentas,
   calcularStats,
   debeDe,
+  estadoDesafio,
+  faltanEnLado,
   intercambiar,
   ladoDeCuenta,
+  nombreDeLado,
   pagadoEfectivo,
   pasar,
   porCabeza,
+  porLado,
   resultadoPara,
   saldado,
   sortear,
   totalDebe,
   totalPagado,
 } from '../lib/calculos.ts';
-import type { Jugador, Partido } from '../lib/tipos.ts';
+import type { Jugador, Partido, Resultado } from '../lib/tipos.ts';
 
 let fallos = 0;
 function chequear(nombre: string, real: unknown, esperado: unknown) {
@@ -308,6 +313,64 @@ chequear('levantar la copa tiene su propio cartel',
   hito(vistoDe(hFinal), grupo(...Array(INSTANCIAS).fill('ganamos')))?.copa, true);
 chequear('quedar eliminado no muestra cartel',
   hito(vistoDe(hOctavos), grupo('ganamos', 'ganamos', 'ganamos', 'perdimos')), null);
+
+/* ============================================================
+   Desafíos (0021)
+   ============================================================ */
+
+const conLado = (nombre: string, lado: 'a' | 'b' | null, invitados = 0): Jugador => ({
+  ...jug(nombre, invitados),
+  lado,
+});
+
+chequear('por lado: 10 de cupo es 5 contra 5', porLado(10), 5);
+chequear('por lado: un cupo impar redondea para abajo', porLado(11), 5);
+// Nunca 0: un lado de cero jugadores no es un partido, y con 0 el
+// contador de "faltan" quedaria siempre en cero y nunca pediria gente.
+chequear('por lado: nunca da cero', porLado(1), 1);
+chequear('por lado: cupo vacio tampoco da cero', porLado(0), 1);
+
+const plantel = [
+  conLado('Ana', 'a'),
+  conLado('Beto', 'a', 2), // trae dos: son tres lugares
+  conLado('Caro', 'b'),
+  conLado('Dani', null), // sin lado: no es de ningun equipo
+];
+chequear('cabezas de un lado cuentan los invitados', cabezasDeLado(plantel, 'a'), 4);
+chequear('el otro lado cuenta lo suyo', cabezasDeLado(plantel, 'b'), 1);
+chequear('el que no tiene lado no cuenta para ninguno',
+  cabezasDeLado(plantel, 'a') + cabezasDeLado(plantel, 'b'), 5);
+
+chequear('faltan los que faltan', faltanEnLado(10, 3), 2);
+chequear('completo da cero', faltanEnLado(10, 5), 0);
+// Con invitados de mas el lado se pasa: el contador no puede ir en
+// negativo o la pantalla diria "faltan -1".
+chequear('pasarse no da negativo', faltanEnLado(10, 7), 0);
+
+const desafio = (
+  rival_id: string | null,
+  rival_acepto_en: string | null,
+  resultado: Resultado | null = null,
+) => ({ rival_id, rival_acepto_en, resultado });
+
+chequear('sin rival, busca rival', estadoDesafio(desafio(null, null)), 'buscando');
+chequear('desafiado y sin contestar, espera', estadoDesafio(desafio('u1', null)), 'esperando');
+chequear('con rival adentro, aceptado', estadoDesafio(desafio('u1', 'ayer')), 'aceptado');
+// `jugado` manda sobre todo lo demas: un desafio con resultado ya no
+// esta esperando nada, aunque el rival nunca haya aceptado formalmente.
+chequear('jugado gana sobre esperando',
+  estadoDesafio(desafio('u1', null, 'ganamos')), 'jugado');
+chequear('jugado gana sobre buscando',
+  estadoDesafio(desafio(null, null, 'empate')), 'jugado');
+
+chequear('el nombre propio manda', nombreDeLado('Los Pibes', 'Alejo Lobos'), 'Los Pibes');
+chequear('sin nombre, se nombra por el capitan',
+  nombreDeLado(null, 'Alejo Lobos'), 'Los de Alejo');
+// Solo el nombre de pila: el apellido no entra en una columna de 160px.
+chequear('solo la primera palabra', nombreDeLado('', 'Juan Ignacio Perez'), 'Los de Juan');
+chequear('sin capitan tampoco rompe', nombreDeLado(null, null), 'Sin nombre');
+chequear('un nombre con espacios no cuenta como nombre',
+  nombreDeLado('   ', 'Rodri'), 'Los de Rodri');
 
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

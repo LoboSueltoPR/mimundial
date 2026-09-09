@@ -14,6 +14,9 @@ export type Jugador = {
   /** cuándo dijo que transfirió. No es lo mismo que haber pagado: eso
    *  lo confirma el organizador en `pagado`. Ver 0020. */
   aviso_pago_en?: string | null;
+  /** En un desafío, de qué lado juega. null en los picaditos: ahí el
+   *  lado lo decide el sorteo y vive solo en el jsonb. Ver 0021. */
+  lado?: Lado | null;
 };
 
 export type Posicion = 'arquero' | 'defensor' | 'mediocampista' | 'delantero';
@@ -232,6 +235,85 @@ export type Partido = {
   /** true si con este partido se dio por terminado el mundial (ver 0007) */
   cierra_mundial: boolean;
   creado_en: string;
+
+  /* ---- desafío (0021) ---------------------------------------------
+     Un desafío es este mismo partido con los dos lados declarados en
+     vez de sorteados. Los campos son nullables a propósito: los
+     partidos que ya existen son picaditos y no se tocan. */
+
+  /** true si es equipo contra equipo en vez de picadito con sorteo. */
+  es_desafio: boolean;
+  /** El capitán de enfrente. null = todavía busca rival. */
+  rival_id: string | null;
+  /** null con `rival_id` cargado = lo desafiaste y no contestó todavía. */
+  rival_acepto_en: string | null;
+  /** Nombre del equipo local (lado 'a', claros). Opcional. */
+  nombre_a: string | null;
+  /** Nombre del equipo visitante (lado 'b', oscuros). Opcional. */
+  nombre_b: string | null;
+};
+
+/* ============================================================
+   Desafíos (0021)
+   ============================================================ */
+
+/**
+ * Por qué me aparece este desafío:
+ * · abierto  — un amigo busca rival y lo puedo tomar
+ * · invitado — me desafiaron y todavía no contesté
+ * · rival    — ya lo tomé y me falta terminar de armar mi equipo
+ */
+export type RolDesafio = 'abierto' | 'invitado' | 'rival';
+
+/** Un desafío de otro que me toca. Lo devuelve `desafios_para_mi`. */
+export type DesafioParaMi = {
+  id: string;
+  token: string;
+  fecha: string;
+  hora: string | null;
+  lugar: string | null;
+  cupo: number;
+  anfitrion: string | null;
+  anfitrion_id: string;
+  avatar_url: string | null;
+  nombre_a: string | null;
+  cabezas_a: number;
+  rol: RolDesafio;
+};
+
+/** Uno de los míos, en la pantalla donde armo mi lado. */
+export type JugadorDeLado = {
+  id: string;
+  nombre: string;
+  invitados: number;
+  user_id: string | null;
+  avatar_url: string | null;
+};
+
+/**
+ * Mi lado de un desafío, para armarlo. Lo devuelve `mi_desafio`, que es
+ * la única puerta que tiene el capitán rival: la RLS de `partidos` y
+ * `jugadores` es por dueño, así que sin esto no puede leer nada.
+ *
+ * Del lado de enfrente viene solo el número. Cuántos son es lo que
+ * necesita para armar; quiénes son, no.
+ */
+export type MiDesafio = {
+  ok: true;
+  lado: Lado;
+  id: string;
+  token: string;
+  fecha: string;
+  hora: string | null;
+  lugar: string | null;
+  cupo: number;
+  jugado: boolean;
+  mi_nombre_equipo: string | null;
+  rival_nombre_equipo: string | null;
+  anfitrion: string | null;
+  rival: string | null;
+  los_mios: JugadorDeLado[];
+  cabezas_rival: number;
 };
 
 export type PartidoConJugadores = Partido & { jugadores: Jugador[] };

@@ -38,8 +38,11 @@ import { MarcaEmpate, MarcaPerdio } from '@/components/Marcas';
 import Avatar from '@/components/Avatar';
 import PerfilModal from '@/components/PerfilModal';
 import { ColumnaEquipo, type Seleccion } from '@/components/Equipos';
+import Cruce from '@/components/Cruce';
+import ArmarEquipo from '@/components/ArmarEquipo';
+import { cabezasDeLado, estadoDesafio, nombreDeLado, porLado } from '@/lib/calculos';
 
-type Vista = 'anotados' | 'equipos' | 'plata' | 'resultado';
+type Vista = 'anotados' | 'equipos' | 'desafio' | 'plata' | 'resultado';
 type AvatarInfo = { avatar_url: string | null; username: string | null };
 
 export default function DetallePartido() {
@@ -57,6 +60,7 @@ export default function DetallePartido() {
   const [solicitudesEnviadas, setSolicitudesEnviadas] = useState<Set<string>>(new Set());
   const [enviandoSolicitud, setEnviandoSolicitud] = useState<string | null>(null);
   const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
+  const [armando, setArmando] = useState(false);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
@@ -125,6 +129,14 @@ export default function DetallePartido() {
   const cab = cabezas(js);
   const faltan = Math.max(0, p.cupo - cab);
   const completo = faltan === 0 && cab > 0;
+
+  const VISTAS: Vista[] = p.es_desafio
+    ? (['desafio', 'plata', 'resultado'] as Vista[])
+    : (['anotados', 'equipos', 'plata', 'resultado'] as Vista[]);
+  /* Sin efecto: si la pestaña guardada no existe para este tipo de
+     partido, se cae a la primera. Un `setVista` dentro de un efecto
+     pintaría una vez la pestaña equivocada. */
+  const vistaOk: Vista = VISTAS.includes(vista) ? vista : VISTAS[0];
 
   /* ---------------- mutaciones ---------------- */
 
@@ -276,11 +288,15 @@ export default function DetallePartido() {
       {/* recién creado y sin nadie anotado: lo único que tiene sentido es invitar */}
       {cab === 0 && <Invitar p={p} onCambio={actualizarPartido} destacado />}
 
+      {/* Un desafío no tiene sorteo ni lista suelta: los lados se
+          declaran. Se le sacan las dos pestañas que no aplican en vez
+          de dejarlas ahí sin hacer nada — sumar a alguien desde
+          "anotados" lo dejaría sin lado y afuera de los dos equipos. */}
       <nav className="tabs" style={{ marginTop: 14, paddingBottom: 0 }}>
-        {(['anotados', 'equipos', 'plata', 'resultado'] as Vista[]).map((v) => (
+        {VISTAS.map((v) => (
           <a
             key={v}
-            className={vista === v ? 'on' : ''}
+            className={vistaOk === v ? 'on' : ''}
             onClick={() => setVista(v)}
             style={{ cursor: 'pointer', textTransform: 'capitalize' }}
           >
@@ -295,7 +311,17 @@ export default function DetallePartido() {
         </div>
       )}
 
-      {vista === 'anotados' && (
+      {vistaOk === 'desafio' && (
+        <DesafioVista
+          p={p}
+          js={js}
+          amigos={amigos}
+          onArmar={() => setArmando(true)}
+          onCambio={actualizarPartido}
+        />
+      )}
+
+      {vistaOk === 'anotados' && (
         <Anotados
           js={js}
           amigos={amigos}
@@ -309,7 +335,7 @@ export default function DetallePartido() {
           onAbrirPerfil={(uid, nombreJ) => setPerfilAbierto({ id: uid, nombre: nombreJ })}
         />
       )}
-      {vista === 'equipos' && (
+      {vistaOk === 'equipos' && (
         <EquiposVista
           js={js}
           equipos={p.equipos}
@@ -318,7 +344,7 @@ export default function DetallePartido() {
           onCambiar={(eq) => actualizarPartido({ equipos: eq })}
         />
       )}
-      {vista === 'plata' && (
+      {vistaOk === 'plata' && (
         <PlataVista
           p={p}
           js={js}
@@ -328,7 +354,18 @@ export default function DetallePartido() {
           onAlias={(alias_pago) => actualizarPartido({ alias_pago })}
         />
       )}
-      {vista === 'resultado' && <ResultadoVista p={p} onGuardar={actualizarPartido} />}
+      {vistaOk === 'resultado' && <ResultadoVista p={p} onGuardar={actualizarPartido} />}
+
+      {armando && (
+        <ArmarEquipo
+          partidoId={p.id}
+          onCerrar={() => setArmando(false)}
+          // `cargar` y no un merge local: la RPC reescribe `equipos`
+          // entero del lado del servidor, y adivinarlo acá sería tener
+          // dos verdades sobre la misma cosa.
+          onListo={cargar}
+        />
+      )}
 
       {/* si todavía no hay nadie anotado, invitar es lo único que tiene sentido hacer */}
       {cab > 0 && <Invitar p={p} onCambio={actualizarPartido} />}
@@ -619,6 +656,142 @@ function Anotados({
             Marcate a vos primero — sin eso no se sabe de qué lado del sorteo jugaste.
           </div>
         </>
+      )}
+    </>
+  );
+}
+
+/* ================= DESAFÍO =================
+   La pantalla del que armó el desafío. No hay bombo que apretar: los
+   dos lados se declaran, así que lo único que se hace acá es juntar a
+   los tuyos y conseguir rival.
+
+   El lado del rival se muestra pero no se toca. Que el dueño del
+   partido pueda desarmarle el equipo al otro sería raro, y además la
+   RPC no se lo permite: `quitar_de_mi_lado` está acotada al lado
+   propio. La UI no promete lo que la base va a rechazar.
+   ========================================== */
+
+function DesafioVista({
+  p,
+  js,
+  amigos,
+  onArmar,
+  onCambio,
+}: {
+  p: PartidoConCancha;
+  js: Jugador[];
+  amigos: Amigo[];
+  onArmar: () => void;
+  onCambio: (campos: Partial<Partido>) => void;
+}) {
+  const [eligiendo, setEligiendo] = useState(false);
+
+  const estado = estadoDesafio(p);
+  const objetivo = porLado(p.cupo);
+  const cabezasA = cabezasDeLado(js, 'a');
+  const cabezasB = cabezasDeLado(js, 'b');
+
+  /* Los nombres salen de las filas de `jugadores`: los dos capitanes
+     tienen la suya, así que no hace falta ir a buscar perfiles. */
+  const anfitrion = js.find((j) => j.user_id === p.user_id)?.nombre ?? null;
+  const rivalNombre = p.rival_id ? (js.find((j) => j.user_id === p.rival_id)?.nombre ?? null) : null;
+  const hayRival = estado === 'aceptado' || estado === 'jugado';
+
+  // El que arma el desafío queda siempre del lado 'a' (lo escribe el
+  // alta), así que `goles_favor` es el de los claros sin dar vuelta.
+  const losDeB = js.filter((j) => j.lado === 'b');
+
+  return (
+    <>
+      <div className="sec">El cruce</div>
+      <Cruce
+        nombreA={nombreDeLado(p.nombre_a, anfitrion)}
+        nombreB={hayRival ? nombreDeLado(p.nombre_b, rivalNombre) : null}
+        cabezasA={cabezasA}
+        cabezasB={cabezasB}
+        porLado={objetivo}
+        estado={estado}
+        golesA={p.goles_favor}
+        golesB={p.goles_contra}
+        ganador={p.equipo_ganador}
+        onInvitar={hayRival ? undefined : () => setEligiendo((v) => !v)}
+      />
+
+      {!hayRival && eligiendo && (
+        <>
+          <div className="sec">A quién desafiás</div>
+          <div className="canchaLista">
+            <button
+              type="button"
+              className={`canchaChip${p.rival_id === null ? ' elegida' : ''}`}
+              onClick={() => {
+                onCambio({ rival_id: null });
+                setEligiendo(false);
+              }}
+            >
+              El que lo tome
+            </button>
+            {amigos.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                className={`canchaChip${p.rival_id === a.id ? ' elegida' : ''}`}
+                onClick={() => {
+                  onCambio({ rival_id: a.id });
+                  setEligiendo(false);
+                }}
+              >
+                {a.nombre}
+              </button>
+            ))}
+          </div>
+          {amigos.length === 0 && (
+            <div className="nota">
+              Todavía no tenés amigos cargados. Dejalo abierto y sumá gente en <b>Amigos</b>.
+            </div>
+          )}
+        </>
+      )}
+
+      <div className="sec">Tu equipo</div>
+      <button className="btn pri wide" onClick={onArmar}>
+        {cabezasA >= objetivo ? 'Ver tu equipo' : `Armar tu equipo · faltan ${objetivo - cabezasA}`}
+      </button>
+
+      {hayRival && (
+        <>
+          <div className="sec">Los de enfrente</div>
+          <div className="card">
+            {losDeB.length === 0 ? (
+              <div className="vacio">
+                {rivalNombre || 'El rival'} todavía no sumó a nadie.
+              </div>
+            ) : (
+              losDeB.map((j, i) => (
+                <div className="jug" key={j.id}>
+                  <span className="num">{i + 1}</span>
+                  <Avatar nombre={j.nombre} url={null} />
+                  <span className="nom">
+                    <b>{j.nombre}</b>
+                    {(j.invitados || 0) > 0 && <small>+{j.invitados} invitado{j.invitados > 1 ? 's' : ''}</small>}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="nota">
+            El equipo de enfrente lo arma su capitán. Vos no se lo podés tocar.
+          </div>
+        </>
+      )}
+
+      {!hayRival && (
+        <div className="nota">
+          {p.rival_id
+            ? 'Le mandaste el desafío y todavía no contestó. Podés cambiar de rival tocando el renglón en blanco.'
+            : 'Está abierto: le aparece a todos tus amigos y lo toma el primero que quiera. Tocá el renglón en blanco para desafiar a alguien puntual.'}
+        </div>
       )}
     </>
   );
@@ -991,7 +1164,10 @@ function ResultadoVista({
     // si cargó marcador y todavía no eligió resultado, lo deduce
     if (favor !== null && contra !== null && !p.resultado) {
       campos.resultado = favor > contra ? 'ganamos' : favor < contra ? 'perdimos' : 'empate';
-      if (miLado) campos.equipo_ganador = ganadorSegun(campos.resultado);
+      // Sin rival no hay lado ganador que valga: escribirlo acá sería
+      // colarle el resultado por la puerta del marcador justo después
+      // de haberlo negado en el control de arriba.
+      if (miLado && !faltaRival) campos.equipo_ganador = ganadorSegun(campos.resultado);
     }
     onGuardar(campos);
   }
@@ -1003,7 +1179,14 @@ function ResultadoVista({
      tampoco. Si no se sabe, el resultado sigue siendo tuyo y de nadie
      más. */
   const miLado = ladoDeCuenta(p.equipos, p.user_id);
-  const hayEquipos = !!p.equipos;
+  /* En un desafío puede haber `equipos` con un solo lado cargado: el
+     que lo armó junta a los suyos y el rival nunca aparece. Marcar
+     ganador ahí le repartiría un resultado a los de tu lado por un
+     partido que tuvo un equipo solo — el mismo modo de falla que
+     `cierra_mundial`: un control que escribe algo incoherente en vez
+     de negarse. */
+  const faltaRival = !!p.es_desafio && (p.equipos?.b.length ?? 0) === 0;
+  const hayEquipos = !!p.equipos && !faltaRival;
 
   /** El lado que ganó, deducido de cómo te fue a vos. */
   function ganadorSegun(r: Resultado | null): Lado | null {
@@ -1044,6 +1227,14 @@ function ResultadoVista({
           </button>
         ))}
       </div>
+
+      {faltaRival && (
+        <div className="nota">
+          Este desafío todavía no tiene rival, así que no hay a quién ganarle: cuando alguien lo
+          tome y arme su equipo, acá vas a poder marcar qué lado ganó. Lo de arriba queda como
+          resultado tuyo y no le llega a nadie más.
+        </div>
+      )}
 
       {hayEquipos && (
         <>

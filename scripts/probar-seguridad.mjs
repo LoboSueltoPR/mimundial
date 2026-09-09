@@ -103,6 +103,42 @@ chequear('no puede llamar camino_de_amigos', !!caminoAnon.error, caminoAnon.erro
 const jugadosAnon = await sb.rpc('partidos_jugados_por', { p_user_id: randomUUID() });
 chequear('no puede llamar partidos_jugados_por', !!jugadosAnon.error, jugadosAnon.error?.message);
 
+/* 0021 — desafios. Toda la superficie nueva es de capitanes logueados:
+   anon no tiene por que poder ni mirar el tablero de "buscan rival"
+   (es un tablero entre amigos, no un padron) ni mucho menos escribir
+   del lado de nadie. Mismo motivo que arriba: un `create or replace`
+   futuro resetea el ACL y esto tiene que saltar solo. */
+const desafiosAnon = await sb.rpc('desafios_para_mi');
+chequear('no puede llamar desafios_para_mi', !!desafiosAnon.error, desafiosAnon.error?.message);
+const aceptarAnon = await sb.rpc('aceptar_desafio', { p_partido_id: randomUUID() });
+chequear('no puede llamar aceptar_desafio', !!aceptarAnon.error, aceptarAnon.error?.message);
+const sumarAnon = await sb.rpc('sumar_a_mi_lado', {
+  p_partido_id: randomUUID(), p_nombre: 'Colado', p_user_id: null,
+});
+chequear('no puede llamar sumar_a_mi_lado', !!sumarAnon.error, sumarAnon.error?.message);
+const quitarAnon = await sb.rpc('quitar_de_mi_lado', {
+  p_partido_id: randomUUID(), p_jugador_id: randomUUID(),
+});
+chequear('no puede llamar quitar_de_mi_lado', !!quitarAnon.error, quitarAnon.error?.message);
+const invAnon = await sb.rpc('invitados_de_mi_lado', {
+  p_partido_id: randomUUID(), p_jugador_id: randomUUID(), p_invitados: 9,
+});
+chequear('no puede llamar invitados_de_mi_lado', !!invAnon.error, invAnon.error?.message);
+const miDesafioAnon = await sb.rpc('mi_desafio', { p_partido_id: randomUUID() });
+chequear('no puede llamar mi_desafio', !!miDesafioAnon.error, miDesafioAnon.error?.message);
+const nombrarAnon = await sb.rpc('nombrar_mi_lado', {
+  p_partido_id: randomUUID(), p_nombre: 'Los Colados',
+});
+chequear('no puede llamar nombrar_mi_lado', !!nombrarAnon.error, nombrarAnon.error?.message);
+/* Interna: no la ejecuta nadie desde afuera, ni anon ni logueado. Es la
+   que reescribe `equipos` entero, asi que si se le escapa el EXECUTE
+   cualquiera puede pisar el sorteo de un partido ajeno. */
+const rearmarAnon = await sb.rpc('rearmar_equipos_desafio', { p_partido_id: randomUUID() });
+chequear('no puede llamar rearmar_equipos_desafio',
+  !!rearmarAnon.error, rearmarAnon.error?.message);
+const miLadoAnon = await sb.rpc('mi_lado_capitan', { p_partido_id: randomUUID() });
+chequear('no puede llamar mi_lado_capitan', !!miLadoAnon.error, miLadoAnon.error?.message);
+
 /* 0016: la tabla de suscripciones push es el material con el que se le
    manda una notificacion a cualquiera. No se llega por PostgREST ni
    logueado (RLS prendida y cero politicas), y el despachador no lo
