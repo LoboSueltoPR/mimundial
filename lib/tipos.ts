@@ -125,6 +125,9 @@ export type PartidoPublico = {
   capitan_del_link: string | null;
   cupo_lado: number | null;
   cabezas_lado: number | null;
+  /** true si este lado todavía no tiene capitán y se la puede quedar
+   *  el primero que abra el link estando logueado. Ver 0024. */
+  busca_capitan: boolean;
 };
 
 /** Lo que me toca a mí en un partido al que entré por el link. */
@@ -268,6 +271,9 @@ export type Partido = {
   nombre_a: string | null;
   /** Nombre del equipo visitante (lado 'b', oscuros). Opcional. */
   nombre_b: string | null;
+  /** El segundo link, el del equipo rival. null en los picaditos.
+   *  Sin capitán todavía, el primero que lo abra logueado se la queda. */
+  token_b: string | null;
 };
 
 /* ============================================================

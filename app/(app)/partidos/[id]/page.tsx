@@ -774,11 +774,31 @@ function DesafioVista({
         </>
       )}
 
+      {/* El link para conseguir rival. Es el mismo `token_b` que después
+          va a ser el link de ese equipo: el primero que lo abra con su
+          cuenta se queda con la capitanía y de ahí en más lo usa para
+          sumar a los suyos. Un solo link para las dos cosas. */}
+      {!hayRival && !p.rival_id && p.token_b && (
+        <>
+          <div className="sec">El link para el otro equipo</div>
+          <CompartirLink
+            token={p.token_b}
+            id="linkLadoB"
+            texto={`Te desafío${p.lugar ? ' en ' + p.lugar : ''}${p.hora ? ' a las ' + p.hora : ''}. El primero que entre arma el equipo:`}
+          />
+          <div className="nota">
+            Mandalo al grupo del otro equipo. <b>El primero que entre con su cuenta</b> queda de
+            capitán y desde ahí suma a los suyos con este mismo link. No hace falta que sea amigo
+            tuyo.
+          </div>
+        </>
+      )}
+
       {!hayRival && (
         <div className="nota">
           {p.rival_id
-            ? 'Le mandaste el desafío y todavía no contestó. Podés cambiar de rival tocando el renglón en blanco.'
-            : 'Está abierto: le aparece a todos tus amigos y lo toma el primero que quiera. Tocá el renglón en blanco para desafiar a alguien puntual.'}
+            ? 'Le mandaste el desafío a alguien puntual y todavía no contestó. Mientras esté dirigido, nadie más se lo puede quedar por link. Tocá el renglón en blanco para cambiar de rival o dejarlo abierto.'
+            : 'También le aparece a tus amigos en su pantalla de Partidos, y lo toma el primero que quiera. Tocá el renglón en blanco para desafiar a alguien puntual.'}
         </div>
       )}
     </>

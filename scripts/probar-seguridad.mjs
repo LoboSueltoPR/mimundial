@@ -138,6 +138,10 @@ chequear('no puede llamar rearmar_equipos_desafio',
   !!rearmarAnon.error, rearmarAnon.error?.message);
 const miLadoAnon = await sb.rpc('mi_lado_capitan', { p_partido_id: randomUUID() });
 chequear('no puede llamar mi_lado_capitan', !!miLadoAnon.error, miLadoAnon.error?.message);
+/* 0024: la capitania por link es de logueados. Sin cuenta no hay a
+   quien anotarle el equipo — `rival_id` referencia auth.users. */
+const capAnon = await sb.rpc('tomar_capitania', { tok: 'xxxxxxxx' });
+chequear('no puede llamar tomar_capitania', !!capAnon.error, capAnon.error?.message);
 
 /* 0016: la tabla de suscripciones push es el material con el que se le
    manda una notificacion a cualquiera. No se llega por PostgREST ni

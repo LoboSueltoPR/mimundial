@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type { Amigo, MiParte, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
 import { fechaLarga, plata } from '@/lib/calculos';
@@ -37,6 +37,7 @@ const marcarAnotado = (token: string, v: boolean) =>
 
 export default function Invitacion() {
   const { token } = useParams<{ token: string }>();
+  const router = useRouter();
   const { confirmar, ui: confirmarUI } = useConfirmar();
 
   const [p, setP] = useState<PartidoPublico | null>(null);
@@ -52,6 +53,7 @@ export default function Invitacion() {
   const [guardando, setGuardando] = useState(false);
 
   const [miId, setMiId] = useState<string | null>(null);
+  const [tomandoCap, setTomandoCap] = useState(false);
   const [miNombreCuenta, setMiNombreCuenta] = useState('vos');
   const [miUsername, setMiUsername] = useState<string | null>(null);
   const [miAvatarUrl, setMiAvatarUrl] = useState<string | null>(null);
@@ -181,6 +183,29 @@ export default function Invitacion() {
     }
     marcarAnotado(token, true);
     cargar();
+  }
+
+  /**
+   * Quedarse con la capitanía del equipo rival desde el link.
+   *
+   * Al terminar se va a Partidos y no se queda acá: desde ahí el
+   * desafío le aparece con "Armá tu equipo", que es lo único que le
+   * falta hacer. Esta pantalla es la del invitado, y el capitán ya
+   * dejó de serlo.
+   */
+  async function tomarCapitania() {
+    setError(null);
+    setTomandoCap(true);
+    const { data, error } = await crearCliente().rpc('tomar_capitania', { tok: token });
+    setTomandoCap(false);
+    const r = data as RespuestaRPC | null;
+    if (error || !r?.ok) {
+      setError(r?.error || error?.message || 'No se pudo tomar el equipo.');
+      // Puede haber llegado tarde: que vea el estado nuevo, no el viejo.
+      cargar();
+      return;
+    }
+    router.push('/partidos');
   }
 
   /**
@@ -390,6 +415,41 @@ export default function Invitacion() {
         <div className="msg info" style={{ marginTop: 14 }}>
           El anfitrión cerró las anotaciones.
         </div>
+      )}
+
+      {/* El link del lado rival, todavía sin dueño. Va antes que
+          cualquier otra cosa: es lo único que este link pide de
+          verdad, y quien lo abre no sabe todavía que hay una
+          capitanía libre. */}
+      {p.busca_capitan && (
+        <>
+          <div className="sec">Este equipo no tiene capitán</div>
+          <div className="card" style={{ padding: 14 }}>
+            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--dim)' }}>
+              {p.anfitrion ? <b>{p.anfitrion}</b> : 'Alguien'} armó un desafío y busca rival. El
+              primero que se haga cargo arma este equipo: le pone nombre, suma a los suyos y les
+              pasa este mismo link.
+            </div>
+            {miId ? (
+              <button
+                className="btn pri wide"
+                style={{ marginTop: 12 }}
+                onClick={tomarCapitania}
+                disabled={tomandoCap}
+              >
+                {tomandoCap ? 'Un segundo…' : 'Me hago cargo de este equipo'}
+              </button>
+            ) : (
+              <div style={{ marginTop: 12 }}>
+                <BotonGoogle destino={`/p/${token}`} texto="Entrar para ser el capitán" />
+                <div className="nota">
+                  Para ser capitán hace falta cuenta: es la que después maneja el equipo. Para
+                  solo jugar, no — anotate más abajo y listo.
+                </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {p.abierto && (
