@@ -6,6 +6,7 @@ import type { Amigo, MiDesafio, RespuestaRPC } from '@/lib/tipos';
 import { color, fechaCorta, iniciales, nombreDeLado, porLado } from '@/lib/calculos';
 import Avatar from '@/components/Avatar';
 import Cruce from '@/components/Cruce';
+import CompartirLink from '@/components/CompartirLink';
 
 /**
  * ARMAR MI LADO — la hoja donde un capitán junta a los suyos.
@@ -285,6 +286,25 @@ export default function ArmarEquipo({
                   No hace falta que tengan cuenta. A los que sí la tienen, sumalos desde los chips:
                   así el resultado les cuenta en <b>su</b> camino.
                 </div>
+
+                {/* Cada capitán manda el link de SU lado. `mi_token` ya
+                    viene resuelto por el servidor según quién pregunta:
+                    si acá se armara con el token del partido, el rival
+                    estaría llenando el equipo del anfitrión. */}
+                {d.mi_token && (
+                  <>
+                    <div className="sec">O pasales el link</div>
+                    <CompartirLink
+                      token={d.mi_token}
+                      id="linkMiLado"
+                      texto={`Jugamos${d.lugar ? ' en ' + d.lugar : ''}${d.hora ? ' a las ' + d.hora : ''}. Sumate a ${nombreDeLado(equipo || d.mi_nombre_equipo, d.lado === 'a' ? d.anfitrion : d.rival)}:`}
+                    />
+                    <div className="nota">
+                      El que lo abre cae en <b>tu</b> equipo, sin necesidad de cuenta. El otro
+                      equipo tiene su propio link.
+                    </div>
+                  </>
+                )}
               </>
             )}
           </>

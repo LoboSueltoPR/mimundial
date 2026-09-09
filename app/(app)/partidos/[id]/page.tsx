@@ -40,6 +40,7 @@ import PerfilModal from '@/components/PerfilModal';
 import { ColumnaEquipo, type Seleccion } from '@/components/Equipos';
 import Cruce from '@/components/Cruce';
 import ArmarEquipo from '@/components/ArmarEquipo';
+import CompartirLink from '@/components/CompartirLink';
 import { cabezasDeLado, estadoDesafio, nombreDeLado, porLado } from '@/lib/calculos';
 
 type Vista = 'anotados' | 'equipos' | 'desafio' | 'plata' | 'resultado';
@@ -367,8 +368,11 @@ export default function DetallePartido() {
         />
       )}
 
-      {/* si todavía no hay nadie anotado, invitar es lo único que tiene sentido hacer */}
-      {cab > 0 && <Invitar p={p} onCambio={actualizarPartido} />}
+      {/* si todavía no hay nadie anotado, invitar es lo único que tiene sentido hacer.
+          En un desafío no va: ahí hay DOS links, uno por equipo, y se
+          comparten desde la pestaña del desafío. Este bloque manda el
+          `token` a secas, que llenaría siempre el lado del anfitrión. */}
+      {cab > 0 && !p.es_desafio && <Invitar p={p} onCambio={actualizarPartido} />}
 
       <div className="sec">Partido</div>
       <button className="btn danger wide sm" onClick={borrarPartido}>
@@ -408,33 +412,7 @@ function Invitar({
   onCambio: (campos: Partial<Partido>) => void;
   destacado?: boolean;
 }) {
-  const [copiado, setCopiado] = useState(false);
-  const [link, setLink] = useState('');
-
-  useEffect(() => {
-    setLink(`${window.location.origin}/p/${p.token}`);
-  }, [p.token]);
-
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(link);
-    } catch {
-      // Safari/iOS sin permiso: al menos lo dejamos seleccionable
-      const i = document.getElementById('linkInv') as HTMLInputElement | null;
-      i?.select();
-    }
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  }
-
-  function compartir() {
-    const texto = `Se juega${p.lugar ? ' en ' + p.lugar : ''}${p.hora ? ' a las ' + p.hora : ''}. Anotate: ${link}`;
-    if (navigator.share) {
-      navigator.share({ title: 'MiMundial', text: texto, url: link }).catch(() => {});
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
-    }
-  }
+  const cuando = `Se juega${p.lugar ? ' en ' + p.lugar : ''}${p.hora ? ' a las ' + p.hora : ''}.`;
 
   return (
     <>
@@ -450,17 +428,7 @@ function Invitar({
         </div>
       )}
 
-      <div className="card" style={{ padding: 14 }}>
-        <input id="linkInv" readOnly value={link} onFocus={(e) => e.target.select()} />
-        <div className="row2" style={{ marginTop: 10 }}>
-          <button className="btn pri" onClick={compartir}>
-            Compartir
-          </button>
-          <button className="btn" onClick={copiar}>
-            {copiado ? '¡Copiado!' : 'Copiar link'}
-          </button>
-        </div>
-      </div>
+      <CompartirLink token={p.token} texto={`${cuando} Anotate:`} />
 
       <div className="nota">
         {p.abierto ? (
@@ -758,6 +726,26 @@ function DesafioVista({
       <button className="btn pri wide" onClick={onArmar}>
         {cabezasA >= objetivo ? 'Ver tu equipo' : `Armar tu equipo · faltan ${objetivo - cabezasA}`}
       </button>
+
+      {/* El link es SOLO del lado del anfitrión: el que lo abre cae en
+          su equipo. El del rival lo tiene el otro capitán, en su propia
+          pantalla — si los dos mandaran el mismo, se llenaría un solo
+          lado y nadie se enteraría hasta el día del partido. */}
+      <div className="sec">
+        El link de tu equipo
+        <button className="act" onClick={() => onCambio({ abierto: !p.abierto })}>
+          {p.abierto ? 'cerrar anotaciones' : 'reabrir'}
+        </button>
+      </div>
+      <CompartirLink
+        token={p.token}
+        id="linkLadoA"
+        texto={`Jugamos${p.lugar ? ' en ' + p.lugar : ''}${p.hora ? ' a las ' + p.hora : ''}. Sumate a ${nombreDeLado(p.nombre_a, anfitrion)}:`}
+      />
+      <div className="nota">
+        El que abre este link cae en <b>tu</b> equipo y <b>no necesita cuenta</b>. El equipo de
+        enfrente tiene su propio link, que comparte su capitán.
+      </div>
 
       {hayRival && (
         <>

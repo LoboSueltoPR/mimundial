@@ -291,7 +291,19 @@ export default function Invitacion() {
       </div>
     );
 
-  const completo = p.faltan === 0;
+  /* En un desafío el link es de UN equipo, así que el cupo que importa
+     acá es el de ese lado. `p.cabezas`/`p.cupo` siguen siendo del
+     partido entero — mostrarlos sería decirle "10/10, completo" a
+     alguien cuyo equipo tiene 3 de 5. */
+  const esDesafio = !!p.es_desafio && p.lado_link !== null;
+  const cabezasVis = esDesafio && p.cabezas_lado != null ? p.cabezas_lado : p.cabezas;
+  const cupoVis = esDesafio && p.cupo_lado != null ? p.cupo_lado : p.cupo;
+  const faltanVis = Math.max(0, cupoVis - cabezasVis);
+  const completo = faltanVis === 0;
+  const miEquipo = esDesafio
+    ? p.equipo_del_link?.trim() ||
+      (p.capitan_del_link ? `Los de ${p.capitan_del_link.split(/\s+/)[0]}` : 'este equipo')
+    : null;
 
   /* Logueado: se ve como el resto de la app, con la misma barra de
      navegación — no como una pantalla pública suelta. Sin cuenta sigue
@@ -317,8 +329,22 @@ export default function Invitacion() {
       <div className={`cancha ${completo ? 'completa' : ''}`}>
         <div className="cancha-lineas" />
         <div className="cancha-contenido">
+          {/* En un desafío lo primero que hay que saber no es quién te
+              invita: es de qué equipo vas a ser. Los dos links llevan a
+              la misma pantalla y solo esto los distingue. */}
           <div className="inv-invita">
-            {p.anfitrion ? <b>{p.anfitrion}</b> : 'Alguien'} te invita a jugar
+            {esDesafio ? (
+              <>
+                Te sumás a <b>{miEquipo}</b>
+                {p.equipo_rival?.trim() ? (
+                  <>
+                    , contra <b>{p.equipo_rival.trim()}</b>
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <>{p.anfitrion ? <b>{p.anfitrion}</b> : 'Alguien'} te invita a jugar</>
+            )}
           </div>
           <div className="inv-lugar">{p.lugar || 'Partido'}</div>
           <div className="inv-cuando">
@@ -344,12 +370,18 @@ export default function Invitacion() {
           {p.cancha_notas && <div className="inv-notas">{p.cancha_notas}</div>}
 
           <div className="marcador-cupo">
-            <span className="mc-n">{p.cabezas}</span>
+            <span className="mc-n">{cabezasVis}</span>
             <span className="mc-sep">/</span>
-            <span className="mc-t">{p.cupo}</span>
+            <span className="mc-t">{cupoVis}</span>
           </div>
           <div className="inv-faltan">
-            {completo ? '¡Está completo!' : p.faltan === 1 ? 'Falta 1' : `Faltan ${p.faltan}`}
+            {completo
+              ? esDesafio
+                ? '¡El equipo está completo!'
+                : '¡Está completo!'
+              : faltanVis === 1
+                ? 'Falta 1'
+                : `Faltan ${faltanVis}`}
           </div>
         </div>
       </div>

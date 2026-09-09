@@ -108,6 +108,23 @@ export type PartidoPublico = {
   goles_claros: number | null;
   goles_oscuros: number | null;
   anotados: AnotadoPublico[];
+
+  /* ---- desafío (0023) ----------------------------------------------
+     En un desafío hay DOS links, uno por equipo, y el lado sale de cuál
+     de los dos abriste. `cabezas`, `faltan` y `cupo` de arriba siguen
+     siendo del partido entero: lo del lado viaja en estos campos, para
+     no cambiarle el significado a lo que ya se leía. */
+
+  es_desafio: boolean;
+  /** De qué lado te anota ESTE link. null en un picadito. */
+  lado_link: Lado | null;
+  /** Nombre del equipo al que te estás sumando. null si no le pusieron. */
+  equipo_del_link: string | null;
+  equipo_rival: string | null;
+  /** El capitán del equipo de este link. */
+  capitan_del_link: string | null;
+  cupo_lado: number | null;
+  cabezas_lado: number | null;
 };
 
 /** Lo que me toca a mí en un partido al que entré por el link. */
@@ -308,6 +325,8 @@ export type MiDesafio = {
   lugar: string | null;
   cupo: number;
   jugado: boolean;
+  /** El link que le toca compartir a QUIEN pregunta: el del lado propio. */
+  mi_token: string;
   mi_nombre_equipo: string | null;
   rival_nombre_equipo: string | null;
   anfitrion: string | null;
