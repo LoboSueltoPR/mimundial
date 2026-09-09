@@ -6,7 +6,7 @@
  */
 
 const CACHE = 'mimundial-v1';
-const SHELL = ['/', '/camino', '/manifest.json', '/icons/icon.svg'];
+const SHELL = ['/', '/camino', '/manifest.json', '/icons/icon-192.png'];
 
 self.addEventListener('install', (evento) => {
   evento.waitUntil(

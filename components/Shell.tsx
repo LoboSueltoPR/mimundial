@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Copita } from './Copa';
 import {
   IconoAmigos,
   IconoCamino,
@@ -40,9 +39,7 @@ export default function Shell({
         <div className="wrap">
           <div className="hd">
             <Link href="/camino" className="brand">
-              <div className="dot">
-                <Copita tam={15} />
-              </div>
+              <div className="dot"><img src="/icons/icon-192.png" alt="" /></div>
               <h1>MiMundial</h1>
             </Link>
 

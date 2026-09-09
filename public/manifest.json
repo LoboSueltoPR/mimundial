@@ -1,21 +1,15 @@
 {
-  "name": "MiMundial",
-  "short_name": "MiMundial",
+  "name": "Mi Mundial",
+  "short_name": "Mi Mundial",
   "description": "Tu registro de picaditos: quién juega, quién debe y cómo salió.",
   "start_url": "/camino",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#e6e8e2",
-  "theme_color": "#e6e8e2",
+  "theme_color": "#111111",
   "lang": "es-AR",
   "icons": [
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
