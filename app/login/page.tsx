@@ -9,7 +9,7 @@ const HAY_CONFIG =
 export default function Login() {
   return (
     <div className="login">
-      <div className="logo"><Logo ancho={196} titulo="MiMundial" /></div>
+      <div className="logo"><Logo ancho={196} /></div>
       <h1>MiMundial</h1>
       <p className="sub">Tu registro de picaditos: quién juega, quién debe, y cómo salió.</p>
 
