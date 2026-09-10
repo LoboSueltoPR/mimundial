@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Logo from './Logo';
 import {
   IconoAmigos,
   IconoCamino,
@@ -39,7 +40,7 @@ export default function Shell({
         <div className="wrap">
           <div className="hd">
             <Link href="/camino" className="brand">
-              <div className="dot"><img src="/icons/icon-192.png" alt="" /></div>
+              <Logo ancho={45} />
               <h1>MiMundial</h1>
             </Link>
 

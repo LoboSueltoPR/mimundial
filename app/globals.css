@@ -23,9 +23,14 @@
    tinta de imprenta, y el azul de la birome — un azul de lapicera,
    violáceo y profundo, no el celeste corporativo de cualquier app.
 
-   El ORO es solo de la copa. Aparece en cuatro lugares contados: el
-   casillero final del camino, la vitrina, el arranque y el ícono. Si
-   aparece en un quinto lugar, deja de significar algo.
+   LA MARCA y LA COPA no son lo mismo. La marca (el monograma MM con la
+   pelota, components/Logo.tsx) dice "esta app": arranque, encabezado,
+   login, íconos. La copa dice "trofeo": el casillero final del camino,
+   la vitrina, GANAMOS. Si las mezclás, ninguna de las dos significa nada.
+
+   El ORO es solo de la copa. Aparece en tres lugares contados: el
+   casillero final del camino, la vitrina y el destello con que termina
+   el arranque. Si aparece en un cuarto lugar, deja de significar algo.
    ============================================================ */
 
 :root{
@@ -50,6 +55,9 @@
   --acento:#26418f; --acento-ink:#ffffff;    /* LA BIROME */
   --acento-suave:#e7eaf5;                    /* su aguada, para fondos */
   --oro:#96690c; --oro-ink:#ffffff;          /* SOLO la copa */
+  /* el mismo oro pero para fondo oscuro: sobre la noche del arranque
+     el #96690c se hunde y no se ve pasar */
+  --oro-claro:#f4cf82;
   --oro-suave:#fbf5e7;
   --oro-txt:#7a5507;                         /* oro legible sobre oro-suave */
 
@@ -130,11 +138,9 @@ header.top:after{
 }
 .hd{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px}
 .brand{display:flex;align-items:center;gap:8px;min-width:0}
-.brand .dot{
-  width:26px;height:26px;border-radius:var(--radio);background:var(--acento);
-  color:var(--acento-ink);display:grid;place-items:center;flex:none;
-}
-.brand .dot img{width:22px;height:22px;object-fit:contain;border-radius:3px}
+/* La marca es apaisada (2.16:1): metida en el cuadradito de 26px queda
+   en 26x12 y no se lee. Va suelta, medida por el alto del renglón. */
+.brand .logoSvg{width:auto;height:21px;color:var(--txt);flex:none}
 .brand h1{font-size:16px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
 
 /* ---------- pestañas: las lengüetas del formulario ---------- */
@@ -938,9 +944,8 @@ label{
 .login{min-height:100dvh;display:flex;flex-direction:column;justify-content:center;
   align-items:center;padding:calc(24px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom));
   text-align:center}
-.login .logo{width:60px;height:60px;border-radius:var(--radio);background:var(--acento);
-  color:var(--acento-ink);display:grid;place-items:center;margin-bottom:16px}
-.login .logo img{width:52px;height:52px;object-fit:contain;border-radius:3px}
+.login .logo{display:grid;place-items:center;margin-bottom:18px}
+.login .logo .logoSvg{width:min(54vw,196px);height:auto;color:var(--txt)}
 .login h1{font-size:29px;font-weight:800;letter-spacing:-.8px}
 .login p.sub{color:var(--dim);font-size:14px;margin-top:6px;margin-bottom:26px;max-width:300px}
 .login .caja{width:100%;max-width:340px}
@@ -969,10 +974,7 @@ label{
   font-size:11px;font-weight:600;color:var(--faint);
   letter-spacing:1.2px;text-transform:uppercase;margin-bottom:14px;
 }
-.inv-marca .dot{
-  width:20px;height:20px;border-radius:2px;background:var(--acento);color:var(--acento-ink);
-  display:grid;place-items:center;
-}
+.inv-marca .logoSvg{width:auto;height:17px;color:var(--dim)}
 .cancha{
   position:relative;overflow:hidden;border-radius:var(--radio);
   background:var(--cesped);
@@ -1041,25 +1043,35 @@ label{
 .arranque.saliendo{opacity:0;transform:scale(1.04);pointer-events:none}
 
 .arranque-cal{
-  position:absolute;width:212px;height:212px;border-radius:50%;
+  position:absolute;width:min(66vw,240px);aspect-ratio:1;border-radius:50%;
   border:1.5px solid rgba(234,242,248,.22);opacity:0;
   animation:calAparece .8s ease-out .15s forwards;
 }
 
-.arranque .copaSvg{color:rgba(234,242,248,.82)}
-.arranque .copaSvg-trazo path{
-  stroke-dasharray:1;stroke-dashoffset:1;
-  animation:trazar .75s ease-out forwards;
-}
-.arranque .copaSvg-trazo path:nth-child(1){animation-delay:.05s}
-.arranque .copaSvg-trazo path:nth-child(2){animation-delay:.28s}
-.arranque .copaSvg-trazo path:nth-child(3){animation-delay:.34s}
-.arranque .copaSvg-trazo path:nth-child(4){animation-delay:.46s}
-.arranque .copaSvg-trazo path:nth-child(5){animation-delay:.54s}
-.arranque .copaSvg-trazo path:nth-child(6){animation-delay:.66s}
+/* La marca entra barrida de izquierda a derecha — el mismo gesto con el
+   que se escribieron las letras, así la palabra no se corta: se contrae.
+   Después el oro la cruza una sola vez y se va. */
+/* marca y copa sueltas sobre la noche, para la guía de estilo. La copa
+   vive esperando que la animen: fuera de una animación hay que encenderle
+   el trazo y el oro a mano o no se ve nada. */
+.marcaDemo{color:#eaf2f8}
+.copaDemo{color:rgba(234,242,248,.82)}
+.copaDemo .copaSvg-relleno{opacity:1}
 
-.arranque .copaSvg-relleno{animation:llenarDeOro .5s ease-out .78s forwards}
-.arranque .copaSvg-brillo{animation:destello .6s ease-out 1s forwards}
+.arranque-marca .logoSvg{
+  grid-area:1/1;
+  width:min(58vw,208px);height:auto;
+}
+.arranque-marca-base{
+  color:#eaf2f8;
+  clip-path:inset(0 100% 0 0);
+  animation:revelarMarca .62s cubic-bezier(.2,.7,.3,1) .08s forwards;
+}
+.arranque-marca-oro{
+  color:var(--oro-claro);
+  opacity:0;clip-path:inset(0 100% 0 0);
+  animation:destello .7s ease-out .78s forwards;
+}
 
 /* La palabra y la copa ocupan el mismo lugar en pantalla: una se
    desvanece justo donde aparece la otra, para que lea como una
@@ -1068,7 +1080,7 @@ label{
   position:relative;display:grid;place-items:center;
   width:min(86vw,340px);height:150px;
 }
-.arranque-palabra, .arranque-copa{grid-area:1/1;display:grid;place-items:center}
+.arranque-palabra, .arranque-marca{grid-area:1/1;display:grid;place-items:center}
 
 /* El wordmark, en Anton de verdad. Cada letra se revela de izquierda a
    derecha, escalonada, como si la fueran escribiendo — y engancha con la
@@ -1099,16 +1111,20 @@ label{
 
 .arranque-palabra{transition:opacity .45s ease, transform .45s ease, filter .45s ease}
 .arranque-palabra.colapsa{opacity:0;transform:scale(.55);filter:blur(7px)}
-.arranque-copa{animation:apareceCopa .4s ease-out both}
+.arranque-marca{animation:apareceMarca .4s ease-out both}
 
-@keyframes trazar{to{stroke-dashoffset:0}}
-@keyframes llenarDeOro{to{opacity:1}}
+@keyframes revelarMarca{to{clip-path:inset(0 0 0 0)}}
 @keyframes calAparece{to{opacity:1}}
-@keyframes apareceCopa{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+@keyframes apareceMarca{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:none}}
+/* El destello: una banda de oro que cruza la marca de izquierda a
+   derecha. En inset() lo que se ve es [left, 100%-right], asi que la
+   banda son los 34 puntos que separan un borde del otro; si los dos
+   valores suman 100 la banda mide cero y el destello no se ve. */
 @keyframes destello{
-  0%{opacity:0;clip-path:inset(0 100% 0 0)}
-  35%{opacity:.5}
-  100%{opacity:0;clip-path:inset(0 0 0 100%)}
+  0%{opacity:0;clip-path:inset(0 100% 0 -34%)}
+  18%{opacity:.85}
+  78%{opacity:.85}
+  100%{opacity:0;clip-path:inset(0 -34% 0 100%)}
 }
 
 /* ---------- transición entre páginas ---------- */
@@ -1140,14 +1156,15 @@ label{
 
 /* Nadie tiene que marearse por una decisión estética. */
 @media (prefers-reduced-motion: reduce){
-  .arranque-cal,.arranque .copaSvg-trazo path,.arranque .copaSvg-relleno,
-  .arranque .copaSvg-brillo,.arranque-copa,.marcaTexto span,
-  .barrido-linea,.barrido-copa,.transicion{
+  .arranque-cal,.arranque-marca,.arranque-marca-base,.arranque-marca-oro,
+  .marcaTexto span,.barrido-linea,.barrido-copa,.transicion{
     animation:none !important;
   }
   .arranque-palabra{transition:none}
-  .arranque .copaSvg-relleno,.arranque-cal,.arranque-copa{opacity:1}
-  .arranque .copaSvg-trazo path{stroke-dashoffset:0}
+  .arranque-cal,.arranque-marca,.arranque-marca-base{opacity:1}
+  .arranque-marca-base{clip-path:none}
+  /* el oro es puro adorno: sin movimiento, directamente no aparece */
+  .arranque-marca-oro{display:none}
   .marcaTexto span{clip-path:none;transform:none}
   .barrido{display:none}
 }

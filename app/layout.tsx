@@ -25,13 +25,16 @@ export const metadata: Metadata = {
   applicationName: 'MiMundial',
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'MiMundial' },
   icons: {
-    icon: [{ url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' }],
+    icon: [
+      { url: '/icons/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
     apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#111111',
+  themeColor: '#e6e8e2',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',

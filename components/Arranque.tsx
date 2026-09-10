@@ -1,17 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Copa from './Copa';
+import Logo from './Logo';
 import { MarcaTexto } from './Marca';
 
-type Fase = 'oculto' | 'letras' | 'copa' | 'saliendo';
+type Fase = 'oculto' | 'letras' | 'marca' | 'saliendo';
 
 /**
  * El arranque: "MIMUNDIAL" se escribe letra por letra y la palabra se
- * cierra en la copa, que se traza en tiza, se llena de oro y brilla.
- * Palabra y copa ocupan el mismo lugar en pantalla: una se desvanece
- * justo donde aparece la otra, para que lea como una transformación y no
- * como dos animaciones pegadas.
+ * cierra sobre sí misma hasta quedar en el monograma — las dos emes y la
+ * pelota. La marca entra barrida de izquierda a derecha, igual que se
+ * escribieron las letras, y un destello de oro la cruza al final.
+ *
+ * Palabra y marca ocupan el mismo lugar en pantalla: una se desvanece
+ * justo donde aparece la otra, para que lea como una contracción de la
+ * palabra en su monograma y no como dos animaciones pegadas.
  *
  * Se ve una vez por sesión del navegador.
  */
@@ -34,13 +37,13 @@ export default function Arranque() {
       setFase('letras');
       const marcas: [() => void, number][] = corto
         ? [
-            [() => setFase('copa'), 80],
+            [() => setFase('marca'), 80],
             [() => setFase('saliendo'), 420],
             [() => setFase('oculto'), 820],
           ]
         : [
             // la palabra termina de escribirse cerca de los 700ms
-            [() => setFase('copa'), 1150],
+            [() => setFase('marca'), 1150],
             [() => setFase('saliendo'), 2600],
             [() => setFase('oculto'), 3100],
           ];
@@ -73,9 +76,12 @@ export default function Arranque() {
           <MarcaTexto estatica={reducido} />
         </div>
 
-        {(fase === 'copa' || fase === 'saliendo') && (
-          <div className="arranque-copa">
-            <Copa tam={120} />
+        {(fase === 'marca' || fase === 'saliendo') && (
+          <div className="arranque-marca">
+            {/* la marca en tiza, barrida de izquierda a derecha */}
+            <Logo ancho={208} clase="arranque-marca-base" titulo="MiMundial" />
+            {/* y el oro que la cruza cuando ya está entera */}
+            <Logo ancho={208} clase="arranque-marca-oro" />
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import type { Amigo, MiParte, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
 import { fechaLarga, plata } from '@/lib/calculos';
 import { comoLlegar } from '@/lib/mapa';
 import { Copita } from '@/components/Copa';
+import Logo from '@/components/Logo';
 import { useConfirmar } from '@/components/Confirmar';
 import BotonGoogle from '@/components/BotonGoogle';
 import Shell from '@/components/Shell';
@@ -345,9 +346,7 @@ export default function Invitacion() {
     <>
       <div className="invitacion">
       <div className="inv-marca">
-        <span className="dot">
-          <Copita tam={11} />
-        </span>{' '}
+        <Logo ancho={38} />
         MiMundial
       </div>
 

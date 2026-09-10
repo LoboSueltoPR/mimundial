@@ -15,6 +15,7 @@
 
 import { useState } from 'react';
 import Copa, { Copita } from '@/components/Copa';
+import Logo from '@/components/Logo';
 import { MarcaTexto } from '@/components/Marca';
 import { MarcaEmpate, MarcaPerdio, MarcaRacha, MarcaTilde } from '@/components/Marcas';
 import BotonGoogle from '@/components/BotonGoogle';
@@ -54,9 +55,7 @@ export default function Taller() {
         <div className="wrap">
           <div className="hd">
             <span className="brand">
-              <span className="dot">
-                <Copita tam={15} />
-              </span>
+              <Logo ancho={45} />
               <h1>MiMundial</h1>
             </span>
             <span className="avatarBtn on">A</span>
@@ -643,9 +642,7 @@ export default function Taller() {
         {/* ---------------- INVITACIÓN ---------------- */}
         <Bloque titulo="Invitación pública">
           <div className="inv-marca">
-            <span className="dot">
-              <Copita tam={11} />
-            </span>{' '}
+            <Logo ancho={38} />
             MiMundial
           </div>
           <div className="cancha">
@@ -775,7 +772,24 @@ export default function Taller() {
             }}
           >
             <MarcaTexto estatica />
-            <Copa tam={90} />
+            <Logo ancho={200} clase="marcaDemo" titulo="MiMundial" />
+          </div>
+          <div className="nota">
+            La marca dice <b>esta app</b>: arranque, encabezado, login, íconos.
+            La copa de abajo dice <b>trofeo</b>: el casillero final del camino,
+            la vitrina, GANAMOS. No son intercambiables.
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              background: '#0a1424',
+              borderRadius: 4,
+              padding: 24,
+              display: 'grid',
+              placeItems: 'center',
+            }}
+          >
+            <Copa tam={90} clase="copaDemo" />
           </div>
           <button
             className="btn wide"

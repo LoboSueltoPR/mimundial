@@ -1,6 +1,6 @@
 'use client';
 
-import { Copita } from '@/components/Copa';
+import Logo from '@/components/Logo';
 import BotonGoogle from '@/components/BotonGoogle';
 
 const HAY_CONFIG =
@@ -9,7 +9,7 @@ const HAY_CONFIG =
 export default function Login() {
   return (
     <div className="login">
-      <div className="logo"><img src="/logo-mimundial.png" alt="Mi Mundial" /></div>
+      <div className="logo"><Logo ancho={196} titulo="MiMundial" /></div>
       <h1>MiMundial</h1>
       <p className="sub">Tu registro de picaditos: quién juega, quién debe, y cómo salió.</p>
 
