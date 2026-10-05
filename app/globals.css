@@ -700,6 +700,21 @@ label{
 }
 .ganador button.on{background:var(--acento-suave);border-color:var(--acento);color:var(--acento)}
 
+/* ---------- votar los equipos (0026) ----------
+   Tres repartos apilados. La opción votada se marca con la birome,
+   igual que el agarrado del emparejar: es "lo tuyo" en esta pantalla. */
+.opcionesVoto{display:flex;flex-direction:column;gap:12px}
+.opcionVoto{border:1px solid var(--line);border-radius:var(--radio);padding:10px;
+  background:var(--surface-2)}
+.opcionVoto.elegida{border-color:var(--acento);background:var(--acento-suave)}
+.ov-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:9px;min-height:30px}
+.ov-head b{font-size:12.5px;text-transform:uppercase;letter-spacing:.4px}
+.ov-head .btn{flex:none}
+.votoAvance{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.votoAvance b{font-family:var(--fuente-dato);font-size:20px}
+.votoAvance span{font-size:12.5px;color:var(--dim)}
+
 /* ---------- el historial en el perfil del otro ----------
    Reusa .item (la fila con la columna de fecha) para que se lea igual
    que las listas de Partidos. La marca del resultado va donde en esas

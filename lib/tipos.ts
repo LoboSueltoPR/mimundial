@@ -66,6 +66,29 @@ export type Equipos = {
   n: number;
 };
 
+/**
+ * La votación de equipos (0026), tal como la ve quien entra por el link.
+ * Nunca trae cuántos votos lleva cada opción: los votos son secretos y
+ * en un grupo chico el conteo alcanza para deducir quién votó qué.
+ */
+export type VotacionPublica = {
+  abierta: boolean;
+  /** Las tres opciones, sin los ids de nadie (`equipos_publicos`). */
+  opciones: Equipos[];
+  ganadora: number | null;
+  /** Cuántos pueden votar: los anotados con cuenta o con navegador. */
+  total: number;
+  votaron: number;
+  puedo_votar: boolean;
+  /** Mi voto y solo el mío. null si todavía no voté. */
+  mi_voto: number | null;
+};
+
+/** Lo mismo para el anfitrión, más quién falta votar (nunca qué votó cada uno). */
+export type VotacionAdmin = VotacionPublica & {
+  faltan: { nombre: string; puede: boolean }[];
+};
+
 /** Lo que ve alguien que entra por el link, sin cuenta. Nunca trae plata. */
 export type PartidoPublico = {
   id: string;

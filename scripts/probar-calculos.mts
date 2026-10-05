@@ -14,6 +14,7 @@ import {
   debeDe,
   estadoDesafio,
   faltanEnLado,
+  firmaEquipos,
   intercambiar,
   ladoDeCuenta,
   nombreDeLado,
@@ -26,6 +27,7 @@ import {
   sortear,
   totalDebe,
   totalPagado,
+  tresOpciones,
 } from '../lib/calculos.ts';
 import type { Jugador, Partido, Resultado } from '../lib/tipos.ts';
 
@@ -88,6 +90,23 @@ chequear('con impar queda 3 y 2', [impar.a.length, impar.b.length], [3, 2]);
 /* el sorteo tiene que variar entre corridas */
 const firmas = new Set(Array.from({ length: 30 }, () => sortear(js).a.map((x) => x.label).join()));
 chequear('el sorteo no siempre da lo mismo', firmas.size > 1, true);
+
+/* ---------- tres opciones para votar ---------- */
+const tres = tresOpciones(js)!;
+chequear('salen tres opciones', tres.length, 3);
+chequear('las tres son repartos distintos', new Set(tres.map(firmaEquipos)).size, 3);
+chequear(
+  'en cada opción están todos',
+  tres.map((o) => [...o.a, ...o.b].map((x) => x.label).sort().join()),
+  Array(3).fill(cabezasLista(js).map((x) => x.label).sort().join()),
+);
+chequear(
+  'pecheras cambiadas es el mismo reparto',
+  firmaEquipos({ a: eq.b, b: eq.a, n: eq.n }),
+  firmaEquipos(eq),
+);
+chequear('con 3 cabezas alcanza justo', tresOpciones(js.slice(0, 3))?.length, 3);
+chequear('con 2 cabezas no hay tres repartos', tresOpciones(js.slice(0, 2)), null);
 
 /* ---------- retocar los equipos a mano ---------- */
 const base = { a: cabezasLista(js).slice(0, 6), b: cabezasLista(js).slice(6), n: 12 };

@@ -11,6 +11,7 @@ import type {
   Partido,
   PartidoConCancha,
   Resultado,
+  VotacionAdmin,
 } from '@/lib/tipos';
 import { comoLlegar } from '@/lib/mapa';
 import {
@@ -31,6 +32,7 @@ import {
   sortear,
   totalDebe,
   totalPagado,
+  tresOpciones,
 } from '@/lib/calculos';
 import { useConfirmar } from '@/components/Confirmar';
 import { Copita } from '@/components/Copa';
@@ -41,6 +43,7 @@ import { ColumnaEquipo, type Seleccion } from '@/components/Equipos';
 import Cruce from '@/components/Cruce';
 import ArmarEquipo from '@/components/ArmarEquipo';
 import CompartirLink from '@/components/CompartirLink';
+import VotarEquipos from '@/components/VotarEquipos';
 import { cabezasDeLado, estadoDesafio, nombreDeLado, porLado } from '@/lib/calculos';
 
 type Vista = 'anotados' | 'equipos' | 'desafio' | 'plata' | 'resultado';
@@ -62,22 +65,29 @@ export default function DetallePartido() {
   const [enviandoSolicitud, setEnviandoSolicitud] = useState<string | null>(null);
   const [perfilAbierto, setPerfilAbierto] = useState<{ id: string; nombre: string } | null>(null);
   const [armando, setArmando] = useState(false);
+  /** La votación de equipos (0026). Viene por RPC y no por la tabla:
+   *  los votos son secretos y la tabla no se lee ni siendo el dueño. */
+  const [votacion, setVotacion] = useState<VotacionAdmin | null>(null);
 
   const cargar = useCallback(async () => {
     const supabase = crearCliente();
-    const { data, error } = await supabase
-      .from('partidos')
-      // `canchas` embebe por el único FK partidos.cancha_id, sin ambigüedad
-      // (jugadores sí la tiene por el FK de `puso`, de ahí el nombre a dedo).
-      .select('*, jugadores!jugadores_partido_id_fkey(*), canchas(*)')
-      .eq('id', id)
-      .single();
+    const [{ data, error }, { data: vot }] = await Promise.all([
+      supabase
+        .from('partidos')
+        // `canchas` embebe por el único FK partidos.cancha_id, sin ambigüedad
+        // (jugadores sí la tiene por el FK de `puso`, de ahí el nombre a dedo).
+        .select('*, jugadores!jugadores_partido_id_fkey(*), canchas(*)')
+        .eq('id', id)
+        .single(),
+      supabase.rpc('votacion_del_partido', { p_partido_id: id }),
+    ]);
 
     setCargando(false);
     if (error) {
       setError(error.message);
       return;
     }
+    setVotacion((vot as VotacionAdmin | null) ?? null);
     const { jugadores, ...resto } = data as PartidoConCancha & { jugadores: Jugador[] };
     setP(resto as PartidoConCancha);
     setJs([...(jugadores ?? [])].sort((a, b) => a.orden - b.orden));
@@ -237,6 +247,68 @@ export default function DetallePartido() {
     router.push('/partidos');
   }
 
+  /* ---------------- votar los equipos (0026) ----------------
+     Todo pasa por RPC y después se recarga: abrir y cerrar reescriben
+     `equipos` del lado del servidor, y adivinar el resultado acá sería
+     tener dos verdades — el mismo criterio que `ArmarEquipo`. */
+
+  async function rpcVotacion(fn: string, args: Record<string, unknown>, falla: string) {
+    setError(null);
+    const { data, error } = await crearCliente().rpc(fn, args);
+    const r = data as { ok: boolean; error?: string } | null;
+    if (error || !r?.ok) setError(r?.error || error?.message || falla);
+    await cargar();
+  }
+
+  async function abrirVotacion() {
+    const opciones = tresOpciones(js);
+    if (!opciones) {
+      setError('Con tan poca gente no salen tres repartos distintos.');
+      return;
+    }
+    if (
+      p?.equipos &&
+      !(await confirmar('Se borran los equipos que hay ahora y votan entre tres nuevos. ¿Dale?', {
+        boton: 'Que voten',
+      }))
+    )
+      return;
+    await rpcVotacion(
+      'abrir_votacion_equipos',
+      { p_partido_id: id, p_opciones: opciones },
+      'No se pudo abrir la votación.',
+    );
+  }
+
+  async function cerrarVotacion() {
+    if (
+      !(await confirmar('Se cierra ya y gana la opción más votada hasta ahora. ¿Cerrar?', {
+        boton: 'Cerrar',
+      }))
+    )
+      return;
+    await rpcVotacion('cerrar_votacion_equipos', { p_partido_id: id }, 'No se pudo cerrar.');
+  }
+
+  async function cancelarVotacion() {
+    if (
+      !(await confirmar('Se borran las opciones y los votos. ¿Cancelar la votación?', {
+        danger: true,
+        boton: 'Cancelar votación',
+      }))
+    )
+      return;
+    await rpcVotacion('cancelar_votacion_equipos', { p_partido_id: id }, 'No se pudo cancelar.');
+  }
+
+  async function votar(opcion: number) {
+    await rpcVotacion(
+      'votar_equipos',
+      { tok: p!.token, p_opcion: opcion, p_claim: null },
+      'No se pudo votar.',
+    );
+  }
+
   /* ---------------- vista ---------------- */
 
   return (
@@ -340,6 +412,11 @@ export default function DetallePartido() {
         <EquiposVista
           js={js}
           equipos={p.equipos}
+          votacion={votacion}
+          onVotacion={abrirVotacion}
+          onVotar={votar}
+          onCerrarVotacion={cerrarVotacion}
+          onCancelarVotacion={cancelarVotacion}
           onSortear={() => actualizarPartido({ equipos: sortear(js) })}
           onBorrar={() => actualizarPartido({ equipos: null, equipo_ganador: null })}
           onCambiar={(eq) => actualizarPartido({ equipos: eq })}
@@ -810,18 +887,67 @@ function DesafioVista({
 function EquiposVista({
   js,
   equipos,
+  votacion,
+  onVotacion,
+  onVotar,
+  onCerrarVotacion,
+  onCancelarVotacion,
   onSortear,
   onBorrar,
   onCambiar,
 }: {
   js: Jugador[];
   equipos: Equipos | null;
+  votacion: VotacionAdmin | null;
+  onVotacion: () => Promise<void>;
+  onVotar: (opcion: number) => Promise<void>;
+  onCerrarVotacion: () => Promise<void>;
+  onCancelarVotacion: () => Promise<void>;
   onSortear: () => void;
   onBorrar: () => void;
   onCambiar: (eq: Equipos) => void;
 }) {
   const lista = cabezasLista(js);
   const [sel, setSel] = useState<Seleccion | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+
+  /** Un solo toque a la vez: votar dos veces seguidas por nervios no
+   *  pasa en la base (un voto por fila), pero el botón no lo promete. */
+  async function con(accion: () => Promise<void>) {
+    if (ocupado) return;
+    setOcupado(true);
+    await accion();
+    setOcupado(false);
+  }
+
+  /* Con menos de 3 cabezas no hay tres repartos distintos (con 2 hay
+     uno solo): el botón ni aparece en vez de fallar al tocarlo. */
+  const sePuedeVotar = lista.length >= 3;
+  const botonVotacion = sePuedeVotar && (
+    <button
+      className="btn wide"
+      style={{ marginTop: 10 }}
+      onClick={() => {
+        setSel(null);
+        con(onVotacion);
+      }}
+      disabled={ocupado}
+    >
+      Sortear 3 opciones y que voten
+    </button>
+  );
+
+  if (votacion?.abierta)
+    return (
+      <VotacionAnfitrion
+        v={votacion}
+        cabezasAhora={lista.length}
+        ocupado={ocupado}
+        onVotar={(i) => con(() => onVotar(i))}
+        onCerrar={() => con(onCerrarVotacion)}
+        onCancelar={() => con(onCancelarVotacion)}
+      />
+    );
 
   if (lista.length < 2)
     return (
@@ -847,8 +973,16 @@ function EquiposVista({
         <button className="btn pri wide" style={{ marginTop: 14 }} onClick={onSortear}>
           Sortear equipos
         </button>
+        {botonVotacion}
         <div className="nota">
           Los invitados entran al bombo como uno más — no van necesariamente con el que los trajo.
+          {sePuedeVotar && (
+            <>
+              {' '}
+              Si no querés decidir vos, sorteá <b>tres</b> repartos y que elijan los que juegan: les
+              llega un aviso y cada uno vota uno.
+            </>
+          )}
         </div>
       </>
     );
@@ -948,9 +1082,114 @@ function EquiposVista({
           Borrar
         </button>
       </div>
+      {botonVotacion}
       <div className="nota">
         El sorteo queda guardado, con los cambios a mano y todo. Si sumás o sacás gente, te aviso
         para que vuelvas a sortear.
+      </div>
+    </>
+  );
+}
+
+/* ================= VOTACIÓN (anfitrión) =================
+   Lo que ve el que abrió la votación mientras está abierta: las tres
+   opciones (y su voto, si juega), cuántos votaron y QUIÉN falta. Qué
+   votó cada uno no lo ve nadie, ni él: la base no lo devuelve.
+   ======================================================== */
+
+function VotacionAnfitrion({
+  v,
+  cabezasAhora,
+  ocupado,
+  onVotar,
+  onCerrar,
+  onCancelar,
+}: {
+  v: VotacionAdmin;
+  cabezasAhora: number;
+  ocupado: boolean;
+  onVotar: (i: number) => void;
+  onCerrar: () => void;
+  onCancelar: () => void;
+}) {
+  const mayoria = Math.floor(v.total / 2) + 1;
+  const pueden = v.faltan.filter((f) => f.puede);
+  const sinCuenta = v.faltan.filter((f) => !f.puede);
+  /* Las opciones se armaron con la lista de ese momento: alguien que se
+     sumó después no está en ninguna. Mismo aviso que el del sorteo. */
+  const cambio = (v.opciones[0]?.n ?? cabezasAhora) !== cabezasAhora;
+
+  return (
+    <>
+      <div className="sec">Votación de equipos</div>
+      <div className="card" style={{ padding: '12px 13px' }}>
+        <div className="votoAvance">
+          <b>
+            {v.votaron}/{v.total}
+          </b>
+          <span>votaron · se cierra sola cuando una opción llega a {mayoria}</span>
+        </div>
+      </div>
+
+      {cambio && (
+        <div className="aviso-cambio" style={{ marginTop: 10 }}>
+          La lista cambió desde que abriste la votación (ahora son {cabezasAhora} y las opciones
+          tienen {v.opciones[0]?.n}). Conviene cancelarla y abrir otra.
+        </div>
+      )}
+
+      <div className="sec">Faltan votar · {pueden.length}</div>
+      <div className="card">
+        {pueden.length === 0 ? (
+          <div className="vacio">Ya votaron todos los que pueden.</div>
+        ) : (
+          pueden.map((f, i) => (
+            <div className="jug" key={i}>
+              <Avatar nombre={f.nombre} url={null} />
+              <span className="nom">
+                <b>{f.nombre}</b>
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+      {sinCuenta.length > 0 && (
+        <div className="nota">
+          <b>{sinCuenta.map((f) => f.nombre).join(', ')}</b>{' '}
+          {sinCuenta.length === 1 ? 'no puede votar: lo cargaste' : 'no pueden votar: los cargaste'} a
+          mano y la app no sabe quién {sinCuenta.length === 1 ? 'es' : 'son'}. Enganchalos en{' '}
+          <b>Anotados → Quién es quién</b> y pasan a votar.
+        </div>
+      )}
+
+      <div className="sec">Las opciones</div>
+      <VotarEquipos
+        opciones={v.opciones}
+        miVoto={v.mi_voto}
+        votando={ocupado}
+        onVotar={v.puedo_votar ? onVotar : undefined}
+      />
+      <div className="nota">
+        {v.puedo_votar
+          ? v.mi_voto === null
+            ? 'Vos también votás, como uno más.'
+            : 'Ya votaste. El voto no se cambia.'
+          : 'No estás anotado en este partido, así que no votás.'}{' '}
+        Los votos son secretos: ves quién falta, no qué votó cada uno.
+      </div>
+
+      <div className="row2" style={{ marginTop: 14 }}>
+        <button className="btn pri" onClick={onCerrar} disabled={ocupado || v.votaron === 0}>
+          Cerrar ya
+        </button>
+        <button className="btn danger" onClick={onCancelar} disabled={ocupado}>
+          Cancelar
+        </button>
+      </div>
+      <div className="nota">
+        <b>Cerrar ya</b> elige la más votada hasta ahora. Si votan todos y ninguna llega a la
+        mayoría, gana la más votada; si empatan, decide el azar entre esas. La que gana queda como
+        los equipos del partido y la podés retocar a mano como siempre.
       </div>
     </>
   );

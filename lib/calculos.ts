@@ -71,6 +71,37 @@ export function sortear(jugadores: Jugador[]): Equipos {
   return { a: lista.slice(0, mitad), b: lista.slice(mitad), n: lista.length };
 }
 
+/**
+ * La firma de un reparto, para saber si dos sorteos son el mismo. Claros
+ * y oscuros no importan — pecheras cambiadas es el mismo partido — y los
+ * invitados de uno son intercambiables entre sí: por eso se compara por
+ * `label` ordenado y no por posición.
+ */
+export function firmaEquipos(eq: Equipos): string {
+  const lado = (arr: Cabeza[]) => arr.map((c) => c.label).sort().join('|');
+  return [lado(eq.a), lado(eq.b)].sort().join(' vs ');
+}
+
+/**
+ * Tres sorteos DISTINTOS para votar. Con pocas cabezas no hay tres
+ * repartos posibles (con 2 hay uno solo), y ahí devuelve null en vez de
+ * ofrecer la misma opción repetida. El tope de intentos es por eso
+ * mismo: con 3 cabezas hay exactamente 3 repartos y el azar tarda en
+ * encontrarlos, pero no infinito.
+ */
+export function tresOpciones(jugadores: Jugador[]): Equipos[] | null {
+  const opciones: Equipos[] = [];
+  const vistas = new Set<string>();
+  for (let intento = 0; intento < 200 && opciones.length < 3; intento++) {
+    const eq = sortear(jugadores);
+    const firma = firmaEquipos(eq);
+    if (vistas.has(firma)) continue;
+    vistas.add(firma);
+    opciones.push(eq);
+  }
+  return opciones.length === 3 ? opciones : null;
+}
+
 /* ------------------------------------------------------------
    Retocar el sorteo a mano
 

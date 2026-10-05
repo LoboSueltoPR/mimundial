@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
-import type { Amigo, MiParte, PartidoPublico, RespuestaRPC } from '@/lib/tipos';
+import type { Amigo, MiParte, PartidoPublico, RespuestaRPC, VotacionPublica } from '@/lib/tipos';
 import { fechaLarga, plata } from '@/lib/calculos';
 import { comoLlegar } from '@/lib/mapa';
 import { Copita } from '@/components/Copa';
@@ -15,6 +15,7 @@ import PerfilModal from '@/components/PerfilModal';
 import Avatar from '@/components/Avatar';
 import EquiposMirar from '@/components/Equipos';
 import BotonPlaca from '@/components/BotonPlaca';
+import VotarEquipos from '@/components/VotarEquipos';
 
 /** El claim vive solo en este navegador: es lo único que te deja editar lo tuyo. */
 function claimGuardado(token: string): string {
@@ -69,6 +70,13 @@ export default function Invitacion() {
    *  porque es lo unico que depende de quien pregunta (ver 0015). */
   const [miParte, setMiParte] = useState<MiParte | null>(null);
   const [aliasCopiado, setAliasCopiado] = useState(false);
+  /** La votación de equipos, si hay (0026). Aparte por lo mismo que
+   *  `miParte`: depende de quién pregunta (tu voto es solo tuyo). */
+  const [votacion, setVotacion] = useState<VotacionPublica | null>(null);
+  const [votando, setVotando] = useState(false);
+  /** Aparte de `error`: ese se pinta adentro del bloque de anotarse, que
+   *  no está cuando las anotaciones se cerraron — y votar sigue andando. */
+  const [errorVoto, setErrorVoto] = useState<string | null>(null);
   /** cargar() y el fetch del perfil corren en paralelo y ninguno espera al
    *  otro: esta ref evita que el nombre de perfil pise el de la anotación
    *  ya existente, gane quien gane la carrera. */
@@ -79,9 +87,10 @@ export default function Invitacion() {
     /* Dos llamadas: el partido (igual para todos) y lo mio (depende de
        quien pregunta). El claim se LEE, no se crea: al que solo mira no
        hace falta reservarle identidad. */
-    const [{ data, error }, { data: parte }] = await Promise.all([
+    const [{ data, error }, { data: parte }, { data: vot }] = await Promise.all([
       supabase.rpc('ver_partido_por_token', { tok: token }),
       supabase.rpc('mi_parte', { tok: token, p_claim: claimLeido(token) }),
+      supabase.rpc('votacion_por_token', { tok: token, p_claim: claimLeido(token) }),
     ]);
     setCargando(false);
     if (error) {
@@ -89,6 +98,7 @@ export default function Invitacion() {
       return;
     }
     setMiParte((parte as MiParte | null) ?? null);
+    setVotacion((vot as VotacionPublica | null) ?? null);
     const partido = data as PartidoPublico | null;
     setP(partido);
     // El logueado que ya tiene fila acá se reconoce por la cuenta, sin
@@ -228,6 +238,25 @@ export default function Invitacion() {
       setError(r?.error || error?.message || 'No se pudo avisar.');
       return;
     }
+    cargar();
+  }
+
+  /**
+   * Un voto, una vez. Que no se pueda cambiar lo garantiza la base (un
+   * voto por fila), no este botón. Se recarga entero porque el voto
+   * puede haber cerrado la votación, y ahí los equipos ya están.
+   */
+  async function votar(opcion: number) {
+    setErrorVoto(null);
+    setVotando(true);
+    const { data, error } = await crearCliente().rpc('votar_equipos', {
+      tok: token,
+      p_opcion: opcion,
+      p_claim: claimLeido(token),
+    });
+    setVotando(false);
+    const r = data as RespuestaRPC | null;
+    if (error || !r?.ok) setErrorVoto(r?.error || error?.message || 'No se pudo votar.');
     cargar();
   }
 
@@ -414,6 +443,35 @@ export default function Invitacion() {
         <div className="msg info" style={{ marginTop: 14 }}>
           El anfitrión cerró las anotaciones.
         </div>
+      )}
+
+      {/* La votación de equipos. Va arriba de todo porque es a lo que
+          viene el que toca el push de "Votá los equipos". Se vota acá
+          con o sin cuenta: la identidad es la misma que la de la plata
+          (cuenta o navegador). El que mira sin estar anotado ve las
+          opciones, pero no tiene voto. */}
+      {votacion?.abierta && (
+        <>
+          <div className="sec">
+            Votá los equipos · {votacion.votaron}/{votacion.total} votaron
+          </div>
+          <VotarEquipos
+            opciones={votacion.opciones}
+            miVoto={votacion.mi_voto}
+            votando={votando}
+            onVotar={votacion.puedo_votar ? votar : undefined}
+          />
+          {errorVoto && <div className="msg err">{errorVoto}</div>}
+          <div className="nota">
+            {!votacion.puedo_votar
+              ? 'Votan los anotados. Si jugás, anotate y después votá.'
+              : votacion.mi_voto === null
+                ? 'Elegí una. Se vota una sola vez y no se cambia.'
+                : `Votaste la opción ${votacion.mi_voto + 1}.`}{' '}
+            Se cierra sola cuando una opción junta más de la mitad de los votos. Los votos son
+            secretos.
+          </div>
+        </>
       )}
 
       {/* El link del lado rival, todavía sin dueño. Va antes que
