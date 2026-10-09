@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { crearCliente } from '@/lib/supabase/client';
 import type {
   Amigo,
   Equipos,
+  InvitadoDet,
   Jugador,
   Lado,
   Partido,
@@ -18,10 +19,13 @@ import {
   cabezas,
   cabezasLista,
   color,
+  cubiertoPorInvitados,
   debeDe,
+  etiquetaCabeza,
   fechaLarga,
   iniciales,
   intercambiar,
+  invitadosDe,
   ladoDeCuenta,
   pagadoDe,
   pagadoEfectivo,
@@ -427,6 +431,7 @@ export default function DetallePartido() {
           p={p}
           js={js}
           onPago={(jid, monto) => actualizarJugador(jid, { pagado: monto })}
+          onInvitados={(jid, det) => actualizarJugador(jid, { invitados_det: det })}
           onPuso={(jid) => actualizarPartido({ puso: jid })}
           onCosto={(costo) => actualizarPartido({ costo })}
           onAlias={(alias_pago) => actualizarPartido({ alias_pago })}
@@ -523,6 +528,37 @@ function Invitar({
 
 /* ================= ANOTADOS ================= */
 
+/** Se guarda al salir del campo (o con Enter), no en cada tecla. Quien lo
+ *  usa le pone `key={valor}`: si el nombre cambia desde afuera, se remonta. */
+function NombreInvitado({
+  valor,
+  placeholder,
+  onGuardar,
+}: {
+  valor: string | null;
+  placeholder: string;
+  onGuardar: (nombre: string | null) => void;
+}) {
+  const [texto, setTexto] = useState(valor ?? '');
+
+  function guardar() {
+    const limpio = texto.trim().slice(0, 40) || null;
+    if (limpio !== (valor ?? null)) onGuardar(limpio);
+  }
+
+  return (
+    <input
+      className="invNombre"
+      value={texto}
+      placeholder={placeholder}
+      maxLength={40}
+      onChange={(e) => setTexto(e.target.value)}
+      onBlur={guardar}
+      onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+    />
+  );
+}
+
 function Anotados({
   js,
   amigos,
@@ -573,12 +609,20 @@ function Anotados({
         ) : (
           js.map((j) => {
             const inv = j.invitados || 0;
-            n++;
-            const etiqueta = inv > 0 ? `${n}–${n + inv}` : String(n);
+            const invs = invitadosDe(j);
+            const etiqueta = String(++n);
+            const desde = n;
             n += inv;
             const esOtroLogueado = !!(j.user_id && j.user_id !== miId);
+            /* Al bajar el conteo se recorta también la lista: el trigger
+               de 0027 lo hace en la base, esto mantiene igual la pantalla. */
+            const conInv = (cuantos: number): Partial<Jugador> => ({
+              invitados: cuantos,
+              invitados_det: invitadosDe({ invitados: cuantos, invitados_det: invs }),
+            });
             return (
-              <div className="jug" key={j.id}>
+              <Fragment key={j.id}>
+              <div className="jug">
                 <span className="num">{etiqueta}</span>
                 <span
                   className="jug-clic"
@@ -605,18 +649,35 @@ function Anotados({
                 </span>
                 <span className="inv">
                   <button
-                    onClick={() => onInv(j.id, { invitados: Math.max(0, inv - 1) })}
+                    onClick={() => onInv(j.id, conInv(Math.max(0, inv - 1)))}
                     disabled={inv === 0}
                   >
                     −
                   </button>
                   <span>+{inv}</span>
-                  <button onClick={() => onInv(j.id, { invitados: inv + 1 })}>+</button>
+                  <button onClick={() => onInv(j.id, conInv(inv + 1))}>+</button>
                 </span>
                 <button className="quitar" onClick={() => onQuitar(j)} title="Sacar">
                   ×
                 </button>
               </div>
+              {invs.map((x, i) => (
+                <div className="jug invRow" key={`${j.id}-${i}`}>
+                  <span className="num">{desde + i + 1}</span>
+                  <NombreInvitado
+                    key={x.nombre ?? ''}
+                    valor={x.nombre}
+                    placeholder={`Invitado de ${j.nombre.split(' ')[0]}`}
+                    onGuardar={(nombre) =>
+                      onInv(j.id, {
+                        invitados_det: invs.map((y, k) => (k === i ? { ...y, nombre } : y)),
+                      })
+                    }
+                  />
+                  <span className="invDe">inv.</span>
+                </div>
+              ))}
+              </Fragment>
             );
           })
         )}
@@ -1046,7 +1107,7 @@ function EquiposVista({
       {agarrado ? (
         <div className="agarre">
           <span className="ag-quien">
-            <b>{agarrado.inv ? 'Inv. de ' + agarrado.de : agarrado.label}</b>
+            <b>{etiquetaCabeza(agarrado)}</b>
             <small>Tocá a uno del otro equipo para cambiarlos</small>
           </span>
           <button className="btn sm" onClick={pasarSel}>
@@ -1201,6 +1262,7 @@ function PlataVista({
   p,
   js,
   onPago,
+  onInvitados,
   onPuso,
   onCosto,
   onAlias,
@@ -1208,6 +1270,7 @@ function PlataVista({
   p: Partido;
   js: Jugador[];
   onPago: (jid: string, monto: number) => void;
+  onInvitados: (jid: string, det: InvitadoDet[]) => void;
   onPuso: (jid: string | null) => void;
   onCosto: (costo: number) => void;
   onAlias: (alias: string | null) => void;
@@ -1236,7 +1299,9 @@ function PlataVista({
       });
       return;
     }
-    const v = prompt(`¿Cuánto puso ${j.nombre}? (debe ${plata(debeDe(p.costo, js, j))})`, String(pagadoDe(j)));
+    // lo que pagaron sus invitados aparte no es de él: le pedimos el resto
+    const resto = debeDe(p.costo, js, j) - cubiertoPorInvitados(p.costo, js, j);
+    const v = prompt(`¿Cuánto puso ${j.nombre}? (debe ${plata(resto)})`, String(pagadoDe(j)));
     if (v === null) return;
     const num = Number(String(v).replace(/[^\d.-]/g, ''));
     onPago(j.id, isNaN(num) ? 0 : Math.max(0, num));
@@ -1291,6 +1356,12 @@ function PlataVista({
           const saldo = d - pg;
           const listo = saldo <= 0;
           const inv = j.invitados || 0;
+          const invs = invitadosDe(j);
+          const porInv = cubiertoPorInvitados(p.costo, js, j);
+          // el círculo del jugador salda lo SUYO: lo de sus invitados que
+          // pagaron aparte ya está contado en `pg`
+          const resto = d - porInv;
+          const cuota = Math.round(porCabeza(p.costo, js));
 
           /* Dijo que transfirió y todavía no lo confirmaste. No es lo
              mismo que haber pagado — por eso es un aviso y no un tilde
@@ -1303,16 +1374,19 @@ function PlataVista({
               ? `pagó ${plata(d)}`
               : aviso
                 ? `dice que te transfirió ${plata(d - pg)} · confirmá con el círculo`
-                : pg > 0
-                  ? `puso ${plata(pg)} de ${plata(d)}`
+                : pagadoDe(j) > 0
+                  ? `puso ${plata(pagadoDe(j))} de ${plata(resto)}`
+                  : porInv > 0
+                    ? `debe ${plata(saldo)} · sus invitados pagaron ${plata(porInv)}`
                   : `debe ${plata(d)}`;
 
           return (
-            <div className={`pago${aviso ? ' avisado' : ''}`} key={j.id}>
+            <Fragment key={j.id}>
+            <div className={`pago${aviso ? ' avisado' : ''}`}>
               <button
                 className={`tick ${listo ? 'ok' : ''}`}
                 disabled={esPagador}
-                onClick={() => onPago(j.id, pagadoDe(j) >= d ? 0 : d)}
+                onClick={() => onPago(j.id, pagadoDe(j) >= resto ? 0 : resto)}
               >
                 {listo ? '✓' : '·'}
               </button>
@@ -1329,6 +1403,32 @@ function PlataVista({
                 {listo ? plata(d) : plata(saldo)}
               </span>
             </div>
+            {/* Cada invitado con su círculo: muchas veces el que paga es él
+                y no el que lo trajo. Marcarlo le cubre una cabeza a ese
+                jugador. Lo marca solo el organizador, como el resto. */}
+            {!esPagador &&
+              invs.map((x, i) => (
+                <div className="pago invRow" key={`${j.id}-${i}`}>
+                  <button
+                    className={`tick ${x.pagado ? 'ok' : ''}`}
+                    title={x.pagado ? 'Pagó aparte' : 'Marcar que pagó aparte'}
+                    onClick={() =>
+                      onInvitados(
+                        j.id,
+                        invs.map((y, k) => (k === i ? { ...y, pagado: !y.pagado } : y)),
+                      )
+                    }
+                  >
+                    {x.pagado ? '✓' : '·'}
+                  </button>
+                  <span className="nom">
+                    <b>{x.nombre || `Invitado ${i + 1} de ${j.nombre.split(' ')[0]}`}</b>
+                    <small>{x.pagado ? 'pagó aparte' : `a cuenta de ${j.nombre.split(' ')[0]}`}</small>
+                  </span>
+                  <span className={`monto ${x.pagado ? 'ok' : ''}`}>{plata(cuota)}</span>
+                </div>
+              ))}
+            </Fragment>
           );
         })}
       </div>

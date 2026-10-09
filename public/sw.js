@@ -5,7 +5,7 @@
  * 'push' ya esta, falta el backend que las mande).
  */
 
-const CACHE = 'mimundial-v2';
+const CACHE = 'mimundial-v3';
 const SHELL = ['/', '/camino', '/manifest.json', '/icons/icon-192.png'];
 
 self.addEventListener('install', (evento) => {

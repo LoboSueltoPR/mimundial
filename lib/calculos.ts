@@ -1,4 +1,4 @@
-import type { Cabeza, Equipos, Jugador, Lado, Partido, Resultado } from './tipos';
+import type { Cabeza, Equipos, InvitadoDet, Jugador, Lado, Partido, Resultado } from './tipos';
 
 /* ============================================================
    Cabezas y plata
@@ -24,9 +24,42 @@ export function pagadoDe(j: Jugador): number {
   return Math.max(0, j.pagado || 0);
 }
 
-/** El que puso la plata adelanto todo: su parte ya esta cubierta. */
+/* ------------------------------------------------------------
+   Invitados con nombre (0027)
+
+   `invitados_det` es posicional y puede venir corto: lo que falta es
+   "sin nombre, sin pagar". Solo cuentan las posiciones < invitados.
+   ------------------------------------------------------------ */
+
+/** Exactamente `invitados` renglones, rellenando los que faltan. */
+export function invitadosDe(j: Pick<Jugador, 'invitados' | 'invitados_det'>): InvitadoDet[] {
+  const det = Array.isArray(j.invitados_det) ? j.invitados_det : [];
+  return Array.from({ length: j.invitados || 0 }, (_, i) => ({
+    nombre: det[i]?.nombre?.trim() || null,
+    pagado: !!det[i]?.pagado,
+  }));
+}
+
+/** Cuántos de sus invitados pagaron aparte. */
+export function invitadosPagados(j: Jugador): number {
+  return invitadosDe(j).filter((x) => x.pagado).length;
+}
+
+/** Lo que le cubren a `j` los invitados que pagaron aparte. */
+export function cubiertoPorInvitados(costo: number, jugadores: Jugador[], j: Jugador): number {
+  return Math.round(porCabeza(costo, jugadores) * invitadosPagados(j));
+}
+
+/**
+ * El que puso la plata adelanto todo: su parte ya esta cubierta.
+ * Cada invitado que pagó aparte le cubre una cabeza al que lo trajo —
+ * misma cuenta que `mi_parte` en 0027.
+ */
 export function pagadoEfectivo(p: Pick<Partido, 'costo' | 'puso'>, jugadores: Jugador[], j: Jugador): number {
-  return p.puso === j.id ? debeDe(p.costo, jugadores, j) : pagadoDe(j);
+  const d = debeDe(p.costo, jugadores, j);
+  if (p.puso === j.id) return d;
+  const inv = cubiertoPorInvitados(p.costo, jugadores, j);
+  return inv > 0 ? Math.min(d, pagadoDe(j) + inv) : pagadoDe(j);
 }
 
 export function saldado(p: Pick<Partido, 'costo' | 'puso'>, jugadores: Jugador[], j: Jugador): boolean {
@@ -53,11 +86,21 @@ export function cabezasLista(jugadores: Jugador[]): Cabeza[] {
   const out: Cabeza[] = [];
   jugadores.forEach((j) => {
     out.push({ label: j.nombre, inv: false, jid: j.id, uid: j.user_id ?? null });
-    for (let i = 0; i < (j.invitados || 0); i++) {
-      out.push({ label: 'Invitado de ' + j.nombre, inv: true, de: j.nombre, jid: j.id });
-    }
+    invitadosDe(j).forEach((x) => {
+      out.push({ label: x.nombre || 'Invitado de ' + j.nombre, inv: true, de: j.nombre, jid: j.id });
+    });
   });
   return out;
+}
+
+/**
+ * Cómo se muestra una cabeza en los equipos. El invitado sin nombre
+ * llega con label "Invitado de X" (también del sorteo de la base) y se
+ * abrevia; el que tiene nombre se muestra con su nombre.
+ */
+export function etiquetaCabeza(c: Cabeza): string {
+  if (!c.inv) return c.label;
+  return c.label && c.label !== 'Invitado de ' + (c.de ?? '') ? c.label : 'Inv. de ' + (c.de ?? '');
 }
 
 /** Fisher-Yates. Reparte en dos equipos; con impar, el primero lleva uno mas. */

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { PartidoPublico } from '@/lib/tipos';
 import { compartirPlaca, generarPlaca, generarPlacaEquipos } from '@/lib/placa';
+import { etiquetaCabeza } from '@/lib/calculos';
 
 /**
  * Genera la placa y la manda por donde se pueda.
@@ -53,7 +54,7 @@ export default function BotonPlaca({ p }: { p: PartidoPublico }) {
 
   /** Los nombres como se leen: el invitado no tiene nombre propio. */
   const nombres = (lado: 'a' | 'b') =>
-    (p.equipos?.[lado] ?? []).map((c) => (c.inv ? 'Inv. de ' + (c.de ?? '') : c.label));
+    (p.equipos?.[lado] ?? []).map(etiquetaCabeza);
 
   async function pasarImagen() {
     setError(null);

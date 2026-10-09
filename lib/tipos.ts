@@ -5,6 +5,10 @@ export type Jugador = {
   partido_id: string;
   nombre: string;
   invitados: number;
+  /** Un renglón por invitado, en orden: nombre y si pagó aparte. Puede
+   *  tener menos entradas que `invitados` (lo que falta es sin nombre y
+   *  sin pagar). Ver 0027. */
+  invitados_det?: InvitadoDet[];
   pagado: number;
   orden: number;
   /** true si se anotó solo por el link de invitación */
@@ -18,6 +22,8 @@ export type Jugador = {
    *  lado lo decide el sorteo y vive solo en el jsonb. Ver 0021. */
   lado?: Lado | null;
 };
+
+export type InvitadoDet = { nombre: string | null; pagado: boolean };
 
 export type Posicion = 'arquero' | 'defensor' | 'mediocampista' | 'delantero';
 export type Pie = 'derecho' | 'zurdo' | 'ambos';
@@ -158,6 +164,8 @@ export type MiParte = {
   anotado: boolean;
   nombre?: string;
   invitados?: number;
+  /** mis invitados, con nombre y si pagaron aparte (ver 0027) */
+  invitados_det?: InvitadoDet[];
   debe?: number;
   pagado?: number;
   saldo?: number;

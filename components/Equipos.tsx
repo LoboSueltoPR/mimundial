@@ -1,7 +1,7 @@
 'use client';
 
 import type { Equipos, Lado } from '@/lib/tipos';
-import { color, iniciales } from '@/lib/calculos';
+import { color, etiquetaCabeza, iniciales } from '@/lib/calculos';
 
 /** Quién está agarrado, para moverlo o cambiarlo de equipo. */
 export type Seleccion = { lado: Lado; i: number };
@@ -57,7 +57,7 @@ export function ColumnaEquipo({
               <span className="mini" style={{ background: x.inv ? '#5a6472' : color(x.label) }}>
                 {x.inv ? '+' : iniciales(x.label)}
               </span>
-              <span>{x.inv ? 'Inv. de ' + x.de : x.label}</span>
+              <span>{etiquetaCabeza(x)}</span>
             </li>
           );
         })}

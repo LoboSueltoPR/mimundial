@@ -11,8 +11,11 @@ import {
   cabezasLista,
   calcularCuentas,
   calcularStats,
+  cubiertoPorInvitados,
   debeDe,
   estadoDesafio,
+  etiquetaCabeza,
+  invitadosDe,
   faltanEnLado,
   firmaEquipos,
   intercambiar,
@@ -455,6 +458,33 @@ chequear('mismo dia: desempata la hora, y arriba el mas temprano',
   [cuando('2026-09-12', '22:00'), cuando('2026-09-12', '20:00')]
     .sort((a, b) => compararPartidos(a, b, HOY_TEST)).map((p) => p.hora),
   ['20:00', '22:00']);
+
+/* ---------- invitados con nombre y pago aparte (0027) ---------- */
+{
+  const bru = { ...jug('Brunito', 2), invitados_det: [{ nombre: 'Tincho', pagado: true }] };
+  const lista = js.map((j) => (j.id === 'Brunito' ? bru : j));
+  chequear('invitadosDe rellena hasta el conteo', invitadosDe(bru), [
+    { nombre: 'Tincho', pagado: true },
+    { nombre: null, pagado: false },
+  ]);
+  chequear('invitadosDe ignora lo que sobra del conteo',
+    invitadosDe({ invitados: 1, invitados_det: [{ nombre: 'A', pagado: false }, { nombre: 'B', pagado: true }] }),
+    [{ nombre: 'A', pagado: false }]);
+  chequear('un invitado que pago le cubre 5000 a Brunito', cubiertoPorInvitados(60000, lista, bru), 5000);
+  chequear('Brunito sigue debiendo 15000 en total', debeDe(60000, lista, bru), 15000);
+  chequear('pagado efectivo de Brunito = 5000', pagadoEfectivo(p, lista, bru), 5000);
+  chequear('con su parte de 10000 queda saldado', saldado(p, lista, { ...bru, pagado: 10000 }), true);
+  chequear('el tope es lo que debe: no se cuenta dos veces',
+    pagadoEfectivo(p, lista, { ...bru, pagado: 15000 }), 15000);
+  chequear('total cubierto suma el invitado', totalPagado(p, lista), 5000);
+  chequear('total que falta = 55000', totalDebe(p, lista), 55000);
+  chequear('el que puso cubre a sus invitados igual',
+    pagadoEfectivo({ costo: 60000, puso: 'Brunito' }, lista, bru), 15000);
+  const cl = cabezasLista(lista).filter((c) => c.inv);
+  chequear('el sorteo usa el nombre del invitado', cl.map((c) => c.label), ['Tincho', 'Invitado de Brunito']);
+  chequear('etiqueta: con nombre, el nombre', etiquetaCabeza(cl[0]), 'Tincho');
+  chequear('etiqueta: sin nombre, Inv. de X', etiquetaCabeza(cl[1]), 'Inv. de Brunito');
+}
 
 console.log(fallos === 0 ? '\nTodo OK' : `\n${fallos} fallo(s)`);
 process.exit(fallos === 0 ? 0 : 1);

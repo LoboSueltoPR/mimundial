@@ -592,6 +592,22 @@ label{
 .quitar{background:none;border:0;color:var(--faint);font-size:17px;cursor:pointer;padding:2px 3px;flex:none}
 .quitar:hover{color:var(--red)}
 
+/* el invitado: un renglón propio debajo del que lo trae (0027) */
+.jug.invRow{padding-top:3px;padding-bottom:3px}
+.jug.invRow .num{color:var(--faint)}
+.invDe{font-family:var(--fuente-dato);font-size:10px;color:var(--faint);flex:none;
+  text-transform:uppercase;letter-spacing:.4px}
+input.invNombre{flex:1;min-width:0;width:auto;margin:0;font-size:13.5px;
+  border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;
+  padding:5px 2px;color:var(--txt);box-shadow:none}
+input.invNombre:focus{outline:none;border-bottom-color:var(--acento)}
+.pago.invRow{padding-left:34px;padding-top:4px;padding-bottom:4px}
+.pago.invRow .tick{width:22px;height:22px;font-size:11px}
+.pago.invRow .nom{cursor:default}
+.pago.invRow .nom b{font-size:13px;font-weight:500}
+.invCampos{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.invCampos input{margin:0}
+
 /* ---------- la fecha, como el talón de una entrada ---------- */
 .item .fec{
   width:40px;flex:none;text-align:center;

@@ -46,6 +46,8 @@ export default function Invitacion() {
   const [cargando, setCargando] = useState(true);
   const [nombre, setNombre] = useState('');
   const [invitados, setInvitados] = useState(0);
+  /** Los nombres de mis invitados, por posición. Ver 0027. */
+  const [nombresInv, setNombresInv] = useState<string[]>([]);
   const [mio, setMio] = useState(false);
   /** true si mi anotación quedó identificada por la cuenta (auth.uid), no
    *  por el claim del navegador: ahí las acciones van por las RPC nuevas,
@@ -97,7 +99,9 @@ export default function Invitacion() {
       setError(error.message);
       return;
     }
-    setMiParte((parte as MiParte | null) ?? null);
+    const mia = (parte as MiParte | null) ?? null;
+    setMiParte(mia);
+    if (mia?.anotado) setNombresInv((mia.invitados_det ?? []).map((x) => x.nombre ?? ''));
     setVotacion((vot as VotacionPublica | null) ?? null);
     const partido = data as PartidoPublico | null;
     setP(partido);
@@ -270,6 +274,25 @@ export default function Invitacion() {
     }
   }
 
+  /**
+   * Los nombres van por su propia RPC y no por anotarse/actualizar:
+   * esas son la puerta de anon y no se les cambia la firma (ver la
+   * trampa de 0004). Corre después, cuando la fila ya existe.
+   */
+  async function guardarNombresInv() {
+    const nombres = nombresInv.slice(0, invitados).map((x) => x.trim());
+    if (invitados === 0 || nombres.every((x) => !x)) {
+      if (!miParte?.invitados_det?.some((x) => x.nombre)) return;
+    }
+    const { data, error } = await crearCliente().rpc('nombrar_mis_invitados', {
+      tok: token,
+      p_claim: claimLeido(token),
+      p_nombres: nombres,
+    });
+    const r = data as RespuestaRPC | null;
+    if (error || !r?.ok) setError(r?.error || error?.message || 'No se pudieron guardar los nombres.');
+  }
+
   async function anotarse() {
     setError(null);
     setGuardando(true);
@@ -289,6 +312,7 @@ export default function Invitacion() {
     localStorage.setItem('mimundial.nombre', nombre.trim());
     marcarAnotado(token, true);
     setMio(true);
+    await guardarNombresInv();
     cargar();
   }
 
@@ -313,6 +337,7 @@ export default function Invitacion() {
       setError(r?.error || error?.message || 'No se pudo actualizar.');
       return;
     }
+    await guardarNombresInv();
     cargar();
   }
 
@@ -330,6 +355,7 @@ export default function Invitacion() {
     setMio(false);
     setViaCuenta(false);
     setInvitados(0);
+    setNombresInv([]);
     cargar();
   }
 
@@ -561,6 +587,25 @@ export default function Invitacion() {
                 </span>
                 <button onClick={() => setInvitados(Math.min(5, invitados + 1))}>+</button>
               </div>
+              {invitados > 0 && (
+                <div className="invCampos">
+                  {Array.from({ length: invitados }, (_, i) => (
+                    <input
+                      key={i}
+                      value={nombresInv[i] ?? ''}
+                      onChange={(e) =>
+                        setNombresInv((prev) => {
+                          const otra = [...prev];
+                          otra[i] = e.target.value;
+                          return otra;
+                        })
+                      }
+                      placeholder={`Nombre del invitado ${i + 1} (opcional)`}
+                      maxLength={40}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -761,7 +806,16 @@ export default function Invitacion() {
                     : miParte.invitados
                       ? `Vos + ${miParte.invitados} invitado${miParte.invitados > 1 ? 's' : ''} = ${
                           1 + miParte.invitados
-                        } partes`
+                        } partes${
+                          (miParte.invitados_det ?? []).some((x) => x.pagado)
+                            ? ' · ' +
+                              (miParte.invitados_det ?? [])
+                                .map((x, i) => (x.pagado ? x.nombre || `invitado ${i + 1}` : null))
+                                .filter(Boolean)
+                                .join(', ') +
+                              ' pagó aparte'
+                            : ''
+                        }`
                       : 'Una parte'}
                 </small>
               </span>
